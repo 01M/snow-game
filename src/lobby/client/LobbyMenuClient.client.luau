@@ -10,7 +10,7 @@ local Maps = require(LobbyFolder:WaitForChild("Maps"))
 local Remotes = LobbyFolder:WaitForChild("Remotes")
 local QueueAction = Remotes:WaitForChild("QueueAction")
 local QueueState = Remotes:WaitForChild("QueueState")
-local L = require(ReplicatedStorage:WaitForChild("Locale")).t
+local L = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Locale")).t
 
 local BLUE = Color3.fromRGB(80, 160, 245)
 local BLUE_DARK = Color3.fromRGB(35, 90, 170)

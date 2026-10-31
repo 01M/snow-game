@@ -1,4 +1,4 @@
--- LocaleClient: переводит надписи в мире и подсказки ProximityPrompt на язык игрока (через ReplicatedStorage.Locale).
+-- LocaleClient: переводит надписи в мире и подсказки ProximityPrompt на язык игрока (через ReplicatedStorage.Shared.Locale).
 -- Надпись помечается тегом "Localized":
 --   TextLabel / TextButton / TextBox — атрибут LocaleKey (ключ строки) и, если в тексте есть {имя}, LocaleArgs (JSON-объект);
 --   ProximityPrompt — LocaleAction (ActionText) и LocaleObject (ObjectText).
@@ -10,7 +10,7 @@ local HttpService = game:GetService("HttpService")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
-local Locale = require(ReplicatedStorage:WaitForChild("Locale"))
+local Locale = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Locale"))
 
 local TAG = "Localized"
 local ATTRIBUTES = { LocaleKey = true, LocaleArgs = true, LocaleAction = true, LocaleObject = true }

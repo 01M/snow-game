@@ -26,7 +26,7 @@
 - `*.rbxl` не в git. Rojo синхронизирует код только в открытое место: чтобы изменения попали в игру, место всё равно нужно опубликовать в Studio
 - Если syncback запускается снова: он дописывает в проекты свойства StarterPlayer и пустые `SerializedOverrides` в `.meta.json`/`.model.json`, это надо убирать
 - Проверено 2026-10-31 на копиях .rbxl: первое подключение добавляет только две пустые папки `Shared`, контрольные суммы всех 48 скриптов не изменились, правки файлов (создание и удаление модуля) доходят до Studio. В play mode не запускалось (сами скрипты побайтно те же). Защита `servePlaceIds` и подключение настоящих мест на момент записи не проверялись
-- **Дубли (перенос в `src/shared` идёт по одному модулю, с 2026-10-31):** перенесены Analytics и Locale.Strings (`src/shared/replicated/Locale/Strings.luau`, пока `Shared.Locale` — папка). Ещё копиями в `src/lobby` и `src/house` (правки вносить в обе): ChatTagClient, LocaleClient, SnowfallClient, Locale, Shop, Shop.Gui
+- **Дубли (перенос в `src/shared` идёт по одному модулю, с 2026-10-31):** перенесены Analytics, Locale и Locale.Strings. Ещё копиями в `src/lobby` и `src/house` (правки вносить в обе): ChatTagClient, LocaleClient, SnowfallClient, Shop, Shop.Gui
 
 ## Места (places) в experience (с 2026-10-14)
 
@@ -71,10 +71,10 @@
 
 ## Локализация (с 2026-10-28, английский + русский, в обоих places)
 
-- `ReplicatedStorage.Locale` (ModuleScript, копии в `src/lobby` и `src/house`, правишь в одном месте — копируй в другое) + `ReplicatedStorage.Shared.Locale.Strings` (ModuleScript, общий: `src/shared/replicated/Locale/Strings.luau`, `[ключ] = { en = "...", ru = "..." }`, ~150 строк)
+- `ReplicatedStorage.Shared.Locale` (ModuleScript) + `Locale.Strings` (ModuleScript: `[ключ] = { en = "...", ru = "..." }`, ~150 строк). Общие для обоих мест: `src/shared/replicated/Locale/`
 - API: `Locale.t(key, args)` на клиенте, `Locale.forPlayer(player, key, args)` на сервере, `Locale.format(lang, key, args)`, `Locale.has(key)`. Переменные в тексте — `{имя}`, числа подставляются без ".0". Нет ключа — warn «[Locale] нет строки» и показывается сам ключ
 - Язык — из настроек Roblox игрока (`Player.LocaleId`, "ru-ru" → ru); для всех языков без перевода — английский (основной). Новый язык = ещё одно поле (es, pt…) в Strings
-- В Studio язык подменяется атрибутом `ForceLanguage` ("ru"/"en") у `ReplicatedStorage.Locale` (в опубликованной игре не действует; после проверки убирать). У Олега Roblox на английском (en-us), поэтому без ForceLanguage в Studio игра на английском
+- В Studio язык подменяется атрибутом `ForceLanguage` ("ru"/"en") у `ReplicatedStorage.Shared.Locale` (в опубликованной игре не действует; после проверки убирать). У Олега Roblox на английском (en-us), поэтому без ForceLanguage в Studio игра на английском
 - Надписи в мире: тег `Localized` + атрибут `LocaleKey` (и `LocaleArgs` — JSON) у TextLabel, `LocaleAction`/`LocaleObject` у ProximityPrompt. Текст ставит `StarterPlayerScripts.LocaleClient` (в обоих places) и обновляет при смене атрибутов — так сервер показывает всем текст на их языке (LobbyServer: setLocaleText)
 - LocaleClient также переименовывает у себя инструменты (Tool с SnowToolId) в `Tool.<Id>` — так подписан слот хотбара. В `ServerStorage.SnowTools` имена остались русскими, сервер ищет инструменты по атрибуту
 - Ключи: Hud.*, Task.*, Journal.*, Upgrade.* (в т.ч. `Upgrade.<ToolId>.<UpgradeId>.Name/.Desc`), Tool.<Id>, Zone.<Name>, Collection.*, Tip.*, MatchEnd.*, Shop.*, World.*, Kick.*, Common.*, Map.<Id>, Lobby.*
@@ -241,7 +241,7 @@ Zones = {
 
 ### 4. UI текст на английском и русском (с 2026-10-28)
 - Олег решил 2026-10-28: игре нужен английский (аудитория — десятки тысяч онлайна). Раньше правило было «только кириллица»
-- Весь текст интерфейса (HUD, Billboard, ProximityPrompt, Kick) — только через `ReplicatedStorage.Locale` и ключи в `Locale.Strings` с en и ru (см. раздел «Локализация»)
+- Весь текст интерфейса (HUD, Billboard, ProximityPrompt, Kick) — только через `ReplicatedStorage.Shared.Locale` и ключи в `Locale.Strings` с en и ru (см. раздел «Локализация»)
 - Проверяй escape-последовательности: используй прямой UTF-8 вместо `\uXXXX`
 
 ### 5. План перед большими изменениями

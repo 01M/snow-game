@@ -3,7 +3,7 @@
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
-local L = require(ReplicatedStorage:WaitForChild("Locale")).t
+local L = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Locale")).t
 
 local player = Players.LocalPlayer
 

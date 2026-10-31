@@ -4,7 +4,7 @@
 -- Журнал: «Журнал» (задачи + игроки), «Апгрейды» (инструменты из Config.Tools — Remotes.BuyToolUpgrade, рюкзак — Remotes.BuyUpgrade),
 -- «Коллекция» (заглушка), «Подсказки».
 -- Заменяет TaskClient, ProgressClient, BackpackClient, MoneyClient (они выключены, Enabled = false).
--- Тексты — через Locale (ReplicatedStorage.Locale): Hud.*, Task.*, Journal.*, Upgrade.*, Tool.*, Zone.*, Collection.*, Tip.*
+-- Тексты — через Locale (ReplicatedStorage.Shared.Locale): Hud.*, Task.*, Journal.*, Upgrade.*, Tool.*, Zone.*, Collection.*, Tip.*
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local UserInputService = game:GetService("UserInputService")
@@ -16,7 +16,7 @@ local zoneConfig = require(snowGame:WaitForChild("ZoneConfig"))
 local buyRemote = snowGame:WaitForChild("Remotes"):WaitForChild("BuyUpgrade")
 local buyToolUpgradeRemote = snowGame:WaitForChild("Remotes"):WaitForChild("BuyToolUpgrade")
 local HttpService = game:GetService("HttpService")
-local Locale = require(ReplicatedStorage:WaitForChild("Locale"))
+local Locale = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Locale"))
 local L = Locale.t
 local Shop = require(ReplicatedStorage:WaitForChild("Shop"))
 local ShopGui = require(ReplicatedStorage.Shop:WaitForChild("Gui"))

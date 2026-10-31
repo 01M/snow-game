@@ -7,7 +7,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 
 local Shop = require(script.Parent)
-local L = require(ReplicatedStorage:WaitForChild("Locale")).t
+local L = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Locale")).t
 
 local player = Players.LocalPlayer
 local IS_MATCH = ReplicatedStorage:FindFirstChild("SnowGame") ~= nil

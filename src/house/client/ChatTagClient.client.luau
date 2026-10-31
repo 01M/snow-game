@@ -4,7 +4,7 @@ local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local TextChatService = game:GetService("TextChatService")
 
-local L = require(ReplicatedStorage:WaitForChild("Locale")).t
+local L = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Locale")).t
 
 local VIP_COLOR = "#FFD24A"
 

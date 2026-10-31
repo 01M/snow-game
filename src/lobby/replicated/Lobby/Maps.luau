@@ -1,5 +1,5 @@
 -- Список карт для выбора в лобби. PlaceId — place с картой в этом же experience.
--- Название карты — в ReplicatedStorage.Locale.Strings, ключ Map.<Id>.
+-- Название карты — в ReplicatedStorage.Shared.Locale.Strings, ключ Map.<Id>.
 local Maps = {
 	{ Id = "House", PlaceId = 77433112786408 },
 }

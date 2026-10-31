@@ -8,7 +8,7 @@ local snowGame = ReplicatedStorage:WaitForChild("SnowGame")
 local config = require(snowGame:WaitForChild("Config"))
 local PlayerData = require(script.Parent:WaitForChild("PlayerData"))
 local ToolServer = require(script.Parent:WaitForChild("ToolServer"))
-local Locale = require(ReplicatedStorage:WaitForChild("Locale"))
+local Locale = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Locale"))
 local Shop = require(ReplicatedStorage:WaitForChild("Shop"))
 
 local AUTOSAVE_INTERVAL = 60

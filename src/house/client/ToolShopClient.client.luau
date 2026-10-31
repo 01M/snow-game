@@ -5,7 +5,7 @@ local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local config = require(ReplicatedStorage:WaitForChild("SnowGame"):WaitForChild("Config"))
-local L = require(ReplicatedStorage:WaitForChild("Locale")).t
+local L = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Locale")).t
 local player = Players.LocalPlayer
 local shop = workspace:WaitForChild("ToolShop")
 

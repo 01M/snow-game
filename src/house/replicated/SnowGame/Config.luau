@@ -64,7 +64,7 @@ local Config = {
 --   "range" — Range × (1 + PerLevel × уровень)
 --   "width" — HalfAngle × (1 + PerLevel × уровень)
 -- Цена уровня L (0 — первая покупка) = floor(BasePrice × UpgradePriceGrowth^L); Price — для разовых.
--- Названия и описания — в ReplicatedStorage.Locale.Strings: Tool.<Id>, Upgrade.<ToolId>.<UpgradeId>.Name / .Desc.
+-- Названия и описания — в ReplicatedStorage.Shared.Locale.Strings: Tool.<Id>, Upgrade.<ToolId>.<UpgradeId>.Name / .Desc.
 Config.Tools = {
 	{
 		Id = "Hand", Price = 0, Mode = "click", Sway = true,

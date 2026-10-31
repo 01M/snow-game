@@ -57,7 +57,7 @@
 | Выдача в лобби (прямо в DataStore) | `src/lobby/server/ShopServer.server.luau` |
 | Выдача в матче (через PlayerData) | `src/house/server/SnowGame/ShopServer.server.luau`, `PlayerData.grantReceipt` |
 
-Новый тип товара обычно требует правки обоих ShopServer. Магазины за Cash — другие скрипты: инструменты `ToolServer`/`ToolShopServer`, рюкзак `UpgradeShopServer`.
+Новый товар создаёт в Creator Dashboard Олег и присылает id; `Id = 0` значит «ещё не создан», такой товар не показывается и не выдаётся. Новый тип товара обычно требует правки обоих ShopServer. Магазины за Cash — другие скрипты: инструменты `ToolServer`/`ToolShopServer`, рюкзак `UpgradeShopServer`.
 
 ## Rojo
 
@@ -82,18 +82,19 @@
 - В начале каждого запуска ключ заполняется заново: Cash 100000, UpgradeLevel 0, только бесплатные инструменты. В Output будет `[SaveStore] TestSave включён`.
 - Сохранение и чеки работают как обычно, обычный ключ не меняется.
 - **Только одно место за раз.** Ключ общий: старт второго места заново заполняет его и снимает блокировку первого, поэтому сохранение первого пропускается.
+- Следующий Play снова заполнит ключ, поэтому сохранение смотрят после Stop: чтением `test_<UserId>` из `PlayerData_Studio`.
 
 ## Как проверять покупки
 
-- **За Cash** (инструменты, апгрейды, рюкзак): TestSave в House Map, Play, купить в сарае, в журнале или у лавки. Проверить Cash, `OwnedTools`, `ToolUpgrades`, `BackpackUpgradeLevel`.
+- **За Cash** (инструменты, апгрейды, рюкзак): TestSave в House Map, Play, купить в сарае, в журнале или у лавки. Проверить `leaderstats.Cash` и атрибуты игрока `OwnedTools`, `ToolUpgrades`, `BackpackUpgradeLevel`.
 - **За Robux:** TestSave в одном месте, Play, окно магазина: кнопка «Магазин» в лобби, 🛒 или клавиша B в матче. Окно подтверждения Roblox — CoreGui, через MCP оно не нажимается, покупку подтверждает Олег. `[не проверено]` В Studio покупка тестовая, Robux не списываются.
-- `[не проверено]` У Олега как у владельца игры все пассы считаются купленными, поэтому покупку пасса на его аккаунте не проверить. Без покупки бонусы проверяются атрибутами `Pass_<Key>`, `BoostUntil`, workspace `BlizzardUntil`.
+- `[не проверено]` У Олега как у владельца игры все пассы считаются купленными, поэтому покупку пасса на его аккаунте не проверить. Без покупки бонусы проверяются атрибутами игрока `Pass_<Key>` (ключи в `Shop.Passes`) и `BoostUntil`, атрибутом workspace `BlizzardUntil`.
 - `Blizzard` (`MatchOnly`) продаётся только в матче. Остальные товары в лобби отвечают `NotProcessedYet`, пока данные держит сервер матча.
 - Телепорт в Studio не работает, переход между местами проверяется только после публикации.
 
 ## Инструменты разработки
 
-Версии закреплены в `rokit.toml`: Rojo 7.7.1, StyLua 2.6.0, Selene 0.32.0, luau-lsp 1.70.1.
+Версии закреплены в `rokit.toml`: Rojo 7.7.1, StyLua 2.6.0, Selene 0.32.0, luau-lsp 1.70.1. Установка: `rokit install`.
 
 - `stylua src` (табы, ширина 120), затем `stylua --check src`. `[не проверено]` За один проход форматирование может не стабилизироваться.
 - `selene src` (`std = "roblox"`, разрешён `roblox_manual_fromscale_or_fromoffset`). Предупреждения не исправлять без вопроса.
@@ -101,7 +102,7 @@
 
 **Перед коммитом:**
 1. Изменение дошло до Studio и проверено в play mode.
-2. `stylua src`, затем `stylua --check src`.
+2. `stylua src`, затем `stylua --check src`; если check не прошёл, повторить.
 3. `selene src`.
 4. `scripts/analyze.ps1` показывает 0 ошибок.
 5. Убраны отладочные атрибуты: `TestSave`, `ForceLanguage`, `DebugSnowBlocks`, `DebugTouchButton`.

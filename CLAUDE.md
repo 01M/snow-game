@@ -4,7 +4,7 @@
 - Serve: `rojo serve lobby.project.json` (port 34872), `rojo serve house.project.json` (port 34873).
 - Studio MCP is still fine for: map/models/terrain, running Play, reading Output.
 - After a change works in Studio: commit. Never publish places — the user publishes both, together.
-- Run StyLua before committing; don't auto-fix Selene warnings without asking.
+- Run StyLua before committing. Selene must report 0 warnings before commit; don't fix real warnings without asking (false positives: inline `-- selene: allow(rule)` with a reason).
 - Before committing run `scripts/analyze.ps1` (fresh sourcemaps + `luau-lsp analyze` for both places): analyze must report 0 errors before commit.
 - New .luau files start with `--!strict`. Don't convert existing files.
 - If behavior in Play doesn't match the code in the file, suspect a Rojo desync first: compare that one script in Studio with the file; if they differ, restart `rojo serve` (re-saving alone isn't reliable), then reconnect the Rojo plugin in Studio.
@@ -65,6 +65,7 @@
 - Rojo удаляет из своих папок всё, чего нет в файлах. Новый объект там (RemoteEvent и т.п.) — файл `Имя.model.json` с `className`.
 - Rojo не управляет Workspace, Lighting, Terrain, SoundService, TextChatService, ServerStorage и свойствами StarterPlayer. Они живут в месте и сохраняются публикацией.
 - Предупреждение в Output про `rbxassetid://203785492` идёт от звука уведомления самого плагина Rojo (`RojoManagedPlugin.rbxm`), а не от игры: его можно игнорировать.
+- git push is done by Oleg; threads only commit locally.
 - Код доходит только до открытого места; в игру он попадает после публикации Олегом. `*.rbxl` и `backups/` (копии мест) не в git.
 - `[не проверено]` `rojo serve` 7.7.1 иногда падает при удалении файлов и папок в `src/` (`change_processor.rs:179`). Лечится перезапуском и повторным подключением, папки лучше удалять при остановленном сервере.
 - `[не проверено]` Если снова запускать `syncback`, он дописывает в проекты свойства StarterPlayer и пустые `SerializedOverrides`; их надо убирать.
@@ -107,8 +108,6 @@
 3. `selene src` показывает 0 предупреждений.
 4. `scripts/analyze.ps1` показывает 0 ошибок.
 5. Убраны отладочные атрибуты: `TestSave`, `ForceLanguage`, `DebugSnowBlocks`, `DebugTouchButton`.
-
-Места не публикуем.
 
 ## Правила работы
 

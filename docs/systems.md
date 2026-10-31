@@ -14,7 +14,7 @@
 
 - **`SnowField`** — серверная карта высот прямоугольной зоны, шаг `SnowGridRes`. Индекс точки `ix * nz + iz`. Свежий снег = шум по мировым координатам + сугробы у краёв (`DriftEdges`). На открытых краях (`DriftEdges < 0.5`) снег сходит на нет на ширине `SnowEdgeTaper`.
 - **Препятствия.** `BlowServer` передаёт в `blockParts` стоящие на земле детали из `SnowYard` и `Blockout.Decor/House/Fences`, а также крышки люков. Снега под ними нет.
-- **Порции.** Зона делится на порции: площадь / `GridStep²`, значение в IntValue `Total` зоны (Yard 900, Driveway 385, SideYard 776, Backyard 1620). Объём снега / `Total` = 1 порция = +1 в Backpack и Score. Остаток меньше порции копится в `carry[player]`.
+- **Порции.** Зона делится на порции: площадь / `GridStep²`, значение в IntValue `Total` зоны (считает `countPortions` в `BlowServer`). Объём снега / `Total` = 1 порция = +1 в Backpack и Score. Остаток меньше порции копится в `carry[player]`.
 - **Конец зоны.** Когда осталось ≤1% снега, зона доочищается и получает `cleared`. `State = "finished"` наступает, только когда в ней нет куч (`tryFinish`, каждые 0,5 с).
 - **Состояния зоны:** `locked` → `active` → `finished`. Порядок = порядок `ZoneConfig.Zones`. Открытие прячет ворота `ZoneConfig.Gate`, их снег `<Gate>_Snow` и табличку на воротах.
 - **Сеть (`SnowSync`).** Клиент просит `"full"` (не чаще раза в 2 с), сервер отвечает `("full", zoneIndex, buffer)`: u8 на точку, шаг `SnowHeightQuant`. Изменения идут `FireAllClients("delta", zoneIndex, buffer)`: записи u16 индекс + u8 высота, в тике среза (15 Гц) и раз в `SnowSyncInterval`. `[не проверено]` Трафик 2–3 КБ/с на дующего игрока — только расчёт.

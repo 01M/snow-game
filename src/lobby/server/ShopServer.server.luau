@@ -11,7 +11,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 
 local Shop = require(ReplicatedStorage:WaitForChild("Shop"))
-local Analytics = require(script.Parent:WaitForChild("Analytics"))
+local Analytics = require(script.Parent:WaitForChild("Shared"):WaitForChild("Analytics"))
 
 -- Должны совпадать с ServerScriptService.SnowGame.PlayerData в House Map
 local STORE_NAME = RunService:IsStudio() and "PlayerData_Studio" or "PlayerData_v1"

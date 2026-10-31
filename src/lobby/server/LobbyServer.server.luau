@@ -6,7 +6,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local HttpService = game:GetService("HttpService")
 local CollectionService = game:GetService("CollectionService")
 
-local Analytics = require(script.Parent:WaitForChild("Analytics"))
+local Analytics = require(script.Parent:WaitForChild("Shared"):WaitForChild("Analytics"))
 
 local LobbyFolder = ReplicatedStorage:WaitForChild("Lobby")
 local Maps = require(LobbyFolder:WaitForChild("Maps"))

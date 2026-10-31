@@ -1,7 +1,7 @@
 -- Analytics: обёртка над AnalyticsService (данные — Creator Dashboard → Analytics). Только сервер.
 -- Roblox принимает события только из опубликованной игры, поэтому в Studio они не отправляются, а печатаются
 -- в Output с префиксом [Analytics] — так проверяются хуки. Ошибка аналитики никогда не ломает игру.
--- Модуль одинаковый в Lobby и House Map (ServerScriptService.Analytics): поменял в одном месте — скопируй в другое.
+-- Общий модуль Lobby и House Map (src/shared/server → ServerScriptService.Shared.Analytics).
 local AnalyticsService = game:GetService("AnalyticsService")
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")

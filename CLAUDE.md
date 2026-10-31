@@ -20,13 +20,13 @@
   - `src/<место>/replicated` → ReplicatedStorage
   - `src/<место>/client` → StarterPlayer.StarterPlayerScripts
   - `src/<место>/character` → StarterPlayer.StarterCharacterScripts (пока пусто)
-  - `src/shared/replicated` → ReplicatedStorage.Shared, `src/shared/server` → ServerScriptService.Shared (пока пусто)
+  - `src/shared/replicated` → ReplicatedStorage.Shared, `src/shared/server` → ServerScriptService.Shared
 - Rojo удаляет из этих папок всё, чего нет в файлах. Новый объект в них (RemoteEvent и т.п.) добавляется файлом (`Имя.model.json` с `className`), а не в Studio
 - Rojo НЕ управляет Workspace, Lighting, Terrain, ServerStorage, свойствами StarterPlayer (CameraMode и др.): они остаются в Studio и сохраняются публикацией места. Старые скрипты в House Map `ServerStorage` (`_Backup_BeforeTools`, `_OldSnowblower`, `_Candidates`) не в Rojo
 - `*.rbxl` не в git. Rojo синхронизирует код только в открытое место: чтобы изменения попали в игру, место всё равно нужно опубликовать в Studio
 - Если syncback запускается снова: он дописывает в проекты свойства StarterPlayer и пустые `SerializedOverrides` в `.meta.json`/`.model.json`, это надо убирать
 - Проверено 2026-10-31 на копиях .rbxl: первое подключение добавляет только две пустые папки `Shared`, контрольные суммы всех 48 скриптов не изменились, правки файлов (создание и удаление модуля) доходят до Studio. В play mode не запускалось (сами скрипты побайтно те же). Защита `servePlaceIds` и подключение настоящих мест на момент записи не проверялись
-- **Дубли (на 2026-10-31):** до решения Олега общий код лежит копиями в `src/lobby` и `src/house`, правки вносить в обе. `src/shared` пуст: скрипты ищут модули по старым путям (`ReplicatedStorage.Locale`), перенос в `Shared` требует правки `require`
+- **Дубли (перенос в `src/shared` идёт по одному модулю, с 2026-10-31):** перенесён Analytics. Ещё копиями в `src/lobby` и `src/house` (правки вносить в обе): ChatTagClient, LocaleClient, SnowfallClient, Locale, Locale.Strings, Shop, Shop.Gui
 
 ## Места (places) в experience (с 2026-10-14)
 
@@ -64,7 +64,7 @@
 
 ## Аналитика (с 2026-10-28)
 
-- `ServerScriptService.Analytics` (ModuleScript, одинаковый в обоих places): `onboarding(player, stepName)`, `cash(player, isSource, amount, balance, transactionType, sku)`, `custom(player, name, value)`. Шлёт в AnalyticsService только в опубликованной игре; в Studio печатает `[Analytics] ...` в Output
+- `ServerScriptService.Shared.Analytics` (ModuleScript, общий для обоих places, `src/shared/server/Analytics.luau`): `onboarding(player, stepName)`, `cash(player, isSource, amount, balance, transactionType, sku)`, `custom(player, name, value)`. Шлёт в AnalyticsService только в опубликованной игре; в Studio печатает `[Analytics] ...` в Output
 - Воронка новичка (9 шагов): лобби — Joined lobby, Joined a pad, Teleport to match (LobbyServer); матч — Arrived in match, First snow, First sale, First purchase, Yard cleared, Match finished (`SnowGame.AnalyticsHooks`)
 - Экономика Cash (AnalyticsHooks по leaderstats.Cash): приход SnowMelter / Manhole / MatchEndSale, расход Tool:<Id> / ToolUpgrade:<Tool>.<Upgrade> / Backpack. Свои события: QuickPlay (лобби), MatchDuration (матч)
 - Проверено в play mode 2026-10-28: матч (шаги 4–9, приход/расход, MatchDuration) и лобби (шаги 1–3, QuickPlay). В Studio лог печатает имя игрока

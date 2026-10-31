@@ -11,7 +11,7 @@ local HttpService = game:GetService("HttpService")
 local Players = game:GetService("Players")
 local ServerScriptService = game:GetService("ServerScriptService")
 
-local Analytics = require(ServerScriptService:WaitForChild("Analytics"))
+local Analytics = require(ServerScriptService:WaitForChild("Shared"):WaitForChild("Analytics"))
 local ECONOMY = Enum.AnalyticsEconomyTransactionType
 
 local function idSet(list: string?)

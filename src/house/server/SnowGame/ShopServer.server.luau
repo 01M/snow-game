@@ -10,7 +10,7 @@ local ServerScriptService = game:GetService("ServerScriptService")
 local Shop = require(ReplicatedStorage:WaitForChild("Shop"))
 local config = require(ReplicatedStorage:WaitForChild("SnowGame"):WaitForChild("Config"))
 local PlayerData = require(script.Parent:WaitForChild("PlayerData"))
-local Analytics = require(ServerScriptService:WaitForChild("Analytics"))
+local Analytics = require(ServerScriptService:WaitForChild("Shared"):WaitForChild("Analytics"))
 
 local function checkPasses(player: Player)
 	for _, pass in Shop.Passes do

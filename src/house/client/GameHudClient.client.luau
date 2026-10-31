@@ -298,7 +298,7 @@ local multiplierLabel = label({
 	Parent = hud,
 }, { textOutline(2) })
 
-local coin = new("Frame", {
+new("Frame", {
 	Name = "Coin",
 	AnchorPoint = Vector2.new(1, 0),
 	Position = UDim2.new(1, -20, 0, 102),

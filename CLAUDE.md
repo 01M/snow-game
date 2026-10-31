@@ -1,3 +1,11 @@
+## RULES — read first
+- Code is managed by Rojo. NEVER create or edit scripts in Studio via MCP — Rojo will overwrite those edits. Edit files in src/ only.
+- Shared code for both places: src/shared/. Place-specific: src/lobby/, src/house/. Before adding a module, check whether it belongs in shared.
+- Serve: `rojo serve lobby.project.json` (port 34872), `rojo serve house.project.json` (port 34873).
+- Studio MCP is still fine for: map/models/terrain, running Play, reading Output.
+- After a change works in Studio: commit. Never publish places — the user publishes both, together.
+- Run StyLua before committing; don't auto-fix Selene warnings without asking.
+
 # Snow Cleaning Simulator
 
 Кооперативный симулятор уборки снега для Roblox. Игроки убирают снег инструментами (Рука, Лопата, Движок, Снегоуборщик), продают его в Снегоплавилке за Cash (или заталкивают кучи на люки теплотрассы), покупают апгрейды рюкзака и инструментов.
@@ -8,13 +16,9 @@
 
 ## Rojo workflow (с 2026-10-31)
 
-- **Скрипты правятся ТОЛЬКО как файлы в `src/`, никогда через Studio MCP** (`multi_edit`, запись `Source` через `execute_luau` и т.п.): Rojo перезапишет такие правки. Правка в окне скриптов Studio при подключённом Rojo тоже потеряется
-- MCP по-прежнему для карты, моделей (Workspace, Lighting, ServerStorage и т.д.) и тестов (`start_stop_play`, `get_console_output`, `execute_luau` для чтения)
+- Основные правила и команды запуска — в блоке RULES в начале файла. Правка в окне скриптов Studio при подключённом Rojo тоже потеряется
 - Rojo 7.7.1 через Rokit (`rokit.toml`), версия закреплена. Плагин ставится `rojo plugin install`
-- Запуск (каждый в своём терминале, порты заданы в проектах как `servePort`):
-  - Lobby: `rojo serve lobby.project.json` → порт 34872
-  - House Map: `rojo serve house.project.json` → порт 34873
-  - В Studio: вкладка Plugins → Rojo → адрес `localhost`, порт нужного места → Connect. `servePlaceIds` не даст подключить проект к чужому месту (место должно быть открыто из облака, а не из файла .rbxl)
+- Подключение: каждый сервер в своём терминале, порты заданы в проектах как `servePort`. В Studio: вкладка Plugins → Rojo → адрес `localhost`, порт нужного места → Connect. `servePlaceIds` не даст подключить проект к чужому месту (место должно быть открыто из облака, а не из файла .rbxl)
 - Что где (одинаково для `lobby` и `house`):
   - `src/<место>/server` → ServerScriptService
   - `src/<место>/replicated` → ReplicatedStorage
@@ -27,7 +31,7 @@
 - `rojo serve` 7.7.1 иногда падает при удалении файлов и папок в `src/` (`Result::unwrap()`, NotFound, `change_processor.rs:179`; дважды 2026-10-31 при удалении папки модуля в `src/house`). Лечится перезапуском сервера и повторным подключением плагина. Перед удалением папки лучше остановить сервер
 - Форматирование и линтер (через Rokit, с 2026-10-31): `stylua src` (`stylua.toml`: табы, ширина 120; за один проход может не стабилизироваться, проверять `stylua --check src`), `selene src` (`selene.toml`: std = "roblox")
 - Если syncback запускается снова: он дописывает в проекты свойства StarterPlayer и пустые `SerializedOverrides` в `.meta.json`/`.model.json`, это надо убирать
-- Проверено 2026-10-31 на копиях .rbxl: первое подключение добавляет только две пустые папки `Shared`, контрольные суммы всех 48 скриптов не изменились, правки файлов (создание и удаление модуля) доходят до Studio. В play mode не запускалось (сами скрипты побайтно те же). Защита `servePlaceIds` и подключение настоящих мест на момент записи не проверялись
+- Проверено 2026-10-31 на копиях .rbxl: первое подключение добавляет только две пустые папки `Shared`, контрольные суммы всех 48 скриптов не изменились, правки файлов (создание и удаление модуля) доходят до Studio. Олег 2026-10-31 подключил настоящие места, проверил блокировку `servePlaceIds` и play mode в обоих
 - **Общий код (перенесён 2026-10-31):** Analytics, Locale, Locale.Strings, Shop, Shop.Gui, ChatTagClient, LocaleClient, SnowfallClient лежат в `src/shared`, копировать между местами больше ничего не нужно. Там, где ниже написано «одинаковый в обоих places», речь об общем файле. ShopServer в местах разный, это не дубль
 
 ## Места (places) в experience (с 2026-10-14)

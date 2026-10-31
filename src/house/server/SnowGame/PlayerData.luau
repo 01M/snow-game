@@ -12,13 +12,13 @@ local ServerScriptService = game:GetService("ServerScriptService")
 local SaveStore = require(ServerScriptService:WaitForChild("Shared"):WaitForChild("SaveStore"))
 local ToolServer = require(script.Parent:WaitForChild("ToolServer"))
 
-local LOCK_TIMEOUT = 120 -- сек; блокировка старше считается брошенной (автосейв обновляет её раз в 60 сек)
 local LOAD_ATTEMPTS = 6 -- последняя попытка забирает блокировку силой
 local SAVE_ATTEMPTS = 3
 local RETRY_WAIT = 3
-local MAX_PURCHASES = 50
 
 local store = SaveStore.store
+local LOCK_TIMEOUT = SaveStore.LOCK_TIMEOUT
+local MAX_PURCHASES = SaveStore.MAX_PURCHASES
 local jobId = game.JobId ~= "" and game.JobId or ("studio-" .. HttpService:GenerateGUID(false))
 
 local PlayerData = {}

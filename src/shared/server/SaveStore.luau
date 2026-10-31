@@ -14,6 +14,8 @@ local TEST_SEED = { Cash = 100000, UpgradeLevel = 0 }
 local SaveStore = {}
 
 SaveStore.store = DataStoreService:GetDataStore(STORE_NAME)
+SaveStore.LOCK_TIMEOUT = 120 -- сек; блокировка старше считается брошенной (автосейв обновляет её раз в 60 сек)
+SaveStore.MAX_PURCHASES = 50
 
 -- seeded[UserId]: false — заполняется сейчас, true — готово (за запуск один раз)
 local seeded: { [number]: boolean } = {}

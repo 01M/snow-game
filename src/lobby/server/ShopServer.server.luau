@@ -12,11 +12,9 @@ local Shop = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Shop
 local Analytics = require(script.Parent:WaitForChild("Shared"):WaitForChild("Analytics"))
 local SaveStore = require(script.Parent:WaitForChild("Shared"):WaitForChild("SaveStore"))
 
--- Должны совпадать с ServerScriptService.SnowGame.PlayerData в House Map
-local LOCK_TIMEOUT = 120
-local MAX_PURCHASES = 50
-
 local store = SaveStore.store
+local LOCK_TIMEOUT = SaveStore.LOCK_TIMEOUT
+local MAX_PURCHASES = SaveStore.MAX_PURCHASES
 
 local function checkPasses(player: Player)
 	for _, pass in Shop.Passes do

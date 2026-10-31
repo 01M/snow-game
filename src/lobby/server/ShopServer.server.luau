@@ -45,8 +45,9 @@ end)
 -- Выдать покупку прямо в сохранении. Возвращает сохранённые данные или nil, если сейчас выдать нельзя
 local function grantInStore(player: Player, purchaseId: string, product)
 	local result = nil
+	SaveStore.prepare(player)
 	local ok, err = pcall(function()
-		store:UpdateAsync("u_" .. player.UserId, function(old)
+		store:UpdateAsync(SaveStore.key(player), function(old)
 			result = nil
 			old = typeof(old) == "table" and old or {}
 			local purchases = typeof(old.Purchases) == "table" and old.Purchases or {}

@@ -8,6 +8,7 @@
 - Before committing run `scripts/analyze.ps1` (fresh sourcemaps + `luau-lsp analyze` for both places): analyze must report 0 errors before commit.
 - New .luau files start with `--!strict`. Don't convert existing files.
 - After edits, verify the change actually reached Studio before testing; if Rojo didn't sync, re-save the file or restart rojo serve.
+- `PlayerData_v1` is read-only from MCP/Command Bar. To test money, use `TestSave`.
 
 # Snow Cleaning Simulator
 
@@ -37,6 +38,11 @@
 - Если syncback запускается снова: он дописывает в проекты свойства StarterPlayer и пустые `SerializedOverrides` в `.meta.json`/`.model.json`, это надо убирать
 - Проверено 2026-10-31 на копиях .rbxl: первое подключение добавляет только две пустые папки `Shared`, контрольные суммы всех 48 скриптов не изменились, правки файлов (создание и удаление модуля) доходят до Studio. Олег 2026-10-31 подключил настоящие места, проверил блокировку `servePlaceIds` и play mode в обоих
 - **Общий код (перенесён 2026-10-31):** Analytics, SaveStore (хранилище сохранений), Locale, Locale.Strings, Shop, Shop.Gui, ChatTagClient, LocaleClient, SnowfallClient лежат в `src/shared`, копировать между местами больше ничего не нужно. Там, где ниже написано «одинаковый в обоих places», речь об общем файле. ShopServer в местах разный, это не дубль
+
+## Сохранения и тесты с деньгами (с 2026-10-31)
+
+- `ServerScriptService.Shared.SaveStore` — хранилище и ключ для PlayerData, LobbyCashServer и ShopServer лобби. В опубликованной игре `PlayerData_v1`, в Studio `PlayerData_Studio`; доступ к API Services включён, так что `PlayerData_Studio` — постоянное облачное хранилище, а не песочница
+- **TestSave:** атрибут workspace `TestSave = true` ставится в edit mode до Play, в каждом месте отдельно, после теста убирать. Действует только при `RunService:IsStudio()`. Ключ `test_<UserId>`, в начале каждого запуска заполняется из `TEST_SEED` (Cash 100000, UpgradeLevel 0, инструменты только бесплатные); в Output предупреждение `[SaveStore] TestSave включён`. Сохранение и чеки работают как обычно, но обычный ключ `u_<UserId>` не меняется. Запускать Play с TestSave только в одном месте за раз: ключ общий, и старт второго места заново заполняет его и снимает блокировку первого, поэтому сохранение первого пропускается
 
 ## Места (places) в experience (с 2026-10-14)
 

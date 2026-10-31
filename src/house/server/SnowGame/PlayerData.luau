@@ -29,10 +29,6 @@ local released = {}
 -- Сколько сохранений сейчас в процессе (BindToClose ждёт их, в т.ч. запущенные из PlayerRemoving)
 local savesInFlight = 0
 
-local function keyFor(player)
-	return "u_" .. player.UserId
-end
-
 local function toCount(v)
 	v = tonumber(v) or 0
 	if v ~= v then
@@ -64,7 +60,8 @@ end
 -- Загружает данные и ставит блокировку.
 -- Возвращает { Cash, UpgradeLevel, OwnedTools, ToolUpgrades } или nil при ошибке.
 function PlayerData.load(player)
-	local key = keyFor(player)
+	SaveStore.prepare(player)
+	local key = SaveStore.key(player)
 	for attempt = 1, LOAD_ATTEMPTS do
 		local locked = false
 		local force = attempt == LOAD_ATTEMPTS
@@ -170,7 +167,7 @@ saveImpl = function(player, release)
 	if release then
 		released[player] = true
 	end
-	local key = keyFor(player)
+	local key = SaveStore.key(player)
 	for attempt = 1, SAVE_ATTEMPTS do
 		local owned = true
 		local ok, err = pcall(function()

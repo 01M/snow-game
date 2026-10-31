@@ -1,6 +1,6 @@
 -- Показ баланса Cash и буста в лобби: только читаем сохранение House Map (без блокировки сессии).
 -- Пишет в сохранение в лобби только ShopServer (покупки за Robux).
--- Ключ должен совпадать с ServerScriptService.SnowGame.PlayerData в House Map, хранилище общее (Shared.SaveStore).
+-- Хранилище и ключ общие с ServerScriptService.SnowGame.PlayerData в House Map (Shared.SaveStore).
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 
@@ -12,9 +12,10 @@ local RETRY_WAIT = 3
 local store = SaveStore.store
 
 local function loadCash(player)
+	SaveStore.prepare(player)
 	for attempt = 1, ATTEMPTS do
 		local ok, result = pcall(function()
-			return store:GetAsync("u_" .. player.UserId)
+			return store:GetAsync(SaveStore.key(player))
 		end)
 		if ok then
 			local cash = typeof(result) == "table" and tonumber(result.Cash) or 0

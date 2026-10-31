@@ -18,7 +18,10 @@
     },
     "StarterPlayer": {
       "StarterPlayerScripts": {
-        "$path": "src/lobby/client"
+        "$path": "src/lobby/client",
+        "Shared": {
+          "$path": "src/shared/client"
+        }
       },
       "StarterCharacterScripts": {
         "$path": "src/lobby/character"

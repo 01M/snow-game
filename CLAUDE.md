@@ -20,14 +20,14 @@
   - `src/<место>/replicated` → ReplicatedStorage
   - `src/<место>/client` → StarterPlayer.StarterPlayerScripts
   - `src/<место>/character` → StarterPlayer.StarterCharacterScripts (пока пусто)
-  - `src/shared/replicated` → ReplicatedStorage.Shared, `src/shared/server` → ServerScriptService.Shared
+  - `src/shared/replicated` → ReplicatedStorage.Shared, `src/shared/server` → ServerScriptService.Shared, `src/shared/client` → StarterPlayerScripts.Shared
 - Rojo удаляет из этих папок всё, чего нет в файлах. Новый объект в них (RemoteEvent и т.п.) добавляется файлом (`Имя.model.json` с `className`), а не в Studio
 - Rojo НЕ управляет Workspace, Lighting, Terrain, ServerStorage, свойствами StarterPlayer (CameraMode и др.): они остаются в Studio и сохраняются публикацией места. Старые скрипты в House Map `ServerStorage` (`_Backup_BeforeTools`, `_OldSnowblower`, `_Candidates`) не в Rojo
 - `*.rbxl` не в git. Rojo синхронизирует код только в открытое место: чтобы изменения попали в игру, место всё равно нужно опубликовать в Studio
 - `rojo serve` 7.7.1 иногда падает при удалении файлов и папок в `src/` (`Result::unwrap()`, NotFound, `change_processor.rs:179`; дважды 2026-10-31 при удалении папки модуля в `src/house`). Лечится перезапуском сервера и повторным подключением плагина. Перед удалением папки лучше остановить сервер
 - Если syncback запускается снова: он дописывает в проекты свойства StarterPlayer и пустые `SerializedOverrides` в `.meta.json`/`.model.json`, это надо убирать
 - Проверено 2026-10-31 на копиях .rbxl: первое подключение добавляет только две пустые папки `Shared`, контрольные суммы всех 48 скриптов не изменились, правки файлов (создание и удаление модуля) доходят до Studio. В play mode не запускалось (сами скрипты побайтно те же). Защита `servePlaceIds` и подключение настоящих мест на момент записи не проверялись
-- **Дубли (перенос в `src/shared` идёт по одному модулю, с 2026-10-31):** перенесены Analytics, Locale, Locale.Strings, Shop и Shop.Gui. Ещё копиями в `src/lobby` и `src/house` (правки вносить в обе): ChatTagClient, LocaleClient, SnowfallClient
+- **Дубли (перенос в `src/shared` идёт по одному модулю, с 2026-10-31):** перенесены Analytics, Locale, Locale.Strings, Shop, Shop.Gui и ChatTagClient. Ещё копиями в `src/lobby` и `src/house` (правки вносить в обе): LocaleClient, SnowfallClient
 
 ## Места (places) в experience (с 2026-10-14)
 

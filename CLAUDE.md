@@ -5,6 +5,7 @@
 - Studio MCP is still fine for: map/models/terrain, running Play, reading Output.
 - After a change works in Studio: commit. Never publish places — the user publishes both, together.
 - Run StyLua before committing; don't auto-fix Selene warnings without asking.
+- Before committing run `scripts/analyze.ps1` (fresh sourcemaps + `luau-lsp analyze` for both places): no new errors beyond the 10 known ones.
 
 # Snow Cleaning Simulator
 
@@ -30,6 +31,7 @@
 - `*.rbxl` не в git. Rojo синхронизирует код только в открытое место: чтобы изменения попали в игру, место всё равно нужно опубликовать в Studio
 - `rojo serve` 7.7.1 иногда падает при удалении файлов и папок в `src/` (`Result::unwrap()`, NotFound, `change_processor.rs:179`; дважды 2026-10-31 при удалении папки модуля в `src/house`). Лечится перезапуском сервера и повторным подключением плагина. Перед удалением папки лучше остановить сервер
 - Форматирование и линтер (через Rokit, с 2026-10-31): `stylua src` (`stylua.toml`: табы, ширина 120; за один проход может не стабилизироваться, проверять `stylua --check src`), `selene src` (`selene.toml`: std = "roblox")
+- Проверка типов (через Rokit, с 2026-10-31): `scripts/analyze.ps1` — для каждого места свежий `rojo sourcemap --include-non-scripts` и `luau-lsp analyze` по `src/<место>` + `src/shared`, одинаковые ошибки печатаются один раз. Всё сгенерированное лежит в `.luau-lsp/` (не в git); типы Roblox (`globalTypes.None`, уровень обычных скриптов игры) скачиваются один раз и без версии, удалить папку = скачать свежие. Файлов с `--!strict` нет, поэтому проверка идёт в нестрогом режиме: 10 известных ошибок на 2026-10-31, в strict было бы 575
 - Если syncback запускается снова: он дописывает в проекты свойства StarterPlayer и пустые `SerializedOverrides` в `.meta.json`/`.model.json`, это надо убирать
 - Проверено 2026-10-31 на копиях .rbxl: первое подключение добавляет только две пустые папки `Shared`, контрольные суммы всех 48 скриптов не изменились, правки файлов (создание и удаление модуля) доходят до Studio. Олег 2026-10-31 подключил настоящие места, проверил блокировку `servePlaceIds` и play mode в обоих
 - **Общий код (перенесён 2026-10-31):** Analytics, Locale, Locale.Strings, Shop, Shop.Gui, ChatTagClient, LocaleClient, SnowfallClient лежат в `src/shared`, копировать между местами больше ничего не нужно. Там, где ниже написано «одинаковый в обоих places», речь об общем файле. ShopServer в местах разный, это не дубль

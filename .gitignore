@@ -2,6 +2,9 @@
 *.rbxl
 *.rbxl.lock
 
+# luau-lsp: sourcemap и типы Roblox (создаёт scripts/analyze.ps1)
+.luau-lsp/
+
 # Blender
 *.blend1
 __pycache__/

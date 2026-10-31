@@ -144,8 +144,9 @@ local function showToast(str)
 end
 
 local function bounce(b)
-	local s = b:FindFirstChildOfClass("UIScale") or Instance.new("UIScale", b)
+	local s = b:FindFirstChildOfClass("UIScale") or Instance.new("UIScale")
 	s.Scale = 0.9
+	s.Parent = b
 	TweenService:Create(s, TweenInfo.new(0.15, Enum.EasingStyle.Back), { Scale = 1 }):Play()
 end
 

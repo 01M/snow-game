@@ -137,5 +137,6 @@
 - `BlowServer`: атрибуты зоны `DisplayName` и `Order` никто не читает (и поле `ZoneConfig.DisplayName` ради них); при `MATCH_MODE = true` не вызывается `startRegen`, и вместе с ней не нужны `RegenDelay`, `RegenDuration`.
 - `GameHudClient`: считает `zoneTotal` сам вместо `Total` зоны, поэтому Yard обязана быть первой и квадратной. Комментарий в строке 2 называет множитель заглушкой, он настоящий.
 - `LobbyHudClient`: комментарий в строке 3 не упоминает работающий магазин.
+- Атрибут workspace `BlizzardBy` (`ShopServer` матча) и строку `Shop.BlizzardBy` никто не читает.
 - `LOCK_TIMEOUT` и `MAX_PURCHASES` заданы и в `PlayerData`, и в `ShopServer` лобби; должны совпадать, лучше перенести в `SaveStore`.
 - Старые копии в ServerStorage: House Map `_Backup_BeforeTools`, `_Candidates`, `_OldBaseplateTexture`, `_OldCollector`, `_OldSnowblower`, `_OldSnowmelter`, `_OldSunsetSky`, `_OldToolModels`, `_OldUpgradeShop`; Lobby `_Candidates`, `_OldBaseplateTexture`, `_OldSky`.

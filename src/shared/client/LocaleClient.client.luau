@@ -37,7 +37,7 @@ local function apply(inst: Instance)
 	elseif inst:IsA("TextLabel") or inst:IsA("TextButton") or inst:IsA("TextBox") then
 		local key = inst:GetAttribute("LocaleKey")
 		if type(key) == "string" and key ~= "" then
-			inst.Text = Locale.t(key, decodeArgs(inst))
+			(inst :: TextLabel).Text = Locale.t(key, decodeArgs(inst))
 		end
 	end
 end

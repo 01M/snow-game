@@ -41,7 +41,7 @@ local function buyBackpackUpgrade(player: Player)
 		player:SetAttribute("BackpackCapacity", config.getBackpackCapacity(level + 1, Shop.backpackMultiplier(player)))
 		player:SetAttribute("BackpackUpgradeLevel", level + 1)
 		-- покупки за матч (для задачи «Улучши рюкзак» в журнале)
-		player:SetAttribute("UpgradesBought", (player:GetAttribute("UpgradesBought") or 0) + 1)
+		player:SetAttribute("UpgradesBought", ((player:GetAttribute("UpgradesBought") or 0) :: number) + 1)
 	end
 end
 

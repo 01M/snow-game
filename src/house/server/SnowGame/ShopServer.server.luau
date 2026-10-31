@@ -52,7 +52,8 @@ local function applyProduct(player: Player, product)
 	if product.Cash then
 		-- IapCash — чтобы AnalyticsHooks записал этот приход как покупку, а не продажу снега
 		player:SetAttribute("IapCash", (player:GetAttribute("IapCash") or 0) + product.Cash)
-		player.leaderstats.Cash.Value += product.Cash
+		local leaderstats = (player :: any).leaderstats
+		leaderstats.Cash.Value += product.Cash
 	end
 	if product.BoostMinutes then
 		local current = player:GetAttribute("BoostUntil") or 0

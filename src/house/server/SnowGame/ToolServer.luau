@@ -146,7 +146,7 @@ end
 function ToolServer.setLoaded(player: Player, ids: { any }?, rawUpgrades: any)
 	upgrades[player] = sanitizeUpgrades(rawUpgrades)
 	local set = {}
-	for _, id in (type(ids) == "table" and ids or {}) do
+	for _, id in (type(ids) == "table" and ids or {}) :: { any } do
 		local tool = config.getTool(id)
 		if tool and tool.Price > 0 then
 			set[tool.Id] = true

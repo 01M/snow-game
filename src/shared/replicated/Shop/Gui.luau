@@ -200,8 +200,9 @@ local function build()
 		Enum.Font.GothamBlack
 	).TextXAlignment =
 		Enum.TextXAlignment.Left
-	statusLabel = label(panel, "", UDim2.new(1, -140, 0, 22), UDim2.fromOffset(20, 56), 16, Enum.Font.GothamBold, GOLD)
-	statusLabel.TextXAlignment = Enum.TextXAlignment.Left
+	local status = label(panel, "", UDim2.new(1, -140, 0, 22), UDim2.fromOffset(20, 56), 16, Enum.Font.GothamBold, GOLD)
+	status.TextXAlignment = Enum.TextXAlignment.Left
+	statusLabel = status
 
 	local close = Instance.new("TextButton")
 	close.Name = "Close"
@@ -297,7 +298,7 @@ local function build()
 		if blizzard > 0 then
 			table.insert(parts, L("Shop.BlizzardActive", { time = formatTime(blizzard) }))
 		end
-		statusLabel.Text = table.concat(parts, "   ")
+		(statusLabel :: TextLabel).Text = table.concat(parts, "   ")
 	end)
 
 	screen = gui
@@ -307,7 +308,7 @@ function Gui.open()
 	if not screen then
 		build()
 	end
-	screen.Enabled = true
+	(screen :: ScreenGui).Enabled = true
 end
 
 function Gui.close()

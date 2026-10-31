@@ -177,7 +177,7 @@ function Config.getToolStats(toolCfg, levels: { [string]: number }?)
 		Speed = 1, -- множитель скорости от апгрейдов (для PileTake)
 	}
 	for _, u in toolCfg.Upgrades or {} do
-		local lv = math.clamp(tonumber(levels[u.Id]) or 0, 0, u.MaxLevel)
+		local lv = math.clamp(tonumber((levels :: { [string]: number })[u.Id]) or 0, 0, u.MaxLevel)
 		if lv > 0 then
 			if u.Effect == "hold" then
 				stats.Hold = true

@@ -289,7 +289,7 @@ local function quickPlay(player)
 		if q.phase == "empty" then
 			if moveOnPad(player, q) then
 				addPlayer(q, player)
-				if q.owner == player and q.phase == "setup" then
+				if q.owner == player and (q.phase :: string) == "setup" then
 					startCountdown(q)
 				end
 			end

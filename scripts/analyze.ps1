@@ -1,13 +1,15 @@
 # Type checks both places. Each place is analyzed with its own sourcemap together with src/shared,
 # so shared code is checked against both; an error reported by both places is printed once.
-# Delete .luau-lsp/ to download fresh Roblox types.
+# Exits 0 only when there are no errors.
 Set-Location (Split-Path $PSScriptRoot)
 
+# Roblox types are pinned to the luau-lsp release from rokit.toml. Change both together.
+$typesVersion = "1.70.1"
 $dir = ".luau-lsp"
-$types = "$dir/globalTypes.d.luau"
+$types = "$dir/globalTypes.$typesVersion.d.luau"
 New-Item -ItemType Directory -Force $dir | Out-Null
 if (-not (Test-Path $types)) {
-	Invoke-WebRequest "https://luau-lsp.pages.dev/type-definitions/globalTypes.None.d.luau" -OutFile $types -ErrorAction Stop
+	Invoke-WebRequest "https://raw.githubusercontent.com/JohnnyMorganz/luau-lsp/$typesVersion/scripts/globalTypes.None.d.luau" -OutFile $types -ErrorAction Stop
 }
 
 $failed = $false
@@ -45,6 +47,7 @@ foreach ($place in "lobby", "house") {
 
 $errors.Keys | ForEach-Object { $_ -replace " \[game/[^\]]*\]", "" }
 Write-Output "$($errors.Count) error(s)"
-if ($failed) {
+if ($failed -or $errors.Count -gt 0) {
 	exit 1
 }
+exit 0

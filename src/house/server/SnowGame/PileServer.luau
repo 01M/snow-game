@@ -117,7 +117,7 @@ function PileServer.manholeParts(): { BasePart }
 end
 
 local function addStat(player: Player, name: string, amount: number)
-	player:SetAttribute(name, (player:GetAttribute(name) or 0) + amount)
+	player:SetAttribute(name, ((player:GetAttribute(name) or 0) :: number) + amount)
 end
 
 -- Куча на люке тает: тому, кто её толкал, сразу Cash за порции × ManholePayRatio

@@ -26,7 +26,7 @@
 - `*.rbxl` не в git. Rojo синхронизирует код только в открытое место: чтобы изменения попали в игру, место всё равно нужно опубликовать в Studio
 - Если syncback запускается снова: он дописывает в проекты свойства StarterPlayer и пустые `SerializedOverrides` в `.meta.json`/`.model.json`, это надо убирать
 - Проверено 2026-10-31 на копиях .rbxl: первое подключение добавляет только две пустые папки `Shared`, контрольные суммы всех 48 скриптов не изменились, правки файлов (создание и удаление модуля) доходят до Studio. В play mode не запускалось (сами скрипты побайтно те же). Защита `servePlaceIds` и подключение настоящих мест на момент записи не проверялись
-- **Дубли (перенос в `src/shared` идёт по одному модулю, с 2026-10-31):** перенесён Analytics. Ещё копиями в `src/lobby` и `src/house` (правки вносить в обе): ChatTagClient, LocaleClient, SnowfallClient, Locale, Locale.Strings, Shop, Shop.Gui
+- **Дубли (перенос в `src/shared` идёт по одному модулю, с 2026-10-31):** перенесены Analytics и Locale.Strings (`src/shared/replicated/Locale/Strings.luau`, пока `Shared.Locale` — папка). Ещё копиями в `src/lobby` и `src/house` (правки вносить в обе): ChatTagClient, LocaleClient, SnowfallClient, Locale, Shop, Shop.Gui
 
 ## Места (places) в experience (с 2026-10-14)
 
@@ -71,7 +71,7 @@
 
 ## Локализация (с 2026-10-28, английский + русский, в обоих places)
 
-- `ReplicatedStorage.Locale` (ModuleScript) + `Locale.Strings` (ModuleScript: `[ключ] = { en = "...", ru = "..." }`, ~150 строк). **Оба модуля одинаковые в Lobby и House Map — правишь в одном месте, копируй в другое** (проверять: длина Source совпадает)
+- `ReplicatedStorage.Locale` (ModuleScript, копии в `src/lobby` и `src/house`, правишь в одном месте — копируй в другое) + `ReplicatedStorage.Shared.Locale.Strings` (ModuleScript, общий: `src/shared/replicated/Locale/Strings.luau`, `[ключ] = { en = "...", ru = "..." }`, ~150 строк)
 - API: `Locale.t(key, args)` на клиенте, `Locale.forPlayer(player, key, args)` на сервере, `Locale.format(lang, key, args)`, `Locale.has(key)`. Переменные в тексте — `{имя}`, числа подставляются без ".0". Нет ключа — warn «[Locale] нет строки» и показывается сам ключ
 - Язык — из настроек Roblox игрока (`Player.LocaleId`, "ru-ru" → ru); для всех языков без перевода — английский (основной). Новый язык = ещё одно поле (es, pt…) в Strings
 - В Studio язык подменяется атрибутом `ForceLanguage` ("ru"/"en") у `ReplicatedStorage.Locale` (в опубликованной игре не действует; после проверки убирать). У Олега Roblox на английском (en-us), поэтому без ForceLanguage в Studio игра на английском

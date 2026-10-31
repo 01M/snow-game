@@ -1,5 +1,5 @@
 -- Locale: тексты интерфейса на языке игрока.
--- Строки — в script.Strings: [ключ] = { en = "...", ru = "..." }; en обязателен (английский — основной язык),
+-- Строки — в ReplicatedStorage.Shared.Locale.Strings: [ключ] = { en = "...", ru = "..." }; en обязателен (английский — основной язык),
 -- переменная в тексте — {имя}, как в LocalizationTable Roblox.
 -- Язык — из настроек Roblox игрока (Player.LocaleId: "ru-ru" → "ru"); нет перевода на его язык — английский.
 -- В Studio язык можно подменить атрибутом ForceLanguage ("ru" / "en") у этого модуля; в опубликованной игре он не действует.
@@ -7,7 +7,7 @@
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 
-local Strings = require(script:WaitForChild("Strings"))
+local Strings = require(script.Parent:WaitForChild("Shared"):WaitForChild("Locale"):WaitForChild("Strings"))
 
 local DEFAULT_LANGUAGE = "en"
 

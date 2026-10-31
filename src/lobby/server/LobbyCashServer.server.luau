@@ -1,15 +1,15 @@
 -- Показ баланса Cash и буста в лобби: только читаем сохранение House Map (без блокировки сессии).
 -- Пишет в сохранение в лобби только ShopServer (покупки за Robux).
--- Ключ и имя хранилища должны совпадать с ServerScriptService.SnowGame.PlayerData в House Map.
+-- Ключ должен совпадать с ServerScriptService.SnowGame.PlayerData в House Map, хранилище общее (Shared.SaveStore).
 local Players = game:GetService("Players")
-local DataStoreService = game:GetService("DataStoreService")
 local RunService = game:GetService("RunService")
 
-local STORE_NAME = RunService:IsStudio() and "PlayerData_Studio" or "PlayerData_v1"
+local SaveStore = require(script.Parent:WaitForChild("Shared"):WaitForChild("SaveStore"))
+
 local ATTEMPTS = 3
 local RETRY_WAIT = 3
 
-local store = DataStoreService:GetDataStore(STORE_NAME)
+local store = SaveStore.store
 
 local function loadCash(player)
 	for attempt = 1, ATTEMPTS do

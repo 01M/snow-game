@@ -5,20 +5,20 @@
 -- BoostUntil — конец личного буста ×2 Cash (атрибут игрока BoostUntil). Лобби пишет покупки в тот же ключ само (ShopServer).
 -- Session — блокировка: писать может только сервер, который загрузил игрока.
 -- Перед телепортом/выходом сервер сохраняет и снимает блокировку (release = true).
-local DataStoreService = game:GetService("DataStoreService")
 local HttpService = game:GetService("HttpService")
 local RunService = game:GetService("RunService")
+local ServerScriptService = game:GetService("ServerScriptService")
 
+local SaveStore = require(ServerScriptService:WaitForChild("Shared"):WaitForChild("SaveStore"))
 local ToolServer = require(script.Parent:WaitForChild("ToolServer"))
 
-local STORE_NAME = RunService:IsStudio() and "PlayerData_Studio" or "PlayerData_v1"
 local LOCK_TIMEOUT = 120 -- сек; блокировка старше считается брошенной (автосейв обновляет её раз в 60 сек)
 local LOAD_ATTEMPTS = 6 -- последняя попытка забирает блокировку силой
 local SAVE_ATTEMPTS = 3
 local RETRY_WAIT = 3
 local MAX_PURCHASES = 50
 
-local store = DataStoreService:GetDataStore(STORE_NAME)
+local store = SaveStore.store
 local jobId = game.JobId ~= "" and game.JobId or ("studio-" .. HttpService:GenerateGUID(false))
 
 local PlayerData = {}

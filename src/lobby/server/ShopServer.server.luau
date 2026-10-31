@@ -4,21 +4,19 @@
 -- UpdateAsync добавляет Cash / продлевает BoostUntil и записывает id чека в Purchases (повтор чека ничего не даёт).
 -- Если данные сейчас держит сервер матча (свежая Session) или товар только для матча — NotProcessedYet:
 -- Roblox повторит чек позже, и его выдаст сервер, где игрок будет тогда.
-local DataStoreService = game:GetService("DataStoreService")
 local MarketplaceService = game:GetService("MarketplaceService")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local RunService = game:GetService("RunService")
 
 local Shop = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Shop"))
 local Analytics = require(script.Parent:WaitForChild("Shared"):WaitForChild("Analytics"))
+local SaveStore = require(script.Parent:WaitForChild("Shared"):WaitForChild("SaveStore"))
 
 -- Должны совпадать с ServerScriptService.SnowGame.PlayerData в House Map
-local STORE_NAME = RunService:IsStudio() and "PlayerData_Studio" or "PlayerData_v1"
 local LOCK_TIMEOUT = 120
 local MAX_PURCHASES = 50
 
-local store = DataStoreService:GetDataStore(STORE_NAME)
+local store = SaveStore.store
 
 local function checkPasses(player: Player)
 	for _, pass in Shop.Passes do

@@ -50,6 +50,7 @@ local Config = {
 }
 
 -- Инструменты уборки (порядок = слоты хотбара). Модели — ServerStorage.SnowTools.<Id> (Tool с атрибутом SnowToolId).
+-- Bare = true — не предмет: работает, когда в руках ничего нет (Рука, Config.BareTool), в Backpack не выдаётся.
 -- Range — макс. дальность от игрока, HalfAngle — полуугол конуса, MeltRate — срез за тик в центре конуса.
 -- Price 0 — есть у всех всегда (не сохраняется); остальные покупаются в сарае (Workspace.ToolShop).
 -- MinDistance / NozzleOffset (необязательно) — свои вместо BlowMinDistance / BlowNozzleOffset.
@@ -69,8 +70,9 @@ Config.Tools = {
 	{
 		Id = "Hand",
 		Price = 0,
+		Bare = true,
+		Icon = "rbxassetid://81467688374407", -- для кнопки «Убирать» (Tool с TextureId у Руки нет)
 		Mode = "click",
-		Sway = true,
 		Range = 4,
 		HalfAngle = 35,
 		MinDistance = 1.2,
@@ -138,6 +140,9 @@ local toolsById = {}
 for i, t in Config.Tools do
 	t.Order = i
 	toolsById[t.Id] = t
+	if t.Bare then
+		Config.BareTool = t
+	end
 	t.UpgradesById = {}
 	for _, u in t.Upgrades or {} do
 		t.UpgradesById[u.Id] = u

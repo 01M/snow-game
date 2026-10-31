@@ -158,8 +158,8 @@ return {
 
 	-- Вкладка «Подсказки»
 	["Tip.Hand"] = {
-		en = "Click with the Hand (slot 1) to scoop up snow. The “Hold” upgrade lets you just hold the button.",
-		ru = "Кликай Рукой (слот 1), чтобы сгребать снег. Апгрейд «Удержание» позволяет просто зажать кнопку.",
+		en = "Click with empty hands to scoop up snow. The “Hold” upgrade lets you just hold the button. To put a tool away, press its key again.",
+		ru = "Кликай пустой рукой, чтобы сгребать снег. Апгрейд «Удержание» позволяет просто зажать кнопку. Чтобы убрать инструмент, нажми его клавишу ещё раз.",
 	},
 	["Tip.Shed"] = {
 		en = "Other tools are sold in the shed by the Snow Melter. Their upgrades are in the “Upgrades” tab.",

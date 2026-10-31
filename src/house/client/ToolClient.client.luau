@@ -1,9 +1,10 @@
 -- ToolClient: ввод для всех инструментов уборки (Tool с атрибутом SnowToolId).
 -- Удержание: зажал — BlowState(true, направление взгляда) и повтор каждые BlowAimInterval (это же keepalive),
 -- отпустил — BlowState(false). Клик (Mode "click"): каждое нажатие — ToolClick(направление), не чаще Cooldown.
--- Рука и Лопата (Sway) покачиваются при работе — только локально, через RightGrip.C1.
+-- Рука (Config.BareTool) — не предмет: работает, когда в руках ничего нет, нажатия ловит UserInputService.
+-- Лопата (Sway) покачивается при работе — только локально, через RightGrip.C1.
 -- Всё остальное (куплен ли инструмент, конус, рюкзак) проверяет сервер.
--- На сенсорных экранах есть своя кнопка «Убирать» (PlayerGui.ToolTouchGui) с иконкой инструмента в руках:
+-- На сенсорных экранах есть своя кнопка «Убирать» (PlayerGui.ToolTouchGui) с иконкой инструмента в руках или Руки:
 -- тап по экрану там ещё и крутит камеру. В Studio её можно показать атрибутом workspace DebugTouchButton = true.
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -19,7 +20,11 @@ local RunService = game:GetService("RunService")
 
 local player = Players.LocalPlayer
 
-local function toolCfgOf(tool: Tool)
+-- tool = nil — пустые руки, то есть Рука
+local function toolCfgOf(tool: Tool?)
+	if not tool then
+		return config.BareTool
+	end
 	return config.getTool(tool:GetAttribute("SnowToolId"))
 end
 
@@ -31,7 +36,7 @@ local function levelsOf(toolId: string)
 end
 
 -- Режим клика (сервер сам проверяет то же самое): click-инструмент без апгрейда «Удержание»
-local function isClickMode(tool: Tool): boolean
+local function isClickMode(tool: Tool?): boolean
 	local cfg = toolCfgOf(tool)
 	return cfg ~= nil and not config.getToolStats(cfg, levelsOf(cfg.Id)).Hold
 end
@@ -113,17 +118,17 @@ local function setBlowing(isOn: boolean)
 end
 
 local hooked: { [Tool]: boolean } = {}
-local lastClick: { [Tool]: number } = {}
+local lastClick: { [string]: number } = {}
 
--- Нажали инструмент (мышь или кнопка «Убирать»): клик-режим — один срез не чаще Cooldown, иначе удержание
-local function press(tool: Tool)
+-- Нажали инструмент (мышь или кнопка «Убирать»; tool = nil — Рука): клик-режим — один срез не чаще Cooldown, иначе удержание
+local function press(tool: Tool?)
 	if isClickMode(tool) then
 		local cfg = toolCfgOf(tool)
 		local now = os.clock()
-		if now - (lastClick[tool] or -math.huge) < cfg.Cooldown then
+		if now - (lastClick[cfg.Id] or -math.huge) < cfg.Cooldown then
 			return
 		end
-		lastClick[tool] = now
+		lastClick[cfg.Id] = now
 		toolClick:FireServer(aimDirection())
 		if cfg.Sway then
 			swayTool = tool
@@ -135,7 +140,7 @@ local function press(tool: Tool)
 	setSway(tool, true)
 end
 
-local function release(tool: Tool)
+local function release(tool: Tool?)
 	setBlowing(false)
 	setSway(tool, false)
 end
@@ -163,7 +168,6 @@ local function hookTool(tool: Instance)
 	end)
 	tool.Destroying:Connect(function()
 		hooked[tool] = nil
-		lastClick[tool] = nil
 	end)
 end
 
@@ -188,12 +192,19 @@ if bp then
 end
 
 -- ============================================================
--- Кнопка «Убирать» для сенсорных экранов: над кнопкой прыжка, иконка — TextureId инструмента в руках
+-- Кнопка «Убирать» для сенсорных экранов: над кнопкой прыжка, иконка — TextureId инструмента в руках или Рука
 -- ============================================================
-local function equippedSnowTool(): Tool?
+-- Чем можно убирать сейчас: true и Tool (nil — пустые руки, Рука); false — нет персонажа или в руках чужой Tool
+local function currentUse(): (boolean, Tool?)
 	local character = player.Character
-	local tool = character and character:FindFirstChildOfClass("Tool")
-	return if tool and tool:GetAttribute("SnowToolId") then tool else nil
+	if not character then
+		return false, nil
+	end
+	local tool = character:FindFirstChildOfClass("Tool")
+	if tool and not tool:GetAttribute("SnowToolId") then
+		return false, nil
+	end
+	return true, tool
 end
 
 local touchGui = Instance.new("ScreenGui")
@@ -227,11 +238,11 @@ end
 usePad.Parent = useButton
 
 local function refreshTouchButton()
-	local tool = equippedSnowTool()
+	local usable, tool = currentUse()
 	local touch = UserInputService.TouchEnabled
 		or (RunService:IsStudio() and workspace:GetAttribute("DebugTouchButton") == true)
-	touchGui.Enabled = touch and tool ~= nil
-	useButton.Image = tool and tool.TextureId or ""
+	touchGui.Enabled = touch and usable
+	useButton.Image = tool and tool.TextureId or config.BareTool.Icon
 end
 
 -- Палец может соскользнуть с кнопки, поэтому отпускание ловим по самому нажатию в UserInputService
@@ -239,7 +250,7 @@ local heldInput: InputObject? = nil
 local heldTool: Tool? = nil
 
 local function releaseHeld()
-	if heldTool then
+	if heldInput then
 		release(heldTool)
 	end
 	heldInput = nil
@@ -250,20 +261,38 @@ useButton.InputBegan:Connect(function(input)
 	if input.UserInputType ~= Enum.UserInputType.Touch and input.UserInputType ~= Enum.UserInputType.MouseButton1 then
 		return
 	end
-	local tool = equippedSnowTool()
-	if tool and not heldInput then
+	local usable, tool = currentUse()
+	if usable and not heldInput then
 		heldInput = input
 		heldTool = tool
 		press(tool)
 	end
 end)
+
+-- Рука на ПК и геймпаде: у инструмента нажатия приходят через Tool.Activated, у пустых рук Tool нет
+UserInputService.InputBegan:Connect(function(input, processed)
+	if processed or heldInput then
+		return
+	end
+	if input.UserInputType ~= Enum.UserInputType.MouseButton1 and input.KeyCode ~= Enum.KeyCode.ButtonR2 then
+		return
+	end
+	local usable, tool = currentUse()
+	if usable and not tool then
+		heldInput = input
+		heldTool = nil
+		press(nil)
+	end
+end)
 UserInputService.InputEnded:Connect(function(input)
+	-- У мыши и геймпада объект нажатия и отпускания может отличаться, сверяем ещё и саму кнопку
 	if
 		input == heldInput
 		or (
 			heldInput
-			and heldInput.UserInputType == Enum.UserInputType.MouseButton1
-			and input.UserInputType == Enum.UserInputType.MouseButton1
+			and heldInput.UserInputType ~= Enum.UserInputType.Touch
+			and heldInput.UserInputType == input.UserInputType
+			and heldInput.KeyCode == input.KeyCode
 		)
 	then
 		releaseHeld()
@@ -271,8 +300,13 @@ UserInputService.InputEnded:Connect(function(input)
 end)
 
 local function watchCharacterTools(character: Model)
+	releaseHeld()
 	character.ChildAdded:Connect(function(child)
 		if child:IsA("Tool") then
+			-- Взял инструмент, не отпустив Руку: иначе удержание перешло бы на него без нажатия
+			if heldInput and not heldTool then
+				releaseHeld()
+			end
 			refreshTouchButton()
 		end
 	end)
@@ -295,10 +329,12 @@ workspace:GetAttributeChangedSignal("DebugTouchButton"):Connect(refreshTouchButt
 
 -- Deactivated не приходит, если кнопку отпустили в меню Roblox или в другом окне
 UserInputService.WindowFocusReleased:Connect(function()
+	releaseHeld()
 	setBlowing(false)
 	swayHolding = false
 end)
 GuiService.MenuOpened:Connect(function()
+	releaseHeld()
 	setBlowing(false)
 	swayHolding = false
 end)

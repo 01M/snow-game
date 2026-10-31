@@ -26,10 +26,11 @@
 ## Инструменты
 
 - `Config.Tools` — порядок равен слотам хотбара. Поля описаны в комментарии над таблицей. `Config.getToolStats` считает параметры с апгрейдами, одна функция на сервер и клиент.
+- Рука (`Bare = true`, `Config.BareTool`) — не предмет: в Backpack не выдаётся, работает, когда в персонаже нет Tool. Клики без инструмента ловит `ToolClient` через `UserInputService`, а `BlowServer` считает пустые руки Рукой. Апгрейды и id `Hand` прежние.
 - `ToolServer` хранит купленное и уровни, выдаёт инструменты после загрузки и на `CharacterAdded`, ведёт атрибуты игрока `OwnedTools` и `ToolUpgrades` (JSON). `Price = 0` есть у всех и не сохраняется.
 - Покупка: инструмент — ProximityPrompt на полке сарая (`ToolShopServer` → `ToolServer.buyTool`), апгрейд — remote `BuyToolUpgrade`, рюкзак — remote `BuyUpgrade` или ProximityPrompt лавки (`UpgradeShopServer`). Кулдаун 0,3 с.
 - `ToolClient` один на все инструменты. Удержание: `BlowState(true, взгляд)` каждые `BlowAimInterval`, это же keepalive. Отпустил, снял инструмент, потерял фокус или открыл меню → `BlowState(false)`. Клик: `ToolClick(взгляд)` не чаще `Cooldown`. Покачивание только локальное, через `RightGrip.C1`.
-- На сенсорных экранах кнопка «Убирать» (`PlayerGui.ToolTouchGui.UseTool`) с иконкой инструмента в руках; отпускание ловится по InputObject, палец может съехать. В Studio показывается атрибутом workspace `DebugTouchButton = true`.
+- На сенсорных экранах кнопка «Убирать» (`PlayerGui.ToolTouchGui.UseTool`) с иконкой инструмента в руках, с пустыми руками — с иконкой Руки; отпускание ловится по InputObject, палец может съехать. В Studio показывается атрибутом workspace `DebugTouchButton = true`.
 - `BlowServer`: лимит `BlowStateMaxRate`, остановка по `BlowKeepAlive`, без инструмента и при смерти. Вершина конуса = корень + `NozzleOffset`, точки ближе `MinDistance` не берутся, дальность ограничена точкой, где взгляд пересекает снег. Зона определяется по точке снега, а не по ногам игрока.
 - `Shape = "strip"` (Снегоуборщик): вместо конуса полоса `StripWidth` × `Range`, апгрейд `width` расширяет полосу.
 - `[не проверено]` Скорость без апгрейдов на ходу ≈ Рука 1, Лопата 1.75, Движок 3, Снегоуборщик 4.5 снега/с.

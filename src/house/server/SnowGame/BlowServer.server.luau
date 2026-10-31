@@ -240,14 +240,22 @@ local rateWindow: { [Player]: { start: number, count: number } } = {}
 local aimDirs: { [Player]: Vector3 } = {}
 -- Снег, собранный игроком, но ещё не дотянувший до целой порции
 local carry: { [Player]: number } = {}
--- Инструмент, которым игрок сейчас убирает (для пыли/звука и проверки, что он всё ещё в руках)
+-- Инструмент, которым игрок сейчас убирает (для пыли/звука и проверки, что он всё ещё в руках); у Руки его нет
 local blowTools: { [Player]: Tool } = {}
 
--- Экипированный инструмент уборки: Tool в персонаже с SnowToolId из Config.Tools, купленный игроком
+-- Чем игрок убирает: Tool в персонаже с SnowToolId из Config.Tools, купленный игроком.
+-- Пустые руки — Рука (Config.BareTool): Tool = nil, конфиг есть. Нечем убирать — nil, nil.
 local function getSnowTool(player: Player): (Tool?, any)
 	local character = player.Character
-	local tool = character and character:FindFirstChildOfClass("Tool")
+	if not character then
+		return nil, nil
+	end
+	local tool = character:FindFirstChildOfClass("Tool")
 	if not tool then
+		local bare = config.BareTool
+		if ToolServer.owns(player, bare.Id) then
+			return nil, bare
+		end
 		return nil, nil
 	end
 	local id = tool:GetAttribute("SnowToolId")
@@ -365,7 +373,7 @@ blowState.OnServerEvent:Connect(function(player: Player, isBlowing: any, aim: an
 	end
 
 	local tool, toolCfg = getSnowTool(player)
-	if not tool or not isHoldMode(player, toolCfg) then
+	if not toolCfg or not isHoldMode(player, toolCfg) then
 		stopBlowing(player)
 		return
 	end
@@ -435,9 +443,10 @@ end)
 -- dt — сколько секунд за ним стоит (для PileTake).
 -- Инструмент с Pile (Движок) складывает снег в кучу перед игроком (PileServer), а не в рюкзак;
 -- инструмент с PileTake (Рука, Лопата) сначала берёт из куч в конусе.
+-- tool = nil — Рука, сопла у неё нет.
 -- Возвращает собранное в порциях (0 — ничего не взяли).
 -- ============================================================
-local function cutSnow(player: Player, tool: Tool, toolCfg, stats, rateMax: number, dt: number): number
+local function cutSnow(player: Player, tool: Tool?, toolCfg, stats, rateMax: number, dt: number): number
 	local range = stats.Range
 	local coneCos = math.cos(math.rad(math.min(stats.HalfAngle, 85)))
 	-- Полоса (Снегоуборщик): прямоугольник шириной StripWidth перед соплом вместо конуса
@@ -501,7 +510,7 @@ local function cutSnow(player: Player, tool: Tool, toolCfg, stats, rateMax: numb
 		end
 	end
 
-	local nozzle = tool:FindFirstChild("Nozzle")
+	local nozzle = tool and tool:FindFirstChild("Nozzle")
 	local nozzlePos = nozzle and nozzle:IsA("BasePart") and nozzle.Position
 		or (origin + look * 2 + Vector3.new(0, 1.5, 0))
 
@@ -669,7 +678,7 @@ RunService.Heartbeat:Connect(function()
 		if
 			now - lastPing > config.BlowKeepAlive
 			or not character
-			or not tool
+			or not toolCfg
 			or tool ~= blowTools[player]
 			or not isHoldMode(player, toolCfg)
 			or not humanoid
@@ -695,7 +704,7 @@ local lastClick: { [Player]: number } = {}
 
 toolClick.OnServerEvent:Connect(function(player: Player, aim: any)
 	local tool, toolCfg = getSnowTool(player)
-	if not tool or isHoldMode(player, toolCfg) then
+	if not toolCfg or isHoldMode(player, toolCfg) then
 		return
 	end
 	local now = os.clock()

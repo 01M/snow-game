@@ -133,10 +133,10 @@ local function giveTool(player: Player, id: string)
 	template:Clone().Parent = backpack
 end
 
--- Все инструменты игрока по порядку Config.Tools (порядок = слоты хотбара)
+-- Все инструменты игрока по порядку Config.Tools (порядок = слоты хотбара); Bare — не предмет, не выдаётся
 local function giveAll(player: Player)
 	for _, t in config.Tools do
-		if ToolServer.owns(player, t.Id) then
+		if not t.Bare and ToolServer.owns(player, t.Id) then
 			giveTool(player, t.Id)
 		end
 	end

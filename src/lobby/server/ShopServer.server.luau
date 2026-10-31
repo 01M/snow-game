@@ -1,4 +1,4 @@
--- ShopServer (лобби): геймпассы и покупки за Robux. Список товаров — ReplicatedStorage.Shop.
+-- ShopServer (лобби): геймпассы и покупки за Robux. Список товаров — ReplicatedStorage.Shared.Shop.
 -- Пассы: UserOwnsGamePassAsync → атрибут Pass_<Key> (для окна магазина и метки VIP в чате).
 -- Разовые покупки лобби пишет прямо в сохранение House Map (тот же store и ключ, что PlayerData):
 -- UpdateAsync добавляет Cash / продлевает BoostUntil и записывает id чека в Purchases (повтор чека ничего не даёт).
@@ -10,7 +10,7 @@ local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 
-local Shop = require(ReplicatedStorage:WaitForChild("Shop"))
+local Shop = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Shop"))
 local Analytics = require(script.Parent:WaitForChild("Shared"):WaitForChild("Analytics"))
 
 -- Должны совпадать с ServerScriptService.SnowGame.PlayerData в House Map

@@ -1,4 +1,4 @@
--- ShopServer (матч): геймпассы и покупки за Robux. Список товаров и бонусы — ReplicatedStorage.Shop.
+-- ShopServer (матч): геймпассы и покупки за Robux. Список товаров и бонусы — ReplicatedStorage.Shared.Shop.
 -- Пассы: при входе UserOwnsGamePassAsync → атрибут Pass_<Key>; купил в игре (PromptGamePassPurchaseFinished) — сразу.
 -- Разовые покупки: ProcessReceipt → PlayerData.grantReceipt (товар выдаётся один раз, чек сразу сохраняется).
 -- В лобби свой ShopServer: там покупки пишутся прямо в DataStore.
@@ -7,7 +7,7 @@ local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local ServerScriptService = game:GetService("ServerScriptService")
 
-local Shop = require(ReplicatedStorage:WaitForChild("Shop"))
+local Shop = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Shop"))
 local config = require(ReplicatedStorage:WaitForChild("SnowGame"):WaitForChild("Config"))
 local PlayerData = require(script.Parent:WaitForChild("PlayerData"))
 local Analytics = require(ServerScriptService:WaitForChild("Shared"):WaitForChild("Analytics"))

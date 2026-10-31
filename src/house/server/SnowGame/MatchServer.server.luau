@@ -5,7 +5,7 @@ local Players = game:GetService("Players")
 local TeleportService = game:GetService("TeleportService")
 
 local PlayerData = require(script.Parent:WaitForChild("PlayerData"))
-local Shop = require(game:GetService("ReplicatedStorage"):WaitForChild("Shop"))
+local Shop = require(game:GetService("ReplicatedStorage"):WaitForChild("Shared"):WaitForChild("Shop"))
 
 local LOBBY_PLACE_ID = 91608833946402
 local RETURN_DELAY = 10

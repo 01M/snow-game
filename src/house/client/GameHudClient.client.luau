@@ -18,7 +18,7 @@ local buyToolUpgradeRemote = snowGame:WaitForChild("Remotes"):WaitForChild("BuyT
 local HttpService = game:GetService("HttpService")
 local Locale = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Locale"))
 local L = Locale.t
-local Shop = require(ReplicatedStorage:WaitForChild("Shop"))
+local Shop = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Shop"))
 local ShopGui = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Shop"):WaitForChild("Gui"))
 
 local player = Players.LocalPlayer

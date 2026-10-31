@@ -6,7 +6,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local snowGame = ReplicatedStorage:WaitForChild("SnowGame")
 local config = require(snowGame:WaitForChild("Config"))
-local Shop = require(ReplicatedStorage:WaitForChild("Shop"))
+local Shop = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Shop"))
 local buyRemote = snowGame:WaitForChild("Remotes"):WaitForChild("BuyUpgrade") :: RemoteEvent
 
 local yard = workspace:WaitForChild("SnowYard")

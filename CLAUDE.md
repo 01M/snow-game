@@ -24,9 +24,10 @@
 - Rojo удаляет из этих папок всё, чего нет в файлах. Новый объект в них (RemoteEvent и т.п.) добавляется файлом (`Имя.model.json` с `className`), а не в Studio
 - Rojo НЕ управляет Workspace, Lighting, Terrain, ServerStorage, свойствами StarterPlayer (CameraMode и др.): они остаются в Studio и сохраняются публикацией места. Старые скрипты в House Map `ServerStorage` (`_Backup_BeforeTools`, `_OldSnowblower`, `_Candidates`) не в Rojo
 - `*.rbxl` не в git. Rojo синхронизирует код только в открытое место: чтобы изменения попали в игру, место всё равно нужно опубликовать в Studio
+- `rojo serve` 7.7.1 иногда падает при удалении файлов и папок в `src/` (`Result::unwrap()`, NotFound, `change_processor.rs:179`; дважды 2026-10-31 при удалении папки модуля в `src/house`). Лечится перезапуском сервера и повторным подключением плагина. Перед удалением папки лучше остановить сервер
 - Если syncback запускается снова: он дописывает в проекты свойства StarterPlayer и пустые `SerializedOverrides` в `.meta.json`/`.model.json`, это надо убирать
 - Проверено 2026-10-31 на копиях .rbxl: первое подключение добавляет только две пустые папки `Shared`, контрольные суммы всех 48 скриптов не изменились, правки файлов (создание и удаление модуля) доходят до Studio. В play mode не запускалось (сами скрипты побайтно те же). Защита `servePlaceIds` и подключение настоящих мест на момент записи не проверялись
-- **Дубли (перенос в `src/shared` идёт по одному модулю, с 2026-10-31):** перенесены Analytics, Locale, Locale.Strings и Shop.Gui (пока `Shared.Shop` — папка). Ещё копиями в `src/lobby` и `src/house` (правки вносить в обе): ChatTagClient, LocaleClient, SnowfallClient, Shop
+- **Дубли (перенос в `src/shared` идёт по одному модулю, с 2026-10-31):** перенесены Analytics, Locale, Locale.Strings, Shop и Shop.Gui. Ещё копиями в `src/lobby` и `src/house` (правки вносить в обе): ChatTagClient, LocaleClient, SnowfallClient
 
 ## Места (places) в experience (с 2026-10-14)
 
@@ -53,7 +54,7 @@
 
 ## Магазин за Robux (с 2026-10-28, план — docs/shop-plan.md)
 
-- `ReplicatedStorage.Shop` (ModuleScript, одинаковый в обоих places): Passes (X2Cash, BigBackpack, AutoSell, VIP) и Products (CashS/M/L 500/2500/10000, Boost 15 мин, Blizzard 10 мин — MatchOnly). **Id = 0 — товар ещё не создан в Creator Dashboard: в магазине не показывается и не выдаётся.** Когда Олег пришлёт ID — вписать в оба модуля. Функции: hasPass, cashMultiplier (×2 пасс × 1.1 VIP × 2 буст × 2 метель), cashFor, backpackMultiplier, boostLeft, blizzardLeft
+- `ReplicatedStorage.Shared.Shop` (ModuleScript, общий для обоих мест, `src/shared/replicated/Shop/`): Passes (X2Cash, BigBackpack, AutoSell, VIP) и Products (CashS/M/L 500/2500/10000, Boost 15 мин, Blizzard 10 мин — MatchOnly). **Id = 0 — товар ещё не создан в Creator Dashboard: в магазине не показывается и не выдаётся.** Когда Олег пришлёт ID — вписать в модуль. Функции: hasPass, cashMultiplier (×2 пасс × 1.1 VIP × 2 буст × 2 метель), cashFor, backpackMultiplier, boostLeft, blizzardLeft
 - Владение пассом → атрибут игрока `Pass_<Key>`; личный буст → атрибут `BoostUntil` (os.time, хранится в PlayerData); «Метель» → workspace `BlizzardUntil` (GetServerTimeNow) и `BlizzardBy`
 - Матч: `SnowGame.ShopServer` — UserOwnsGamePassAsync, PromptGamePassPurchaseFinished, ProcessReceipt → `PlayerData.grantReceipt` (id чека в `Purchases`, последние 50, сразу сохраняется; повтор не выдаёт второй раз). Пачка Cash ставит атрибут `IapCash` (AnalyticsHooks пишет приход как IAP)
 - Лобби: `ShopServer` — покупки пишет прямо в DataStore (UpdateAsync, без блокировки сессии); если данные держит сервер матча (свежая Session) или товар MatchOnly — NotProcessedYet. `LobbyCashServer` ставит атрибут BoostUntil

@@ -8,7 +8,7 @@ local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local config = require(ReplicatedStorage:WaitForChild("SnowGame"):WaitForChild("Config"))
-local Shop = require(ReplicatedStorage:WaitForChild("Shop"))
+local Shop = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Shop"))
 
 local yard = workspace:WaitForChild("SnowYard")
 local pileFolder = yard:FindFirstChild("Piles") or Instance.new("Folder")

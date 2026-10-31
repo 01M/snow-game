@@ -3,7 +3,7 @@
 -- Названия и описания — в Locale.Strings: Shop.Pass.<Key>.Name/.Desc, Shop.Product.<Key>.Name/.Desc.
 -- Владелец пасса получает атрибут Pass_<Key> = true (ставит ShopServer), личный буст — атрибут BoostUntil (os.time),
 -- «Метель для всех» — workspace BlizzardUntil (GetServerTimeNow).
--- Модуль одинаковый в Lobby и House Map: поменял в одном месте — скопируй в другое.
+-- Общий модуль Lobby и House Map (src/shared/replicated/Shop → ReplicatedStorage.Shared.Shop).
 local Shop = {}
 
 Shop.Passes = {

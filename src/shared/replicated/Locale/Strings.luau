@@ -165,7 +165,7 @@ return {
 	["Shop.UpgradeShop"] = { en = "Upgrade Shop", ru = "Магазин апгрейдов" },
 	["Shop.ToolsSign"] = { en = "TOOLS", ru = "ИНСТРУМЕНТЫ" },
 
-	-- Магазин за Robux (ReplicatedStorage.Shop, окно ShopGui)
+	-- Магазин за Robux (ReplicatedStorage.Shared.Shop, окно ShopGui)
 	["Shop.Title"] = { en = "SHOP", ru = "МАГАЗИН" },
 	["Chat.VipTag"] = { en = "[VIP]", ru = "[VIP]" },
 	["Shop.Section.Passes"] = { en = "GAME PASSES", ru = "ГЕЙМПАССЫ" },

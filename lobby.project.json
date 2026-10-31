@@ -1,0 +1,28 @@
+{
+  "name": "snow-lobby",
+  "servePort": 34872,
+  "servePlaceIds": [91608833946402],
+  "tree": {
+    "$className": "DataModel",
+    "ServerScriptService": {
+      "$path": "src/lobby/server",
+      "Shared": {
+        "$path": "src/shared/server"
+      }
+    },
+    "ReplicatedStorage": {
+      "$path": "src/lobby/replicated",
+      "Shared": {
+        "$path": "src/shared/replicated"
+      }
+    },
+    "StarterPlayer": {
+      "StarterPlayerScripts": {
+        "$path": "src/lobby/client"
+      },
+      "StarterCharacterScripts": {
+        "$path": "src/lobby/character"
+      }
+    }
+  }
+}

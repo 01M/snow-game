@@ -1,0 +1,28 @@
+{
+  "name": "snow-house",
+  "servePort": 34873,
+  "servePlaceIds": [77433112786408],
+  "tree": {
+    "$className": "DataModel",
+    "ServerScriptService": {
+      "$path": "src/house/server",
+      "Shared": {
+        "$path": "src/shared/server"
+      }
+    },
+    "ReplicatedStorage": {
+      "$path": "src/house/replicated",
+      "Shared": {
+        "$path": "src/shared/replicated"
+      }
+    },
+    "StarterPlayer": {
+      "StarterPlayerScripts": {
+        "$path": "src/house/client"
+      },
+      "StarterCharacterScripts": {
+        "$path": "src/house/character"
+      }
+    }
+  }
+}

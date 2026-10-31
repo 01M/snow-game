@@ -1,0 +1,7 @@
+# Roblox places (код в src/, карта в Studio/облаке)
+*.rbxl
+*.rbxl.lock
+
+# Blender
+*.blend1
+__pycache__/

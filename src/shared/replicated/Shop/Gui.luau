@@ -103,8 +103,17 @@ local function makeCard(parent, order, icon, name, desc)
 	corner(card, 12)
 	stroke(card, 2, INK, true)
 	label(card, icon, UDim2.fromOffset(52, 52), UDim2.fromOffset(8, 6), 38, Enum.Font.GothamBlack)
-	label(card, name, UDim2.new(1, -70, 0, 24), UDim2.fromOffset(64, 10), 19, Enum.Font.GothamBlack).TextXAlignment = Enum.TextXAlignment.Left
-	local d = label(card, desc, UDim2.new(1, -20, 0, 56), UDim2.fromOffset(10, 58), 15, Enum.Font.GothamMedium, Color3.fromRGB(205, 215, 235))
+	label(card, name, UDim2.new(1, -70, 0, 24), UDim2.fromOffset(64, 10), 19, Enum.Font.GothamBlack).TextXAlignment =
+		Enum.TextXAlignment.Left
+	local d = label(
+		card,
+		desc,
+		UDim2.new(1, -20, 0, 56),
+		UDim2.fromOffset(10, 58),
+		15,
+		Enum.Font.GothamMedium,
+		Color3.fromRGB(205, 215, 235)
+	)
 	d.TextXAlignment = Enum.TextXAlignment.Left
 	d.TextYAlignment = Enum.TextYAlignment.Top
 	local buy = Instance.new("TextButton")
@@ -182,7 +191,15 @@ local function build()
 	fit()
 	workspace.CurrentCamera:GetPropertyChangedSignal("ViewportSize"):Connect(fit)
 
-	label(panel, "🛒 " .. L("Shop.Title"), UDim2.new(1, -120, 0, 50), UDim2.fromOffset(20, 10), 32, Enum.Font.GothamBlack).TextXAlignment = Enum.TextXAlignment.Left
+	label(
+		panel,
+		"🛒 " .. L("Shop.Title"),
+		UDim2.new(1, -120, 0, 50),
+		UDim2.fromOffset(20, 10),
+		32,
+		Enum.Font.GothamBlack
+	).TextXAlignment =
+		Enum.TextXAlignment.Left
 	statusLabel = label(panel, "", UDim2.new(1, -140, 0, 22), UDim2.fromOffset(20, 56), 16, Enum.Font.GothamBold, GOLD)
 	statusLabel.TextXAlignment = Enum.TextXAlignment.Left
 
@@ -223,7 +240,13 @@ local function build()
 		if pass.Id ~= 0 then
 			any = true
 			passGrid = passGrid or section(list, 1, L("Shop.Section.Passes"))
-			local buy = makeCard(passGrid, i, pass.Icon, L("Shop.Pass." .. pass.Key .. ".Name"), L("Shop.Pass." .. pass.Key .. ".Desc"))
+			local buy = makeCard(
+				passGrid,
+				i,
+				pass.Icon,
+				L("Shop.Pass." .. pass.Key .. ".Name"),
+				L("Shop.Pass." .. pass.Key .. ".Desc")
+			)
 			passButtons[pass] = buy
 			loadPrice(pass.Id, Enum.InfoType.GamePass, refreshPasses)
 			buy.Activated:Connect(function()
@@ -239,7 +262,13 @@ local function build()
 		if product.Id ~= 0 and (IS_MATCH or not product.MatchOnly) then
 			any = true
 			productGrid = productGrid or section(list, 3, L("Shop.Section.Products"))
-			local buy = makeCard(productGrid, i, product.Icon, L("Shop.Product." .. product.Key .. ".Name"), L("Shop.Product." .. product.Key .. ".Desc"))
+			local buy = makeCard(
+				productGrid,
+				i,
+				product.Icon,
+				L("Shop.Product." .. product.Key .. ".Name"),
+				L("Shop.Product." .. product.Key .. ".Desc")
+			)
 			loadPrice(product.Id, Enum.InfoType.Product, function(price)
 				buy.Text = L("Shop.Price", { price = price })
 			end)
@@ -249,7 +278,8 @@ local function build()
 		end
 	end
 	if not any then
-		label(list, L("Shop.ComingSoon"), UDim2.new(1, -20, 0, 120), UDim2.new(), 26, Enum.Font.GothamBlack).LayoutOrder = 1
+		label(list, L("Shop.ComingSoon"), UDim2.new(1, -20, 0, 120), UDim2.new(), 26, Enum.Font.GothamBlack).LayoutOrder =
+			1
 	end
 	refreshPasses()
 

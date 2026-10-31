@@ -5,11 +5,11 @@ local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
 
 local camera = workspace.CurrentCamera
-local AREA = 90         -- ширина области снегопада вокруг камеры
-local HEIGHT = 30       -- высота эмиттера над камерой
+local AREA = 90 -- ширина области снегопада вокруг камеры
+local HEIGHT = 30 -- высота эмиттера над камерой
 local BASE_RATE = if UserInputService.TouchEnabled then 150 else 300
 local MIN_RATE = 40
-local FPS_WINDOW = 3    -- секунд на замер FPS
+local FPS_WINDOW = 3 -- секунд на замер FPS
 
 local anchor = Instance.new("Part")
 anchor.Name = "SnowfallAnchor"

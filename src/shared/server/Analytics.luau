@@ -64,7 +64,14 @@ function Analytics.onboarding(player: Player, stepName: string)
 end
 
 -- Cash: приход (isSource) или расход; amount > 0, balance — Cash после операции, sku — откуда/на что
-function Analytics.cash(player: Player, isSource: boolean, amount: number, balance: number, transactionType: Enum.AnalyticsEconomyTransactionType, sku: string)
+function Analytics.cash(
+	player: Player,
+	isSource: boolean,
+	amount: number,
+	balance: number,
+	transactionType: Enum.AnalyticsEconomyTransactionType,
+	sku: string
+)
 	if amount <= 0 then
 		return
 	end

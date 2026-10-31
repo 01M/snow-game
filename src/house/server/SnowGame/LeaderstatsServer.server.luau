@@ -40,7 +40,10 @@ local function onPlayerAdded(player: Player)
 	backpack.Parent = leaderstats
 
 	-- Per-player upgradeable capacity (×2 с пассом «Большой рюкзак»; если пасс узнают позже, пересчитает ShopServer)
-	player:SetAttribute("BackpackCapacity", config.getBackpackCapacity(data.UpgradeLevel, Shop.backpackMultiplier(player)))
+	player:SetAttribute(
+		"BackpackCapacity",
+		config.getBackpackCapacity(data.UpgradeLevel, Shop.backpackMultiplier(player))
+	)
 	player:SetAttribute("BackpackUpgradeLevel", data.UpgradeLevel)
 	-- Личный буст ×2 Cash из магазина (мог быть куплен в лобби)
 	player:SetAttribute("BoostUntil", data.BoostUntil or 0)

@@ -18,14 +18,20 @@ local lastBuy: { [Player]: number } = {}
 
 local function buyBackpackUpgrade(player: Player)
 	local now = os.clock()
-	if now - (lastBuy[player] or 0) < BUY_COOLDOWN then return end
+	if now - (lastBuy[player] or 0) < BUY_COOLDOWN then
+		return
+	end
 	lastBuy[player] = now
 
 	local ls = player:FindFirstChild("leaderstats")
-	if not ls then return end
+	if not ls then
+		return
+	end
 
 	local cash = ls:FindFirstChild("Cash") :: IntValue
-	if not cash then return end
+	if not cash then
+		return
+	end
 
 	local level = player:GetAttribute("BackpackUpgradeLevel") or 0
 	local price = config.getUpgradePrice(level)
@@ -43,7 +49,9 @@ prompt.Triggered:Connect(buyBackpackUpgrade)
 
 -- Пока апгрейд один; id проверяем, чтобы мусор от клиента ничего не делал
 buyRemote.OnServerEvent:Connect(function(player: Player, upgradeId)
-	if upgradeId ~= "BackpackCapacity" then return end
+	if upgradeId ~= "BackpackCapacity" then
+		return
+	end
 	buyBackpackUpgrade(player)
 end)
 

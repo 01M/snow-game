@@ -134,18 +134,34 @@ local journalOpened = false
 
 -- Задачи матча: текущая — первая невыполненная
 local tasks = {
-	{ key = "Task.Collect", goal = 5, get = function()
-		return player:GetAttribute("SnowCollected") or 0
-	end },
-	{ key = "Task.Sell", goal = 5, get = function()
-		return player:GetAttribute("SnowSold") or 0
-	end },
-	{ key = "Task.OpenJournal", goal = 1, get = function()
-		return journalOpened and 1 or 0
-	end },
-	{ key = "Task.UpgradeBackpack", goal = 1, get = function()
-		return player:GetAttribute("UpgradesBought") or 0
-	end },
+	{
+		key = "Task.Collect",
+		goal = 5,
+		get = function()
+			return player:GetAttribute("SnowCollected") or 0
+		end,
+	},
+	{
+		key = "Task.Sell",
+		goal = 5,
+		get = function()
+			return player:GetAttribute("SnowSold") or 0
+		end,
+	},
+	{
+		key = "Task.OpenJournal",
+		goal = 1,
+		get = function()
+			return journalOpened and 1 or 0
+		end,
+	},
+	{
+		key = "Task.UpgradeBackpack",
+		goal = 1,
+		get = function()
+			return player:GetAttribute("UpgradesBought") or 0
+		end,
+	},
 	{ key = "Task.ClearYard", goal = zoneTotal, get = getZoneCleared },
 }
 for _, t in tasks do
@@ -181,7 +197,14 @@ new("Frame", {
 	Parent = taskCard,
 }, {
 	corner(8),
-	label({ Size = UDim2.fromScale(1, 1), Text = "!", Font = Enum.Font.GothamBlack, TextSize = 26, TextColor3 = C.white, TextXAlignment = Enum.TextXAlignment.Center }),
+	label({
+		Size = UDim2.fromScale(1, 1),
+		Text = "!",
+		Font = Enum.Font.GothamBlack,
+		TextSize = 26,
+		TextColor3 = C.white,
+		TextXAlignment = Enum.TextXAlignment.Center,
+	}),
 })
 
 label({
@@ -329,7 +352,13 @@ new("Frame", {
 }, {
 	corner(8),
 	border(C.outline, 2.5),
-	label({ Size = UDim2.fromScale(1, 1), Text = "Tab", Font = Enum.Font.GothamBlack, TextSize = 20, TextXAlignment = Enum.TextXAlignment.Center }),
+	label({
+		Size = UDim2.fromScale(1, 1),
+		Text = "Tab",
+		Font = Enum.Font.GothamBlack,
+		TextSize = 20,
+		TextXAlignment = Enum.TextXAlignment.Center,
+	}),
 })
 
 -- Кнопка магазина за Robux (ReplicatedStorage.Shared.Shop.Gui) — под кнопкой журнала.
@@ -357,7 +386,13 @@ local shopButton = new("TextButton", {
 	}, {
 		corner(6),
 		border(C.outline, 2),
-		label({ Size = UDim2.fromScale(1, 1), Text = "B", Font = Enum.Font.GothamBlack, TextSize = 18, TextXAlignment = Enum.TextXAlignment.Center }),
+		label({
+			Size = UDim2.fromScale(1, 1),
+			Text = "B",
+			Font = Enum.Font.GothamBlack,
+			TextSize = 18,
+			TextXAlignment = Enum.TextXAlignment.Center,
+		}),
 	}),
 })
 shopButton.Activated:Connect(ShopGui.toggle)
@@ -374,7 +409,14 @@ local upgradeBadge = new("Frame", {
 }, {
 	corner("full"),
 	border(C.outline, 2.5),
-	label({ Size = UDim2.fromScale(1, 1), Text = "!", Font = Enum.Font.GothamBlack, TextSize = 20, TextColor3 = C.white, TextXAlignment = Enum.TextXAlignment.Center }),
+	label({
+		Size = UDim2.fromScale(1, 1),
+		Text = "!",
+		Font = Enum.Font.GothamBlack,
+		TextSize = 20,
+		TextColor3 = C.white,
+		TextXAlignment = Enum.TextXAlignment.Center,
+	}),
 })
 
 -- Мешок снега (слева снизу): значок с вместимостью + число снега
@@ -583,7 +625,13 @@ for i, tab in ipairs(TABS) do
 	}, {
 		corner(14),
 		border(C.outline, 4),
-		label({ Position = UDim2.fromOffset(10, 0), Size = UDim2.new(0, 56, 1, 0), Text = tab.icon, TextSize = 36, TextXAlignment = Enum.TextXAlignment.Center }),
+		label({
+			Position = UDim2.fromOffset(10, 0),
+			Size = UDim2.new(0, 56, 1, 0),
+			Text = tab.icon,
+			TextSize = 36,
+			TextXAlignment = Enum.TextXAlignment.Center,
+		}),
 		label({
 			Position = UDim2.fromOffset(70, 0),
 			Size = UDim2.new(1, -80, 1, 0),
@@ -649,9 +697,33 @@ for i, t in ipairs(tasks) do
 		BackgroundColor3 = C.white,
 		Parent = row,
 	}, { corner(6), border(C.inkSoft, 2.5) })
-	local check = label({ Size = UDim2.fromScale(1, 1), Text = "✓", Font = Enum.Font.GothamBlack, TextSize = 24, TextColor3 = C.green, TextXAlignment = Enum.TextXAlignment.Center, Visible = false, Parent = box })
-	local text = label({ Position = UDim2.fromOffset(42, 0), Size = UDim2.new(1, -42, 0, 30), Text = t.text, Font = Enum.Font.GothamBlack, TextSize = 21, TextTruncate = Enum.TextTruncate.AtEnd, Parent = row })
-	local progress = label({ Position = UDim2.fromOffset(42, 30), Size = UDim2.new(1, -42, 0, 22), Text = "", TextSize = 18, TextColor3 = C.inkSoft, Parent = row })
+	local check = label({
+		Size = UDim2.fromScale(1, 1),
+		Text = "✓",
+		Font = Enum.Font.GothamBlack,
+		TextSize = 24,
+		TextColor3 = C.green,
+		TextXAlignment = Enum.TextXAlignment.Center,
+		Visible = false,
+		Parent = box,
+	})
+	local text = label({
+		Position = UDim2.fromOffset(42, 0),
+		Size = UDim2.new(1, -42, 0, 30),
+		Text = t.text,
+		Font = Enum.Font.GothamBlack,
+		TextSize = 21,
+		TextTruncate = Enum.TextTruncate.AtEnd,
+		Parent = row,
+	})
+	local progress = label({
+		Position = UDim2.fromOffset(42, 30),
+		Size = UDim2.new(1, -42, 0, 22),
+		Text = "",
+		TextSize = 18,
+		TextColor3 = C.inkSoft,
+		Parent = row,
+	})
 	taskRows[i] = { check = check, text = text, progress = progress }
 end
 
@@ -670,9 +742,33 @@ for i = 1, MAX_PLAYERS do
 		Image = "",
 		Parent = slot,
 	}, { corner("full"), border(C.gray, 3) })
-	local unknown = label({ Size = UDim2.fromScale(1, 1), Text = "?", Font = Enum.Font.GothamBlack, TextSize = 36, TextColor3 = C.gray, TextXAlignment = Enum.TextXAlignment.Center, Parent = avatar })
-	local name = label({ Position = UDim2.fromOffset(92, 12), Size = UDim2.new(1, -92, 0, 28), Text = L("Journal.PlayerSlot", { n = i }), Font = Enum.Font.GothamBlack, TextSize = 22, TextColor3 = C.gray, TextTruncate = Enum.TextTruncate.AtEnd, Parent = slot })
-	local stats = label({ Position = UDim2.fromOffset(92, 46), Size = UDim2.new(1, -92, 0, 26), Text = "💰 0    ❄ 0", TextSize = 20, TextColor3 = C.gray, Parent = slot })
+	local unknown = label({
+		Size = UDim2.fromScale(1, 1),
+		Text = "?",
+		Font = Enum.Font.GothamBlack,
+		TextSize = 36,
+		TextColor3 = C.gray,
+		TextXAlignment = Enum.TextXAlignment.Center,
+		Parent = avatar,
+	})
+	local name = label({
+		Position = UDim2.fromOffset(92, 12),
+		Size = UDim2.new(1, -92, 0, 28),
+		Text = L("Journal.PlayerSlot", { n = i }),
+		Font = Enum.Font.GothamBlack,
+		TextSize = 22,
+		TextColor3 = C.gray,
+		TextTruncate = Enum.TextTruncate.AtEnd,
+		Parent = slot,
+	})
+	local stats = label({
+		Position = UDim2.fromOffset(92, 46),
+		Size = UDim2.new(1, -92, 0, 26),
+		Text = "💰 0    ❄ 0",
+		TextSize = 20,
+		TextColor3 = C.gray,
+		Parent = slot,
+	})
 	playerSlots[i] = { avatar = avatar, unknown = unknown, name = name, stats = stats }
 end
 
@@ -683,7 +779,13 @@ local function getThumb(userId)
 	end
 	thumbCache[userId] = ""
 	task.spawn(function()
-		local ok, url = pcall(Players.GetUserThumbnailAsync, Players, userId, Enum.ThumbnailType.HeadShot, Enum.ThumbnailSize.Size100x100)
+		local ok, url = pcall(
+			Players.GetUserThumbnailAsync,
+			Players,
+			userId,
+			Enum.ThumbnailType.HeadShot,
+			Enum.ThumbnailSize.Size100x100
+		)
 		if ok then
 			thumbCache[userId] = url
 		else
@@ -700,10 +802,18 @@ local upgradesPage = pages.Upgrades
 
 local EFFECT_ICONS = { hold = "✋", speed = "⚡", range = "📏", width = "↔️" }
 local EFFECT_TAGS = {
-	hold = function() return L("Upgrade.Tag.Hold") end,
-	speed = function(u) return L("Upgrade.Tag.Speed", { pct = math.floor(u.PerLevel * 100 + 0.5) }) end,
-	range = function(u) return L("Upgrade.Tag.Range", { pct = math.floor(u.PerLevel * 100 + 0.5) }) end,
-	width = function(u) return L("Upgrade.Tag.Width", { pct = math.floor(u.PerLevel * 100 + 0.5) }) end,
+	hold = function()
+		return L("Upgrade.Tag.Hold")
+	end,
+	speed = function(u)
+		return L("Upgrade.Tag.Speed", { pct = math.floor(u.PerLevel * 100 + 0.5) })
+	end,
+	range = function(u)
+		return L("Upgrade.Tag.Range", { pct = math.floor(u.PerLevel * 100 + 0.5) })
+	end,
+	width = function(u)
+		return L("Upgrade.Tag.Width", { pct = math.floor(u.PerLevel * 100 + 0.5) })
+	end,
 }
 
 local function decodeLevels()
@@ -742,14 +852,31 @@ for _, tool in ipairs(config.Tools) do
 	local toolName = L("Tool." .. tool.Id)
 	for _, u in ipairs(tool.Upgrades or {}) do
 		local key = "Upgrade." .. tool.Id .. "." .. u.Id
-		table.insert(items, { kind = "tool", toolId = tool.Id, toolName = toolName, upgrade = u, name = L(key .. ".Name"), desc = L(key .. ".Desc"), icon = EFFECT_ICONS[u.Effect] or "⬆️" })
+		table.insert(items, {
+			kind = "tool",
+			toolId = tool.Id,
+			toolName = toolName,
+			upgrade = u,
+			name = L(key .. ".Name"),
+			desc = L(key .. ".Desc"),
+			icon = EFFECT_ICONS[u.Effect] or "⬆️",
+		})
 	end
 	table.insert(UPGRADE_ROWS, { category = upperRu(toolName), toolId = tool.Id, items = items })
 end
-table.insert(UPGRADE_ROWS, { category = L("Upgrade.Backpack.Category"), items = {
-	{ kind = "backpack", id = "BackpackCapacity", name = L("Upgrade.Backpack.Name"), icon = "🎒", tag = L("Upgrade.Backpack.Tag", { n = config.UpgradeCapacityBoost }),
-		desc = L("Upgrade.Backpack.Desc") },
-} })
+table.insert(UPGRADE_ROWS, {
+	category = L("Upgrade.Backpack.Category"),
+	items = {
+		{
+			kind = "backpack",
+			id = "BackpackCapacity",
+			name = L("Upgrade.Backpack.Name"),
+			icon = "🎒",
+			tag = L("Upgrade.Backpack.Tag", { n = config.UpgradeCapacityBoost }),
+			desc = L("Upgrade.Backpack.Desc"),
+		},
+	},
+})
 
 local selectedUpgrade = nil
 local upgradeCards = {}
@@ -785,12 +912,23 @@ for r, rowData in ipairs(UPGRADE_ROWS) do
 		BackgroundColor3 = C.row,
 		Parent = upgradeList,
 	}, { corner(12), border(C.gray, 2) })
-	label({ Position = UDim2.fromOffset(14, 0), Size = UDim2.new(0, 110, 1, 0), Text = rowData.category, Font = Enum.Font.GothamBlack, TextSize = 16, TextColor3 = C.inkSoft, TextWrapped = true, Parent = row })
+	label({
+		Position = UDim2.fromOffset(14, 0),
+		Size = UDim2.new(0, 110, 1, 0),
+		Text = rowData.category,
+		Font = Enum.Font.GothamBlack,
+		TextSize = 16,
+		TextColor3 = C.inkSoft,
+		TextWrapped = true,
+		Parent = row,
+	})
 
 	for j = 1, 3 do
 		local item = rowData.items[j] or false
 		local card = new("TextButton", {
-			Name = item and (item.kind == "tool" and ("Card_" .. item.toolId .. "_" .. item.upgrade.Id) or ("Card_" .. item.id)) or ("Card_Locked" .. r .. "_" .. j),
+			Name = item
+					and (item.kind == "tool" and ("Card_" .. item.toolId .. "_" .. item.upgrade.Id) or ("Card_" .. item.id))
+				or ("Card_Locked" .. r .. "_" .. j),
 			Position = UDim2.fromOffset(128 + (j - 1) * 196, 8),
 			Size = UDim2.fromOffset(188, 72),
 			BackgroundColor3 = C.white,
@@ -800,7 +938,14 @@ for r, rowData in ipairs(UPGRADE_ROWS) do
 		}, { corner(10), border(C.gray, 2.5) })
 		upgradeCards[card] = item
 
-		local nameLabel = label({ Position = UDim2.fromOffset(10, 4), Size = UDim2.new(1, -20, 0, 20), Text = item and item.name or "???", Font = Enum.Font.GothamBlack, TextSize = 15, Parent = card })
+		local nameLabel = label({
+			Position = UDim2.fromOffset(10, 4),
+			Size = UDim2.new(1, -20, 0, 20),
+			Text = item and item.name or "???",
+			Font = Enum.Font.GothamBlack,
+			TextSize = 15,
+			Parent = card,
+		})
 		local iconBox = new("Frame", {
 			Position = UDim2.fromOffset(10, 26),
 			Size = UDim2.fromOffset(56, 40),
@@ -808,7 +953,13 @@ for r, rowData in ipairs(UPGRADE_ROWS) do
 			BackgroundTransparency = item and 1 or 0,
 			Parent = card,
 		}, { corner(8) })
-		local iconLabel = label({ Size = UDim2.fromScale(1, 1), Text = item and item.icon or "🔒", TextSize = 28, TextXAlignment = Enum.TextXAlignment.Center, Parent = iconBox })
+		local iconLabel = label({
+			Size = UDim2.fromScale(1, 1),
+			Text = item and item.icon or "🔒",
+			TextSize = 28,
+			TextXAlignment = Enum.TextXAlignment.Center,
+			Parent = iconBox,
+		})
 		local price = label({
 			AnchorPoint = Vector2.new(1, 1),
 			Position = UDim2.new(1, -10, 1, -14),
@@ -870,7 +1021,14 @@ local descBox = new("Frame", {
 	Parent = upgradesPage,
 }, { corner(12), border(C.gray, 2) })
 
-descTitle = label({ Position = UDim2.fromOffset(14, 10), Size = UDim2.fromOffset(200, 28), Text = "", Font = Enum.Font.GothamBlack, TextSize = 22, Parent = descBox })
+descTitle = label({
+	Position = UDim2.fromOffset(14, 10),
+	Size = UDim2.fromOffset(200, 28),
+	Text = "",
+	Font = Enum.Font.GothamBlack,
+	TextSize = 22,
+	Parent = descBox,
+})
 descTag = label({
 	AnchorPoint = Vector2.new(1, 0),
 	Position = UDim2.new(1, -12, 0, 10),
@@ -906,7 +1064,14 @@ buyButton = new("TextButton", {
 	Parent = upgradesPage,
 }, { corner(12), border(C.outline, 3) })
 
-label({ Position = UDim2.fromOffset(492, 384), Size = UDim2.fromOffset(130, 40), Text = L("Upgrade.YourCash"), TextSize = 17, TextColor3 = C.inkSoft, Parent = upgradesPage })
+label({
+	Position = UDim2.fromOffset(492, 384),
+	Size = UDim2.fromOffset(130, 40),
+	Text = L("Upgrade.YourCash"),
+	TextSize = 17,
+	TextColor3 = C.inkSoft,
+	Parent = upgradesPage,
+})
 walletLabel = label({
 	Position = UDim2.fromOffset(622, 384),
 	Size = UDim2.fromOffset(126, 40),
@@ -968,13 +1133,42 @@ for i, zoneName in ipairs(COLLECTION) do
 		Parent = entry,
 	}, {
 		corner("full"),
-		label({ Size = UDim2.fromScale(1, 1), Text = "❄", TextSize = 34, TextColor3 = C.gray, TextXAlignment = Enum.TextXAlignment.Center }),
+		label({
+			Size = UDim2.fromScale(1, 1),
+			Text = "❄",
+			TextSize = 34,
+			TextColor3 = C.gray,
+			TextXAlignment = Enum.TextXAlignment.Center,
+		}),
 	})
-	label({ Position = UDim2.fromOffset(92, 16), Size = UDim2.new(1, -100, 0, 28), Text = upperRu(L("Zone." .. zoneName)), Font = Enum.Font.GothamBlack, TextSize = 19, TextTruncate = Enum.TextTruncate.AtEnd, Parent = entry })
-	label({ Position = UDim2.fromOffset(92, 50), Size = UDim2.new(1, -100, 0, 24), Text = L("Collection.Chance"), TextSize = 16, TextColor3 = C.inkSoft, Parent = entry })
+	label({
+		Position = UDim2.fromOffset(92, 16),
+		Size = UDim2.new(1, -100, 0, 28),
+		Text = upperRu(L("Zone." .. zoneName)),
+		Font = Enum.Font.GothamBlack,
+		TextSize = 19,
+		TextTruncate = Enum.TextTruncate.AtEnd,
+		Parent = entry,
+	})
+	label({
+		Position = UDim2.fromOffset(92, 50),
+		Size = UDim2.new(1, -100, 0, 24),
+		Text = L("Collection.Chance"),
+		TextSize = 16,
+		TextColor3 = C.inkSoft,
+		Parent = entry,
+	})
 end
 
-label({ Position = UDim2.fromOffset(400, 16), Size = UDim2.fromOffset(350, 40), Text = L("Collection.Title"), Font = Enum.Font.GothamBlack, TextSize = 30, TextColor3 = C.frameDark, Parent = collectionPage })
+label({
+	Position = UDim2.fromOffset(400, 16),
+	Size = UDim2.fromOffset(350, 40),
+	Text = L("Collection.Title"),
+	Font = Enum.Font.GothamBlack,
+	TextSize = 30,
+	TextColor3 = C.frameDark,
+	Parent = collectionPage,
+})
 label({
 	Position = UDim2.fromOffset(400, 64),
 	Size = UDim2.fromOffset(345, 230),
@@ -984,8 +1178,26 @@ label({
 	TextYAlignment = Enum.TextYAlignment.Top,
 	Parent = collectionPage,
 })
-label({ Position = UDim2.fromOffset(400, 310), Size = UDim2.fromOffset(345, 36), Text = L("Collection.Found"), Font = Enum.Font.GothamBlack, TextSize = 28, TextColor3 = C.frameDark, TextXAlignment = Enum.TextXAlignment.Center, Parent = collectionPage })
-label({ Position = UDim2.fromOffset(400, 350), Size = UDim2.fromOffset(345, 50), Text = "0 / " .. #COLLECTION, Font = Enum.Font.GothamBlack, TextSize = 40, TextColor3 = C.white, TextXAlignment = Enum.TextXAlignment.Center, Parent = collectionPage }, { textOutline(3) })
+label({
+	Position = UDim2.fromOffset(400, 310),
+	Size = UDim2.fromOffset(345, 36),
+	Text = L("Collection.Found"),
+	Font = Enum.Font.GothamBlack,
+	TextSize = 28,
+	TextColor3 = C.frameDark,
+	TextXAlignment = Enum.TextXAlignment.Center,
+	Parent = collectionPage,
+})
+label({
+	Position = UDim2.fromOffset(400, 350),
+	Size = UDim2.fromOffset(345, 50),
+	Text = "0 / " .. #COLLECTION,
+	Font = Enum.Font.GothamBlack,
+	TextSize = 40,
+	TextColor3 = C.white,
+	TextXAlignment = Enum.TextXAlignment.Center,
+	Parent = collectionPage,
+}, { textOutline(3) })
 
 -- ---------- Подсказки ----------
 local tipsPage = pages.Tips
@@ -1020,8 +1232,23 @@ for i, tip in ipairs(TIPS) do
 		BackgroundColor3 = C.white,
 		Parent = tipsList,
 	}, { corner(12), border(C.gray, 2) })
-	label({ Position = UDim2.fromOffset(10, 0), Size = UDim2.new(0, 40, 1, 0), Text = "❄", TextSize = 26, TextColor3 = C.ice, TextXAlignment = Enum.TextXAlignment.Center, Parent = row })
-	label({ Position = UDim2.fromOffset(56, 0), Size = UDim2.new(1, -68, 1, 0), Text = L(tip), TextSize = 17, TextWrapped = true, Parent = row })
+	label({
+		Position = UDim2.fromOffset(10, 0),
+		Size = UDim2.new(0, 40, 1, 0),
+		Text = "❄",
+		TextSize = 26,
+		TextColor3 = C.ice,
+		TextXAlignment = Enum.TextXAlignment.Center,
+		Parent = row,
+	})
+	label({
+		Position = UDim2.fromOffset(56, 0),
+		Size = UDim2.new(1, -68, 1, 0),
+		Text = L(tip),
+		TextSize = 17,
+		TextWrapped = true,
+		Parent = row,
+	})
 end
 
 -- ============================================================
@@ -1055,7 +1282,9 @@ closeButton.Activated:Connect(function()
 end)
 
 UserInputService.InputBegan:Connect(function(input, gameProcessed)
-	if gameProcessed then return end
+	if gameProcessed then
+		return
+	end
 	if input.KeyCode == Enum.KeyCode.Tab then
 		setJournalOpen(not journal.Enabled)
 	elseif input.KeyCode == Enum.KeyCode.B then
@@ -1109,7 +1338,8 @@ local function refreshHud()
 	zoneBar.pct.Text = string.format("%.1f%%", pct * 100)
 	local zone = getZoneFolder()
 	local state = zone and zone:FindFirstChild("State")
-	zoneBar.right.Text = (state and state.Value == "finished") and L("Hud.Cleared") or string.format("%d/%d", cleared, zoneTotal)
+	zoneBar.right.Text = (state and state.Value == "finished") and L("Hud.Cleared")
+		or string.format("%d/%d", cleared, zoneTotal)
 
 	-- таймер
 	local startTime = workspace:GetAttribute("MatchStartTime")
@@ -1132,7 +1362,11 @@ local function refreshJournal()
 			slot.unknown.Visible = slot.avatar.Image == ""
 			slot.name.Text = p.DisplayName
 			slot.name.TextColor3 = p == player and C.iceDark or C.ink
-			slot.stats.Text = string.format("💰 %d    ❄ %d", cashValue and cashValue.Value or 0, p:GetAttribute("SnowCollected") or 0)
+			slot.stats.Text = string.format(
+				"💰 %d    ❄ %d",
+				cashValue and cashValue.Value or 0,
+				p:GetAttribute("SnowCollected") or 0
+			)
 			slot.stats.TextColor3 = C.ink
 		else
 			slot.avatar.Image = ""
@@ -1180,7 +1414,9 @@ local function refreshJournal()
 		descTitle.Text = item.name
 		descTag.Visible = true
 		descTag.Text = item.tag
-		descText.Text = item.desc .. "\n" .. L("Upgrade.Backpack.Now", { n = player:GetAttribute("BackpackCapacity") or config.BackpackCapacity })
+		descText.Text = item.desc
+			.. "\n"
+			.. L("Upgrade.Backpack.Now", { n = player:GetAttribute("BackpackCapacity") or config.BackpackCapacity })
 		local canBuy = cash >= price
 		buyButton.Text = canBuy and L("Upgrade.Buy", { price = price }) or L("Upgrade.Need", { price = price })
 		buyButton.BackgroundColor3 = canBuy and C.green or C.gray
@@ -1204,7 +1440,8 @@ local function refreshJournal()
 				buyButton.BackgroundColor3 = C.gray
 			else
 				local canBuy = cash >= nextPrice
-				buyButton.Text = canBuy and L("Upgrade.Buy", { price = nextPrice }) or L("Upgrade.Need", { price = nextPrice })
+				buyButton.Text = canBuy and L("Upgrade.Buy", { price = nextPrice })
+					or L("Upgrade.Need", { price = nextPrice })
 				buyButton.BackgroundColor3 = canBuy and C.green or C.gray
 			end
 		end
@@ -1225,7 +1462,12 @@ end
 
 -- По умолчанию выбран первый апгрейд первого инструмента (у Руки — «Удержание»)
 for card, item in pairs(upgradeCards) do
-	if item and item.kind == "tool" and item.toolId == config.Tools[1].Id and item.upgrade == config.Tools[1].Upgrades[1] then
+	if
+		item
+		and item.kind == "tool"
+		and item.toolId == config.Tools[1].Id
+		and item.upgrade == config.Tools[1].Upgrades[1]
+	then
 		selectUpgrade(item, card)
 	end
 end

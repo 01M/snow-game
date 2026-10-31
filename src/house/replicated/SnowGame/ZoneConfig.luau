@@ -11,14 +11,14 @@ local ZoneConfig = {
 		{
 			Name = "Yard",
 			Center = Vector3.new(0, 0, 0),
-			Size = 60,              -- square zone (Size x Size studs in X and Z)
-			CellSize = 2.3,         -- visual size of each snow cell part
-			GridStep = 2,           -- spacing between cell centers
-			GroundTopY = 1.0,      -- top surface Y of the ground platform
-			SnowDepthMin = 0.7,    -- minimum cell thickness
-			SnowDepthMax = 1.3,    -- maximum cell thickness
-			RegenDelay = 5,        -- seconds after full clear before regen starts
-			RegenDuration = 8,     -- seconds for cells to regrow
+			Size = 60, -- square zone (Size x Size studs in X and Z)
+			CellSize = 2.3, -- visual size of each snow cell part
+			GridStep = 2, -- spacing between cell centers
+			GroundTopY = 1.0, -- top surface Y of the ground platform
+			SnowDepthMin = 0.7, -- minimum cell thickness
+			SnowDepthMax = 1.3, -- maximum cell thickness
+			RegenDelay = 5, -- seconds after full clear before regen starts
+			RegenDuration = 8, -- seconds for cells to regrow
 			-- Сугробы у краёв зоны (множитель Config.SnowDriftHeight): заборы по X, крыльцо/дом по -Z, тротуар по +Z
 			DriftEdges = { PosX = 1, NegX = 1, NegZ = 0.8, PosZ = 0.3 },
 			DisplayName = "Двор",

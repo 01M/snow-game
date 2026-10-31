@@ -22,7 +22,6 @@ local toolClick = remotes:WaitForChild("ToolClick")
 local yard = workspace:WaitForChild("SnowYard")
 local globalScore = yard:WaitForChild("Score") :: IntValue
 
-
 -- В режиме матча очищенная зона не регенерирует: когда очищены все зоны,
 -- ставим workspace.MatchState = "finished", дальше работает MatchServer
 local MATCH_MODE = true
@@ -473,7 +472,8 @@ local function cutSnow(player: Player, tool: Tool, toolCfg, stats, rateMax: numb
 			local eyeY = origin.Y + config.BlowEyeHeight
 			local snowTopY = config.GroundTopY + config.SnowBaseDepth
 			local groundDist = (eyeY - snowTopY) / -aim.Y * hMag
-			reach = math.clamp(groundDist + 1, math.min((toolCfg.MinDistance or config.BlowMinDistance) + 1, range), range)
+			reach =
+				math.clamp(groundDist + 1, math.min((toolCfg.MinDistance or config.BlowMinDistance) + 1, range), range)
 		end
 	end
 	local minDist = toolCfg.MinDistance or config.BlowMinDistance
@@ -512,7 +512,8 @@ local function cutSnow(player: Player, tool: Tool, toolCfg, stats, rateMax: numb
 
 	-- Из кучи берётся сразу много (PileTake порций/с), остаток рюкзака — со снега
 	if toolCfg.PileTake and not toPile then
-		local took, at = PileServer.take(origin, look, reach, coneCos, math.min(toolCfg.PileTake * stats.Speed * dt, freePortions))
+		local took, at =
+			PileServer.take(origin, look, reach, coneCos, math.min(toolCfg.PileTake * stats.Speed * dt, freePortions))
 		if took > 0 then
 			gained += took
 			touched += 1
@@ -529,7 +530,10 @@ local function cutSnow(player: Player, tool: Tool, toolCfg, stats, rateMax: numb
 		end
 		local field = zone.field
 		local zc = zone.config
-		if math.abs(origin.X - zc.Center.X) > field.sx / 2 + scanRadius or math.abs(origin.Z - zc.Center.Z) > field.sz / 2 + scanRadius then
+		if
+			math.abs(origin.X - zc.Center.X) > field.sx / 2 + scanRadius
+			or math.abs(origin.Z - zc.Center.Z) > field.sz / 2 + scanRadius
+		then
 			continue
 		end
 		local pv = zone.portionVolume
@@ -572,9 +576,7 @@ local function cutSnow(player: Player, tool: Tool, toolCfg, stats, rateMax: numb
 
 			-- Сильнее в центре конуса (полосы) и ближе к соплу
 			local d = math.min(distRoot / range, 1)
-			local rate = rateMax
-				* (config.EdgeMeltRatio + (1 - config.EdgeMeltRatio) * t)
-				* (1 - 0.5 * d * d)
+			local rate = rateMax * (config.EdgeMeltRatio + (1 - config.EdgeMeltRatio) * t) * (1 - 0.5 * d * d)
 
 			local got = field:remove(i, math.min(rate, (freePortions - gained) * pv))
 			if got > 0 then

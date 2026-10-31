@@ -55,7 +55,13 @@ local function teleportToLobby(players)
 		if ok then
 			return
 		end
-		warn(string.format("[MatchServer] телепорт в лобби не удался (попытка %d): %s", attempt, tostring(err)))
+		warn(
+			string.format(
+				"[MatchServer] телепорт в лобби не удался (попытка %d): %s",
+				attempt,
+				tostring(err)
+			)
+		)
 		task.wait(2)
 	end
 end
@@ -86,7 +92,9 @@ end
 
 -- Если телепорт игрока сорвался после старта, пробуем ещё раз только его
 TeleportService.TeleportInitFailed:Connect(function(player, result, errorMessage)
-	warn(string.format("[MatchServer] TeleportInitFailed для %s: %s %s", player.Name, tostring(result), errorMessage))
+	warn(
+		string.format("[MatchServer] TeleportInitFailed для %s: %s %s", player.Name, tostring(result), errorMessage)
+	)
 	if workspace:GetAttribute("ReturnCountdown") == 0 then
 		task.wait(2)
 		teleportToLobby({ player })

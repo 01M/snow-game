@@ -68,7 +68,7 @@ iconLabel.Parent = container
 local function updateLabel(backpack)
 	local capacity = player:GetAttribute("BackpackCapacity") or config.BackpackCapacity
 	numberLabel.Text = tostring(backpack.Value)
-	
+
 	-- Change color when full
 	if backpack.Value >= capacity then
 		numberLabel.TextColor3 = Color3.fromRGB(255, 100, 100)

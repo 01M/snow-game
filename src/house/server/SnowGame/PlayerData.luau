@@ -73,7 +73,12 @@ function PlayerData.load(player)
 				locked = false
 				old = typeof(old) == "table" and old or {}
 				local s = old.Session
-				if not force and typeof(s) == "table" and s.Job ~= jobId and os.time() - (tonumber(s.Time) or 0) < LOCK_TIMEOUT then
+				if
+					not force
+					and typeof(s) == "table"
+					and s.Job ~= jobId
+					and os.time() - (tonumber(s.Time) or 0) < LOCK_TIMEOUT
+				then
 					locked = true
 					return nil
 				end
@@ -103,13 +108,28 @@ function PlayerData.load(player)
 		end
 		if not ok and RunService:IsStudio() and string.find(tostring(result), "403") then
 			-- в Studio без доступа к API играем без сохранения, а не кикаем
-			warn("[PlayerData] в Studio выключен доступ к API Services, игра без сохранения")
+			warn(
+				"[PlayerData] в Studio выключен доступ к API Services, игра без сохранения"
+			)
 			return { Cash = 0, UpgradeLevel = 0, OwnedTools = {}, ToolUpgrades = {}, BoostUntil = 0 }
 		end
 		if not ok then
-			warn(string.format("[PlayerData] загрузка %s не удалась (попытка %d): %s", player.Name, attempt, tostring(result)))
+			warn(
+				string.format(
+					"[PlayerData] загрузка %s не удалась (попытка %d): %s",
+					player.Name,
+					attempt,
+					tostring(result)
+				)
+			)
 		elseif locked then
-			warn(string.format("[PlayerData] %s ещё заблокирован другим сервером (попытка %d)", player.Name, attempt))
+			warn(
+				string.format(
+					"[PlayerData] %s ещё заблокирован другим сервером (попытка %d)",
+					player.Name,
+					attempt
+				)
+			)
 		end
 		if not player.Parent then
 			return nil
@@ -173,14 +193,26 @@ saveImpl = function(player, release)
 		end)
 		if ok then
 			if not owned then
-				warn(string.format("[PlayerData] %s: блокировку забрал другой сервер, сохранение пропущено", player.Name))
+				warn(
+					string.format(
+						"[PlayerData] %s: блокировку забрал другой сервер, сохранение пропущено",
+						player.Name
+					)
+				)
 			end
 			if release then
 				loaded[player] = nil
 			end
 			return owned
 		end
-		warn(string.format("[PlayerData] сохранение %s не удалось (попытка %d): %s", player.Name, attempt, tostring(err)))
+		warn(
+			string.format(
+				"[PlayerData] сохранение %s не удалось (попытка %d): %s",
+				player.Name,
+				attempt,
+				tostring(err)
+			)
+		)
 		if attempt < SAVE_ATTEMPTS then
 			task.wait(RETRY_WAIT)
 		end

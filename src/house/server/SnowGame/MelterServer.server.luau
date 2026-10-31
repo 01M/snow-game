@@ -21,17 +21,25 @@ RunService.Heartbeat:Connect(function()
 
 	for _, player in Players:GetPlayers() do
 		local character = player.Character
-		if not character then continue end
+		if not character then
+			continue
+		end
 		local root = character:FindFirstChild("HumanoidRootPart")
-		if not root then continue end
+		if not root then
+			continue
+		end
 
 		local last = lastDeposit[player] or 0
-		if now - last < DEPOSIT_COOLDOWN then continue end
+		if now - last < DEPOSIT_COOLDOWN then
+			continue
+		end
 
 		local ls = player:FindFirstChild("leaderstats")
 		local bp = ls and ls:FindFirstChild("Backpack") :: IntValue
 		local cash = ls and ls:FindFirstChild("Cash") :: IntValue
-		if not bp or not cash or bp.Value <= 0 then continue end
+		if not bp or not cash or bp.Value <= 0 then
+			continue
+		end
 
 		-- AABB zone check
 		local pos = root.Position

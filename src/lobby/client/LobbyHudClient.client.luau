@@ -295,7 +295,13 @@ playPad.Parent = playBtn
 -- Лёгкая пульсация, чтобы новичок сразу заметил кнопку
 local playScale = Instance.new("UIScale")
 playScale.Parent = playBtn
-TweenService:Create(playScale, TweenInfo.new(0.8, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true), { Scale = 1.06 }):Play()
+TweenService
+	:Create(
+		playScale,
+		TweenInfo.new(0.8, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true),
+		{ Scale = 1.06 }
+	)
+	:Play()
 
 local myPadIndex = nil
 QueueState.OnClientEvent:Connect(function(padIndex, state)

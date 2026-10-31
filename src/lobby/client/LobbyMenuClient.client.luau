@@ -134,7 +134,8 @@ root.Visible = false
 root.Parent = gui
 
 -- ===== Настройки игры =====
-local settings, settingsHead = panel("Settings", UDim2.fromOffset(540, 470), UDim2.fromOffset(0, 0), L("Lobby.Menu.Settings"), "⚙️")
+local settings, settingsHead =
+	panel("Settings", UDim2.fromOffset(540, 470), UDim2.fromOffset(0, 0), L("Lobby.Menu.Settings"), "⚙️")
 settings.Parent = root
 local close = button(settingsHead, "X", UDim2.fromOffset(60, 60), UDim2.new(1, -72, 0, 10), RED)
 corner(close, 30)
@@ -162,7 +163,8 @@ friendsBtn.Text = ""
 friendsBtn.Parent = settings
 corner(friendsBtn, 10)
 stroke(friendsBtn, 3, INK, true)
-text(friendsBtn, L("Lobby.Menu.FriendsOnly"), UDim2.new(0.55, -10, 0.8, 0), UDim2.new(0, 12, 0.1, 0), INK, false).TextXAlignment = Enum.TextXAlignment.Left
+text(friendsBtn, L("Lobby.Menu.FriendsOnly"), UDim2.new(0.55, -10, 0.8, 0), UDim2.new(0, 12, 0.1, 0), INK, false).TextXAlignment =
+	Enum.TextXAlignment.Left
 local friendsState = text(friendsBtn, L("Common.Off"), UDim2.new(0.42, -10, 0.6, 0), UDim2.new(0.58, 0, 0.2, 0), RED)
 
 local inviteBtn = Instance.new("TextButton")
@@ -175,7 +177,8 @@ corner(inviteBtn, 10)
 stroke(inviteBtn, 3, INK, true)
 text(inviteBtn, L("Lobby.Menu.Invite"), UDim2.new(1, -20, 0.8, 0), UDim2.new(0, 10, 0.1, 0), INK, false)
 
-local hintFriends = text(settings, "", UDim2.new(1, -40, 0, 24), UDim2.fromOffset(20, 326), Color3.fromRGB(200, 200, 210), false)
+local hintFriends =
+	text(settings, "", UDim2.new(1, -40, 0, 24), UDim2.fromOffset(20, 326), Color3.fromRGB(200, 200, 210), false)
 
 -- Таймер и подтверждение
 local timerLabel = text(settings, "", UDim2.fromOffset(270, 40), UDim2.fromOffset(20, 390), WHITE)
@@ -183,7 +186,8 @@ timerLabel.TextXAlignment = Enum.TextXAlignment.Left
 local confirm = button(settings, L("Lobby.Menu.Start"), UDim2.fromOffset(220, 70), UDim2.fromOffset(300, 375), GREEN)
 
 -- ===== Выбор карты =====
-local mapsPanel = panel("Maps", UDim2.fromOffset(380, 470), UDim2.fromOffset(560, 0), L("Lobby.Menu.MapSelect"), "🗺️")
+local mapsPanel =
+	panel("Maps", UDim2.fromOffset(380, 470), UDim2.fromOffset(560, 0), L("Lobby.Menu.MapSelect"), "🗺️")
 mapsPanel.Parent = root
 text(mapsPanel, L("Lobby.Menu.Chapter", { n = 1 }), UDim2.new(1, -40, 0, 34), UDim2.fromOffset(20, 96))
 

@@ -60,7 +60,10 @@ local function applyProduct(player: Player, product)
 	end
 	if product.BlizzardMinutes then
 		local current = workspace:GetAttribute("BlizzardUntil") or 0
-		workspace:SetAttribute("BlizzardUntil", math.max(workspace:GetServerTimeNow(), current) + product.BlizzardMinutes * 60)
+		workspace:SetAttribute(
+			"BlizzardUntil",
+			math.max(workspace:GetServerTimeNow(), current) + product.BlizzardMinutes * 60
+		)
 		workspace:SetAttribute("BlizzardBy", player.DisplayName)
 	end
 	Analytics.custom(player, "BuyProduct_" .. product.Key)

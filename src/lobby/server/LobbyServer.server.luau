@@ -218,7 +218,9 @@ local function teleport(q)
 		TeleportService:TeleportAsync(map.PlaceId, group, options)
 	end)
 	if not ok then
-		warn("[LobbyServer] Телепорт не удался (в Studio это нормально): " .. tostring(err))
+		warn(
+			"[LobbyServer] Телепорт не удался (в Studio это нормально): " .. tostring(err)
+		)
 		for _, p in ipairs(group) do
 			pushOff(p, q)
 		end
@@ -259,11 +261,19 @@ local function quickPlay(player)
 	local best = nil
 	for _, q in pairs(pads) do
 		local rank = PHASE_RANK[q.phase]
-		local open = rank and #q.players < q.maxPlayers and (not q.friendsOnly or (q.owner and isFriendOf(q.owner, player) == true))
+		local open = rank
+			and #q.players < q.maxPlayers
+			and (not q.friendsOnly or (q.owner and isFriendOf(q.owner, player) == true))
 		if open then
 			local bestRank = best and PHASE_RANK[best.phase]
-			if not best or rank < bestRank or (rank == bestRank and (#q.players > #best.players
-				or (#q.players == #best.players and q.deadline < best.deadline))) then
+			if
+				not best
+				or rank < bestRank
+				or (
+					rank == bestRank
+					and (#q.players > #best.players or (#q.players == #best.players and q.deadline < best.deadline))
+				)
+			then
 				best = q
 			end
 		end
@@ -315,7 +325,12 @@ QueueAction.OnServerEvent:Connect(function(player, action, value)
 		return
 	end
 	if action == "setMaxPlayers" then
-		if typeof(value) == "number" and value == math.floor(value) and value >= math.max(1, #q.players) and value <= Maps.MaxPlayers then
+		if
+			typeof(value) == "number"
+			and value == math.floor(value)
+			and value >= math.max(1, #q.players)
+			and value <= Maps.MaxPlayers
+		then
 			q.maxPlayers = value
 			broadcast(q)
 		end

@@ -188,7 +188,11 @@ function PileServer.push(player: Player, rootPos: Vector3, look: Vector3, portio
 	end
 
 	-- Куча уже далеко (игрок отошёл или отвернулся) — отцепляем
-	if pile and (pilePos(pile) - frontFor(pile.portions)).Magnitude > PileServer.radius(pile.portions) + config.PileGrabDistance then
+	if
+		pile
+		and (pilePos(pile) - frontFor(pile.portions)).Magnitude
+			> PileServer.radius(pile.portions) + config.PileGrabDistance
+	then
 		pile = nil
 	end
 	if not pile then
@@ -237,7 +241,13 @@ function PileServer.release(player: Player)
 end
 
 -- Рука/Лопата берут из куч в конусе: до maxPortions суммарно. Возвращает (взято, точка для комьев)
-function PileServer.take(origin: Vector3, look: Vector3, reach: number, coneCos: number, maxPortions: number): (number, Vector3?)
+function PileServer.take(
+	origin: Vector3,
+	look: Vector3,
+	reach: number,
+	coneCos: number,
+	maxPortions: number
+): (number, Vector3?)
 	if maxPortions <= 0 then
 		return 0, nil
 	end

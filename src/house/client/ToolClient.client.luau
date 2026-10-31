@@ -228,7 +228,8 @@ usePad.Parent = useButton
 
 local function refreshTouchButton()
 	local tool = equippedSnowTool()
-	local touch = UserInputService.TouchEnabled or (RunService:IsStudio() and workspace:GetAttribute("DebugTouchButton") == true)
+	local touch = UserInputService.TouchEnabled
+		or (RunService:IsStudio() and workspace:GetAttribute("DebugTouchButton") == true)
 	touchGui.Enabled = touch and tool ~= nil
 	useButton.Image = tool and tool.TextureId or ""
 end
@@ -257,7 +258,14 @@ useButton.InputBegan:Connect(function(input)
 	end
 end)
 UserInputService.InputEnded:Connect(function(input)
-	if input == heldInput or (heldInput and heldInput.UserInputType == Enum.UserInputType.MouseButton1 and input.UserInputType == Enum.UserInputType.MouseButton1) then
+	if
+		input == heldInput
+		or (
+			heldInput
+			and heldInput.UserInputType == Enum.UserInputType.MouseButton1
+			and input.UserInputType == Enum.UserInputType.MouseButton1
+		)
+	then
 		releaseHeld()
 	end
 end)

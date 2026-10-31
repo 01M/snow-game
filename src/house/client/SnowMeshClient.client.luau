@@ -135,10 +135,18 @@ local function buildZone(zoneIndex: number)
 
 	-- «Юбка» по периметру: боковая стенка снега до земли (двусторонняя, чтобы не думать о порядке обхода)
 	local ring = {}
-	for iz = 0, nz - 1 do table.insert(ring, iz + 1) end -- ix = 0
-	for ix = 1, nx - 1 do table.insert(ring, ix * nz + nz) end -- iz = nz-1
-	for iz = nz - 2, 0, -1 do table.insert(ring, (nx - 1) * nz + iz + 1) end -- ix = nx-1
-	for ix = nx - 2, 1, -1 do table.insert(ring, ix * nz + 1) end -- iz = 0
+	for iz = 0, nz - 1 do
+		table.insert(ring, iz + 1)
+	end -- ix = 0
+	for ix = 1, nx - 1 do
+		table.insert(ring, ix * nz + nz)
+	end -- iz = nz-1
+	for iz = nz - 2, 0, -1 do
+		table.insert(ring, (nx - 1) * nz + iz + 1)
+	end -- ix = nx-1
+	for ix = nx - 2, 1, -1 do
+		table.insert(ring, ix * nz + 1)
+	end -- iz = 0
 	z.bottom = {}
 	local bottomV, bottomN, bottomUV = {}, {}, {}
 	for k, i in ring do
@@ -151,8 +159,28 @@ local function buildZone(zoneIndex: number)
 		local k2 = k % #ring + 1
 		local t1, t2 = ring[k], ring[k2]
 		local quads = {
-			{ z.verts[t1], bottomV[k], z.verts[t2], normals[t1], bottomN[k], normals[t2], uvs[t1], bottomUV[k], uvs[t2] },
-			{ z.verts[t2], bottomV[k], bottomV[k2], normals[t2], bottomN[k], bottomN[k2], uvs[t2], bottomUV[k], bottomUV[k2] },
+			{
+				z.verts[t1],
+				bottomV[k],
+				z.verts[t2],
+				normals[t1],
+				bottomN[k],
+				normals[t2],
+				uvs[t1],
+				bottomUV[k],
+				uvs[t2],
+			},
+			{
+				z.verts[t2],
+				bottomV[k],
+				bottomV[k2],
+				normals[t2],
+				bottomN[k],
+				bottomN[k2],
+				uvs[t2],
+				bottomUV[k],
+				bottomUV[k2],
+			},
 		}
 		for _, q in quads do
 			local f1 = em:AddTriangle(q[1], q[2], q[3])
@@ -213,9 +241,14 @@ local function makeBlocks(z)
 			p.Parent = folder
 			z.cells[cx * cnz + cz + 1] = {
 				part = p,
-				ix0 = ix0, ix1 = ix1, iz0 = iz0, iz1 = iz1,
-				lx = (x0 + x1) / 2, lz = (z0 + z1) / 2,
-				w = x1 - x0, d = z1 - z0,
+				ix0 = ix0,
+				ix1 = ix1,
+				iz0 = iz0,
+				iz1 = iz1,
+				lx = (x0 + x1) / 2,
+				lz = (z0 + z1) / 2,
+				w = x1 - x0,
+				d = z1 - z0,
 			}
 		end
 	end

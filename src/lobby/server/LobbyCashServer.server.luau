@@ -30,7 +30,14 @@ local function loadCash(player)
 			player:SetAttribute("Cash", 0)
 			return
 		end
-		warn(string.format("[LobbyCashServer] чтение %s не удалось (попытка %d): %s", player.Name, attempt, tostring(result)))
+		warn(
+			string.format(
+				"[LobbyCashServer] чтение %s не удалось (попытка %d): %s",
+				player.Name,
+				attempt,
+				tostring(result)
+			)
+		)
 		if not player.Parent then
 			return
 		end

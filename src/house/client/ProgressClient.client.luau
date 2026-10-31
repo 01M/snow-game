@@ -36,7 +36,7 @@ local function createBar(name: string, yPos: number, labelText: string, pct: num
 	container.Position = UDim2.new(0, 40, 0, yPos)
 	container.BackgroundTransparency = 1
 	container.Parent = screenGui
-	
+
 	-- Label above bar
 	local label = Instance.new("TextLabel")
 	label.Name = "Label"
@@ -49,7 +49,7 @@ local function createBar(name: string, yPos: number, labelText: string, pct: num
 	label.TextXAlignment = Enum.TextXAlignment.Left
 	label.Text = labelText
 	label.Parent = container
-	
+
 	-- Progress bar background
 	local barBg = Instance.new("Frame")
 	barBg.Name = "BarBg"
@@ -58,11 +58,11 @@ local function createBar(name: string, yPos: number, labelText: string, pct: num
 	barBg.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
 	barBg.BorderSizePixel = 0
 	barBg.Parent = container
-	
+
 	local barCorner = Instance.new("UICorner")
 	barCorner.CornerRadius = UDim.new(0, 5)
 	barCorner.Parent = barBg
-	
+
 	-- Fill
 	local fill = Instance.new("Frame")
 	fill.Name = "Fill"
@@ -70,11 +70,11 @@ local function createBar(name: string, yPos: number, labelText: string, pct: num
 	fill.BackgroundColor3 = Color3.fromRGB(120, 200, 255)
 	fill.BorderSizePixel = 0
 	fill.Parent = barBg
-	
+
 	local fillCorner = Instance.new("UICorner")
 	fillCorner.CornerRadius = UDim.new(0, 5)
 	fillCorner.Parent = fill
-	
+
 	-- Percentage label on the right
 	local pctLabel = Instance.new("TextLabel")
 	pctLabel.Name = "PctLabel"
@@ -87,7 +87,7 @@ local function createBar(name: string, yPos: number, labelText: string, pct: num
 	pctLabel.TextXAlignment = Enum.TextXAlignment.Right
 	pctLabel.Text = string.format("%d%%", math.floor(pct * 100))
 	pctLabel.Parent = container
-	
+
 	return container, fill, label, pctLabel
 end
 
@@ -106,7 +106,7 @@ local function updateZoneDisplay(zoneName: string?, cleared: number, total: numb
 	local pct = total > 0 and math.clamp(cleared / total, 0, 1) or 0
 	zoneFill.Size = UDim2.new(pct, 0, 1, 0)
 	zonePctLabel.Text = string.format("%d%%", math.floor(pct * 100))
-	
+
 	if isRegen then
 		zoneLabel.Text = string.format("%s (регенерация...)", zoneName or "Неизвестно")
 		zoneFill.BackgroundColor3 = Color3.fromRGB(255, 180, 80)
@@ -144,12 +144,14 @@ end
 local function connectZone(zoneName)
 	disconnectZone()
 	local zoneFolder = yard:FindFirstChild(zoneName)
-	if not zoneFolder then return end
-	
+	if not zoneFolder then
+		return
+	end
+
 	local zoneScore = zoneFolder:FindFirstChild("Score") :: IntValue
 	local zoneState = zoneFolder:FindFirstChild("State") :: StringValue
 	local total = zoneTotals[zoneName] or 1
-	
+
 	if zoneScore then
 		local isRegen = zoneState and zoneState.Value == "regenerating"
 		updateZoneDisplay(zoneName, zoneScore.Value, total, isRegen)
@@ -158,7 +160,7 @@ local function connectZone(zoneName)
 			updateZoneDisplay(zoneName, zoneScore.Value, total, regen)
 		end)
 	end
-	
+
 	if zoneState then
 		stateConnection = zoneState.Changed:Connect(function()
 			local cleared = zoneScore and zoneScore.Value or 0
@@ -179,10 +181,10 @@ local function updateZone()
 		end
 		return
 	end
-	
+
 	local zc = getZoneAtPosition(root.Position)
 	local zoneName = zc and zc.Name
-	
+
 	if zoneName ~= currentZoneName then
 		currentZoneName = zoneName
 		if zoneName then

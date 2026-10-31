@@ -45,8 +45,20 @@ function SnowField:blockParts(parts: { BasePart }, margin: number)
 	for _, p in parts do
 		local cf, size = p.CFrame, p.Size
 		-- AABB повёрнутой детали
-		local hx = (math.abs(cf.RightVector.X) * size.X + math.abs(cf.UpVector.X) * size.Y + math.abs(cf.LookVector.X) * size.Z) / 2 + margin
-		local hz = (math.abs(cf.RightVector.Z) * size.X + math.abs(cf.UpVector.Z) * size.Y + math.abs(cf.LookVector.Z) * size.Z) / 2 + margin
+		local hx = (
+			math.abs(cf.RightVector.X) * size.X
+			+ math.abs(cf.UpVector.X) * size.Y
+			+ math.abs(cf.LookVector.X) * size.Z
+		)
+				/ 2
+			+ margin
+		local hz = (
+			math.abs(cf.RightVector.Z) * size.X
+			+ math.abs(cf.UpVector.Z) * size.Y
+			+ math.abs(cf.LookVector.Z) * size.Z
+		)
+				/ 2
+			+ margin
 		local ixMin = math.max(0, math.ceil((cf.X - hx - self.x0) / res))
 		local ixMax = math.min(self.nx - 1, math.floor((cf.X + hx - self.x0) / res))
 		local izMin = math.max(0, math.ceil((cf.Z - hz - self.z0) / res))

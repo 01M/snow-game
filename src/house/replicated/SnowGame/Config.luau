@@ -2,31 +2,31 @@
 local Config = {
 	-- Snow cells
 	SnowCellFolder = "SnowCells",
-	CellSize = 2.3,           -- visual size (slightly larger than grid step to hide seams)
-	GridStep = 2,             -- grid spacing
-	GroundTopY = 1.0,        -- top surface of YardPlatform
-	EdgeMeltRatio = 0.5,      -- melt rate at cone edge relative to max
-	MeltTickRate = 1 / 15,    -- process at most 15 times per second
+	CellSize = 2.3, -- visual size (slightly larger than grid step to hide seams)
+	GridStep = 2, -- grid spacing
+	GroundTopY = 1.0, -- top surface of YardPlatform
+	EdgeMeltRatio = 0.5, -- melt rate at cone edge relative to max
+	MeltTickRate = 1 / 15, -- process at most 15 times per second
 
 	-- Snow height field (карта высот, рисуется клиентом через EditableMesh)
-	SnowGridRes = 1,          -- шаг точек карты высот, studs
-	SnowBaseDepth = 0.8,      -- средняя глубина снега
-	SnowNoiseAmp = 0.35,      -- неровность покрова
-	SnowNoiseScale = 11,      -- размер «волн» неровности, studs
-	SnowDriftHeight = 1.7,    -- добавка сугроба у края зоны
-	SnowDriftWidth = 7,       -- ширина сугроба от края, studs
-	SnowEdgeTaper = 3,        -- на открытых краях зоны (без забора) снег сходит на нет на этой ширине, studs
-	SnowMinHeight = 0.04,     -- тоньше этого снег считается убранным
-	SnowHeightQuant = 0.02,   -- шаг высоты при пересылке клиентам (u8, до 5.1 studs)
-	SnowSyncInterval = 0.1,   -- как часто сервер шлёт изменения высот
+	SnowGridRes = 1, -- шаг точек карты высот, studs
+	SnowBaseDepth = 0.8, -- средняя глубина снега
+	SnowNoiseAmp = 0.35, -- неровность покрова
+	SnowNoiseScale = 11, -- размер «волн» неровности, studs
+	SnowDriftHeight = 1.7, -- добавка сугроба у края зоны
+	SnowDriftWidth = 7, -- ширина сугроба от края, studs
+	SnowEdgeTaper = 3, -- на открытых краях зоны (без забора) снег сходит на нет на этой ширине, studs
+	SnowMinHeight = 0.04, -- тоньше этого снег считается убранным
+	SnowHeightQuant = 0.02, -- шаг высоты при пересылке клиентам (u8, до 5.1 studs)
+	SnowSyncInterval = 0.1, -- как часто сервер шлёт изменения высот
 
 	-- Cone detection (конус идёт от сопла по направлению взгляда; дальность, угол и скорость — в Config.Tools)
-	BlowMinDistance = 2,      -- ближе к игроку снег не берём (не чистим под ногами)
-	BlowNozzleOffset = 1.5,   -- вершина конуса: корень + столько вперёд
-	BlowEyeHeight = 1.5,      -- высота глаз над HumanoidRootPart (для дальности по наклону взгляда)
+	BlowMinDistance = 2, -- ближе к игроку снег не берём (не чистим под ногами)
+	BlowNozzleOffset = 1.5, -- вершина конуса: корень + столько вперёд
+	BlowEyeHeight = 1.5, -- высота глаз над HumanoidRootPart (для дальности по наклону взгляда)
 	BlowAimInterval = 1 / 15, -- клиент шлёт направление взгляда не чаще этого (это же keepalive)
-	BlowKeepAlive = 0.5,      -- нет BlowState(true) дольше этого — сервер сам выключает дутьё
-	BlowStateMaxRate = 25,    -- больше сообщений BlowState в секунду сервер отбрасывает
+	BlowKeepAlive = 0.5, -- нет BlowState(true) дольше этого — сервер сам выключает дутьё
+	BlowStateMaxRate = 25, -- больше сообщений BlowState в секунду сервер отбрасывает
 
 	-- Backpack
 	BackpackCapacity = 30, -- max snow cells a player can carry before depositing
@@ -37,12 +37,12 @@ local Config = {
 	UpgradeCapacityBoost = 10, -- capacity added per upgrade
 
 	-- Кучи снега от Движка (PileServer)
-	PileBaseRadius = 0.8,     -- радиус кучи = Base + PerCbrt × порции^(1/3), не больше Max
+	PileBaseRadius = 0.8, -- радиус кучи = Base + PerCbrt × порции^(1/3), не больше Max
 	PileRadiusPerCbrt = 0.75,
-	PileMaxRadius = 4,        -- больше куча загораживает обзор от первого лица
-	PilePushGap = 4.8,        -- от корня игрока до ближнего края кучи (сразу за скребком Движка, он в ~5 studs)
-	PileGrabDistance = 2.5,   -- насколько куча может быть в стороне от места перед игроком, чтобы её подхватить
-	ManholePayRatio = 0.5,    -- куча на люке теплотрассы: Cash = порции × это (снегоплавилка платит 1)
+	PileMaxRadius = 4, -- больше куча загораживает обзор от первого лица
+	PilePushGap = 4.8, -- от корня игрока до ближнего края кучи (сразу за скребком Движка, он в ~5 studs)
+	PileGrabDistance = 2.5, -- насколько куча может быть в стороне от места перед игроком, чтобы её подхватить
+	ManholePayRatio = 0.5, -- куча на люке теплотрассы: Cash = порции × это (снегоплавилка платит 1)
 
 	-- Snow particle visuals: сервер шлёт BlowParticles только игрокам ближе этого к соплу
 	ParticleRenderDistance = 80,
@@ -67,9 +67,18 @@ local Config = {
 -- Названия и описания — в ReplicatedStorage.Shared.Locale.Strings: Tool.<Id>, Upgrade.<ToolId>.<UpgradeId>.Name / .Desc.
 Config.Tools = {
 	{
-		Id = "Hand", Price = 0, Mode = "click", Sway = true,
-		Range = 4, HalfAngle = 35, MinDistance = 1.2, NozzleOffset = 0.5,
-		ClickRate = 0.5, Cooldown = 0.35, MeltRate = 0.09, PileTake = 8,
+		Id = "Hand",
+		Price = 0,
+		Mode = "click",
+		Sway = true,
+		Range = 4,
+		HalfAngle = 35,
+		MinDistance = 1.2,
+		NozzleOffset = 0.5,
+		ClickRate = 0.5,
+		Cooldown = 0.35,
+		MeltRate = 0.09,
+		PileTake = 8,
 		Upgrades = {
 			{ Id = "Hold", Effect = "hold", MaxLevel = 1, Price = 10 },
 			{ Id = "Dexterity", Effect = "speed", MaxLevel = 5, BasePrice = 5, PerLevel = 0.15 },
@@ -77,8 +86,15 @@ Config.Tools = {
 		},
 	},
 	{
-		Id = "Shovel", Price = 8, Sway = true, Range = 5, HalfAngle = 40, MeltRate = 0.09,
-		MinDistance = 1.5, NozzleOffset = 1, PileTake = 9,
+		Id = "Shovel",
+		Price = 8,
+		Sway = true,
+		Range = 5,
+		HalfAngle = 40,
+		MeltRate = 0.09,
+		MinDistance = 1.5,
+		NozzleOffset = 1,
+		PileTake = 9,
 		Upgrades = {
 			{ Id = "Strength", Effect = "speed", MaxLevel = 5, BasePrice = 15, PerLevel = 0.15 },
 			{ Id = "Handle", Effect = "range", MaxLevel = 5, BasePrice = 20, PerLevel = 0.1 },
@@ -86,8 +102,14 @@ Config.Tools = {
 		},
 	},
 	{
-		Id = "Blower", Price = 30, Range = 6, HalfAngle = 40, MeltRate = 0.1, Pile = true,
-		MinDistance = 1.5, NozzleOffset = 1,
+		Id = "Blower",
+		Price = 30,
+		Range = 6,
+		HalfAngle = 40,
+		MeltRate = 0.1,
+		Pile = true,
+		MinDistance = 1.5,
+		NozzleOffset = 1,
 		Upgrades = {
 			{ Id = "Turbo", Effect = "speed", MaxLevel = 5, BasePrice = 35, PerLevel = 0.15 },
 			{ Id = "Nozzle", Effect = "range", MaxLevel = 5, BasePrice = 45, PerLevel = 0.1 },
@@ -95,8 +117,15 @@ Config.Tools = {
 		},
 	},
 	{
-		Id = "Vacuum", Price = 100, Range = 7, HalfAngle = 28, MeltRate = 0.09,
-		Shape = "strip", StripWidth = 7, MinDistance = 1.5, NozzleOffset = 1.5,
+		Id = "Vacuum",
+		Price = 100,
+		Range = 7,
+		HalfAngle = 28,
+		MeltRate = 0.09,
+		Shape = "strip",
+		StripWidth = 7,
+		MinDistance = 1.5,
+		NozzleOffset = 1.5,
 		Upgrades = {
 			{ Id = "Power", Effect = "speed", MaxLevel = 5, BasePrice = 60, PerLevel = 0.15 },
 			{ Id = "Reach", Effect = "range", MaxLevel = 5, BasePrice = 80, PerLevel = 0.1 },

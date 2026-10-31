@@ -66,11 +66,15 @@ progressLabel.Parent = card
 -- Update progress from zone score
 local function updateProgress()
 	local yard = workspace:FindFirstChild("SnowYard")
-	if not yard then return end
-	
+	if not yard then
+		return
+	end
+
 	local zoneFolder = yard:FindFirstChild("Yard")
-	if not zoneFolder then return end
-	
+	if not zoneFolder then
+		return
+	end
+
 	local zoneScore = zoneFolder:FindFirstChild("Score")
 	if zoneScore then
 		progressLabel.Text = string.format("(%d/900)", zoneScore.Value)
@@ -82,7 +86,7 @@ task.spawn(function()
 	local yard = workspace:WaitForChild("SnowYard")
 	local zoneFolder = yard:WaitForChild("Yard")
 	local zoneScore = zoneFolder:WaitForChild("Score")
-	
+
 	updateProgress()
 	zoneScore.Changed:Connect(updateProgress)
 end)

@@ -13,7 +13,8 @@ TextChatService.OnIncomingMessage = function(message: TextChatMessage)
 	local sender = source and Players:GetPlayerByUserId(source.UserId)
 	if sender and sender:GetAttribute("Pass_VIP") == true then
 		local props = Instance.new("TextChatMessageProperties")
-		props.PrefixText = string.format('<font color="%s">%s</font> %s', VIP_COLOR, L("Chat.VipTag"), message.PrefixText)
+		props.PrefixText =
+			string.format('<font color="%s">%s</font> %s', VIP_COLOR, L("Chat.VipTag"), message.PrefixText)
 		return props
 	end
 	return nil

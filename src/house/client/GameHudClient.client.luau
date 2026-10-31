@@ -3,7 +3,6 @@
 -- кнопка журнала, мешок снега, таймер матча (workspace.MatchStartTime/MatchEndTime ставит MatchServer).
 -- Журнал: «Журнал» (задачи + игроки), «Апгрейды» (инструменты из Config.Tools — Remotes.BuyToolUpgrade, рюкзак — Remotes.BuyUpgrade),
 -- «Коллекция» (заглушка), «Подсказки».
--- Заменяет TaskClient, ProgressClient, BackpackClient, MoneyClient (они выключены, Enabled = false).
 -- Тексты — через Locale (ReplicatedStorage.Shared.Locale): Hud.*, Task.*, Journal.*, Upgrade.*, Tool.*, Zone.*, Collection.*, Tip.*
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")

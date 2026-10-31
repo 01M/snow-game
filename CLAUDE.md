@@ -7,7 +7,7 @@
 - Run StyLua before committing; don't auto-fix Selene warnings without asking.
 - Before committing run `scripts/analyze.ps1` (fresh sourcemaps + `luau-lsp analyze` for both places): analyze must report 0 errors before commit.
 - New .luau files start with `--!strict`. Don't convert existing files.
-- After edits, verify the change actually reached Studio before testing; if Rojo didn't sync, re-save the file or restart rojo serve.
+- If behavior in Play doesn't match the code in the file, suspect a Rojo desync first: compare that one script in Studio with the file; if they differ, restart `rojo serve` (re-saving alone isn't reliable), then reconnect the Rojo plugin in Studio.
 - `PlayerData_v1` is read-only from MCP/Command Bar. To test money, use `TestSave`.
 
 # Snow Cleaning Simulator
@@ -64,6 +64,7 @@
 - Плагин ставится `rojo plugin install`. Запуск в отдельном терминале на каждое место. В Studio: Plugins → Rojo → `localhost`, порт места → Connect. `servePlaceIds` не даст подключить проект к чужому месту; место открывается из облака, а не из файла `.rbxl`.
 - Rojo удаляет из своих папок всё, чего нет в файлах. Новый объект там (RemoteEvent и т.п.) — файл `Имя.model.json` с `className`.
 - Rojo не управляет Workspace, Lighting, Terrain, SoundService, TextChatService, ServerStorage и свойствами StarterPlayer. Они живут в месте и сохраняются публикацией.
+- Предупреждение в Output про `rbxassetid://203785492` идёт от звука уведомления самого плагина Rojo (`RojoManagedPlugin.rbxm`), а не от игры: его можно игнорировать.
 - Код доходит только до открытого места; в игру он попадает после публикации Олегом. `*.rbxl` и `backups/` (копии мест) не в git.
 - `[не проверено]` `rojo serve` 7.7.1 иногда падает при удалении файлов и папок в `src/` (`change_processor.rs:179`). Лечится перезапуском и повторным подключением, папки лучше удалять при остановленном сервере.
 - `[не проверено]` Если снова запускать `syncback`, он дописывает в проекты свойства StarterPlayer и пустые `SerializedOverrides`; их надо убирать.
@@ -101,7 +102,7 @@
 - `scripts/analyze.ps1` проверяет каждое место вместе с `src/shared` по свежему sourcemap. Код выхода 0 только при 0 ошибок. Сгенерированное лежит в `.luau-lsp/` (не в git). Типы Roblox закреплены: `$typesVersion` в скрипте меняется вместе с версией luau-lsp. Файлы без `--!strict` проверяются в нестрогом режиме.
 
 **Перед коммитом:**
-1. Изменение дошло до Studio и проверено в play mode.
+1. Изменение проверено в play mode.
 2. `stylua src`, затем `stylua --check src`; если check не прошёл, повторить.
 3. `selene src` показывает 0 предупреждений.
 4. `scripts/analyze.ps1` показывает 0 ошибок.

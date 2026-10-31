@@ -61,7 +61,7 @@
 
 ## Rojo
 
-- Запуск в отдельном терминале на каждое место. В Studio: Plugins → Rojo → `localhost`, порт места → Connect. `servePlaceIds` не даст подключить проект к чужому месту; место открывается из облака, а не из файла `.rbxl`.
+- Плагин ставится `rojo plugin install`. Запуск в отдельном терминале на каждое место. В Studio: Plugins → Rojo → `localhost`, порт места → Connect. `servePlaceIds` не даст подключить проект к чужому месту; место открывается из облака, а не из файла `.rbxl`.
 - Rojo удаляет из своих папок всё, чего нет в файлах. Новый объект там (RemoteEvent и т.п.) — файл `Имя.model.json` с `className`.
 - Rojo не управляет Workspace, Lighting, Terrain, SoundService, TextChatService, ServerStorage и свойствами StarterPlayer. Они живут в месте и сохраняются публикацией.
 - Код доходит только до открытого места; в игру он попадает после публикации Олегом. `*.rbxl` и `backups/` (копии мест) не в git.

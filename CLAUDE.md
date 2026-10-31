@@ -27,7 +27,7 @@
 - `rojo serve` 7.7.1 иногда падает при удалении файлов и папок в `src/` (`Result::unwrap()`, NotFound, `change_processor.rs:179`; дважды 2026-10-31 при удалении папки модуля в `src/house`). Лечится перезапуском сервера и повторным подключением плагина. Перед удалением папки лучше остановить сервер
 - Если syncback запускается снова: он дописывает в проекты свойства StarterPlayer и пустые `SerializedOverrides` в `.meta.json`/`.model.json`, это надо убирать
 - Проверено 2026-10-31 на копиях .rbxl: первое подключение добавляет только две пустые папки `Shared`, контрольные суммы всех 48 скриптов не изменились, правки файлов (создание и удаление модуля) доходят до Studio. В play mode не запускалось (сами скрипты побайтно те же). Защита `servePlaceIds` и подключение настоящих мест на момент записи не проверялись
-- **Дубли (перенос в `src/shared` идёт по одному модулю, с 2026-10-31):** перенесены Analytics, Locale, Locale.Strings, Shop, Shop.Gui и ChatTagClient. Ещё копиями в `src/lobby` и `src/house` (правки вносить в обе): LocaleClient, SnowfallClient
+- **Дубли (перенос в `src/shared` идёт по одному модулю, с 2026-10-31):** перенесены Analytics, Locale, Locale.Strings, Shop, Shop.Gui, ChatTagClient и LocaleClient. Ещё копиями в `src/lobby` и `src/house` (правки вносить в обе): SnowfallClient
 
 ## Места (places) в experience (с 2026-10-14)
 
@@ -76,7 +76,7 @@
 - API: `Locale.t(key, args)` на клиенте, `Locale.forPlayer(player, key, args)` на сервере, `Locale.format(lang, key, args)`, `Locale.has(key)`. Переменные в тексте — `{имя}`, числа подставляются без ".0". Нет ключа — warn «[Locale] нет строки» и показывается сам ключ
 - Язык — из настроек Roblox игрока (`Player.LocaleId`, "ru-ru" → ru); для всех языков без перевода — английский (основной). Новый язык = ещё одно поле (es, pt…) в Strings
 - В Studio язык подменяется атрибутом `ForceLanguage` ("ru"/"en") у `ReplicatedStorage.Shared.Locale` (в опубликованной игре не действует; после проверки убирать). У Олега Roblox на английском (en-us), поэтому без ForceLanguage в Studio игра на английском
-- Надписи в мире: тег `Localized` + атрибут `LocaleKey` (и `LocaleArgs` — JSON) у TextLabel, `LocaleAction`/`LocaleObject` у ProximityPrompt. Текст ставит `StarterPlayerScripts.LocaleClient` (в обоих places) и обновляет при смене атрибутов — так сервер показывает всем текст на их языке (LobbyServer: setLocaleText)
+- Надписи в мире: тег `Localized` + атрибут `LocaleKey` (и `LocaleArgs` — JSON) у TextLabel, `LocaleAction`/`LocaleObject` у ProximityPrompt. Текст ставит `StarterPlayerScripts.Shared.LocaleClient` (общий для обоих мест) и обновляет при смене атрибутов — так сервер показывает всем текст на их языке (LobbyServer: setLocaleText)
 - LocaleClient также переименовывает у себя инструменты (Tool с SnowToolId) в `Tool.<Id>` — так подписан слот хотбара. В `ServerStorage.SnowTools` имена остались русскими, сервер ищет инструменты по атрибуту
 - Ключи: Hud.*, Task.*, Journal.*, Upgrade.* (в т.ч. `Upgrade.<ToolId>.<UpgradeId>.Name/.Desc`), Tool.<Id>, Zone.<Name>, Collection.*, Tip.*, MatchEnd.*, Shop.*, World.*, Kick.*, Common.*, Map.<Id>, Lobby.*
 - В Config.Tools больше нет Name/Desc, в Lobby.Maps — Name. ZoneConfig.DisplayName остался (BlowServer пишет его в атрибут зоны, но UI его не читает — берёт Zone.<Name>)

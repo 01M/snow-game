@@ -7,6 +7,7 @@
 - Run StyLua before committing; don't auto-fix Selene warnings without asking.
 - Before committing run `scripts/analyze.ps1` (fresh sourcemaps + `luau-lsp analyze` for both places): analyze must report 0 errors before commit.
 - New .luau files start with `--!strict`. Don't convert existing files.
+- After edits, verify the change actually reached Studio before testing; if Rojo didn't sync, re-save the file or restart rojo serve.
 
 # Snow Cleaning Simulator
 

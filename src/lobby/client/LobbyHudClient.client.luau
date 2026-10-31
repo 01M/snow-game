@@ -8,7 +8,7 @@ local SoundService = game:GetService("SoundService")
 local TweenService = game:GetService("TweenService")
 
 local L = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Locale")).t
-local ShopGui = require(ReplicatedStorage:WaitForChild("Shop"):WaitForChild("Gui"))
+local ShopGui = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Shop"):WaitForChild("Gui"))
 local LobbyRemotes = ReplicatedStorage:WaitForChild("Lobby"):WaitForChild("Remotes")
 local QueueAction = LobbyRemotes:WaitForChild("QueueAction")
 local QueueState = LobbyRemotes:WaitForChild("QueueState")

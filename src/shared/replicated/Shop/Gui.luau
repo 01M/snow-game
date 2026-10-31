@@ -1,12 +1,12 @@
 -- Shop.Gui: окно магазина за Robux (только клиент). Открывается кнопкой «Магазин» в лобби (LobbyHudClient) и 🛒 в матче (GameHudClient).
 -- Показывает товары из ReplicatedStorage.Shop с Id ~= 0 (MatchOnly — только в матче), цена — из GetProductInfo.
--- Покупку проверяет и выдаёт сервер (ShopServer), окно только запускает Prompt*Purchase. Модуль одинаковый в обоих places.
+-- Покупку проверяет и выдаёт сервер (ShopServer), окно только запускает Prompt*Purchase. Общий модуль обоих мест.
 local MarketplaceService = game:GetService("MarketplaceService")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 
-local Shop = require(script.Parent)
+local Shop = require(ReplicatedStorage:WaitForChild("Shop"))
 local L = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Locale")).t
 
 local player = Players.LocalPlayer

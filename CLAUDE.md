@@ -26,7 +26,7 @@
 - `*.rbxl` не в git. Rojo синхронизирует код только в открытое место: чтобы изменения попали в игру, место всё равно нужно опубликовать в Studio
 - Если syncback запускается снова: он дописывает в проекты свойства StarterPlayer и пустые `SerializedOverrides` в `.meta.json`/`.model.json`, это надо убирать
 - Проверено 2026-10-31 на копиях .rbxl: первое подключение добавляет только две пустые папки `Shared`, контрольные суммы всех 48 скриптов не изменились, правки файлов (создание и удаление модуля) доходят до Studio. В play mode не запускалось (сами скрипты побайтно те же). Защита `servePlaceIds` и подключение настоящих мест на момент записи не проверялись
-- **Дубли (перенос в `src/shared` идёт по одному модулю, с 2026-10-31):** перенесены Analytics, Locale и Locale.Strings. Ещё копиями в `src/lobby` и `src/house` (правки вносить в обе): ChatTagClient, LocaleClient, SnowfallClient, Shop, Shop.Gui
+- **Дубли (перенос в `src/shared` идёт по одному модулю, с 2026-10-31):** перенесены Analytics, Locale, Locale.Strings и Shop.Gui (пока `Shared.Shop` — папка). Ещё копиями в `src/lobby` и `src/house` (правки вносить в обе): ChatTagClient, LocaleClient, SnowfallClient, Shop
 
 ## Места (places) в experience (с 2026-10-14)
 
@@ -58,7 +58,7 @@
 - Матч: `SnowGame.ShopServer` — UserOwnsGamePassAsync, PromptGamePassPurchaseFinished, ProcessReceipt → `PlayerData.grantReceipt` (id чека в `Purchases`, последние 50, сразу сохраняется; повтор не выдаёт второй раз). Пачка Cash ставит атрибут `IapCash` (AnalyticsHooks пишет приход как IAP)
 - Лобби: `ShopServer` — покупки пишет прямо в DataStore (UpdateAsync, без блокировки сессии); если данные держит сервер матча (свежая Session) или товар MatchOnly — NotProcessedYet. `LobbyCashServer` ставит атрибут BoostUntil
 - Бонусы в матче: множитель Cash в MelterServer, PileServer (люк), MatchServer (конец матча); вместимость рюкзака — `Config.getBackpackCapacity(level, Shop.backpackMultiplier(player))` в LeaderstatsServer, UpgradeShopServer и ShopServer (при появлении пасса); автопродажа — MelterServer (полный рюкзак продаётся где угодно); VIP — `ChatTagClient` (оба места, TextChatService.OnIncomingMessage, префикс [VIP])
-- Окно: `ReplicatedStorage.Shop.Gui` (клиент, оба места) — лобби: кнопка «Магазин»; матч: кнопка 🛒 под журналом (на ПК — клавиша B, мышь в LockFirstPerson заперта); множитель в HUD вместо заглушки (x1.00)
+- Окно: `ReplicatedStorage.Shared.Shop.Gui` (клиент, оба места, `src/shared/replicated/Shop/Gui.luau`) — лобби: кнопка «Магазин»; матч: кнопка 🛒 под журналом (на ПК — клавиша B, мышь в LockFirstPerson заперта); множитель в HUD вместо заглушки (x1.00)
 - ID (вписаны 2026-10-28 в оба модуля): пассы X2Cash 2060962565, BigBackpack 2058689419, AutoSell 2057279447, VIP 2060530636; товары CashS 3723261055, CashM 3723261117, CashL 3723261166, Boost 3723261211, Blizzard 3723261365
 - Проверено в play mode 2026-10-28 атрибутами: ×2+VIP (10 снега → 22), рюкзак 110 → 220, автопродажа, буст+метель (10 → 40), окно открывается/закрывается в обоих местах. С ID: цены в окне подгружаются (R$ 29/99/299/49/99), у Олега как владельца игры все пассы «Owned» (Roblox считает их купленными создателем) — множитель x2.20, рюкзак 220. Сама тестовая покупка через MCP не нажимается (окно покупки — CoreGui); Олег 2026-10-28 купил в Studio — работает (Cash вырос), после чего Cash в сохранении Studio возвращён к 634
 

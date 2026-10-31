@@ -19,7 +19,7 @@ local HttpService = game:GetService("HttpService")
 local Locale = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Locale"))
 local L = Locale.t
 local Shop = require(ReplicatedStorage:WaitForChild("Shop"))
-local ShopGui = require(ReplicatedStorage.Shop:WaitForChild("Gui"))
+local ShopGui = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Shop"):WaitForChild("Gui"))
 
 local player = Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui")
@@ -332,7 +332,7 @@ new("Frame", {
 	label({ Size = UDim2.fromScale(1, 1), Text = "Tab", Font = Enum.Font.GothamBlack, TextSize = 20, TextXAlignment = Enum.TextXAlignment.Center }),
 })
 
--- Кнопка магазина за Robux (ReplicatedStorage.Shop.Gui) — под кнопкой журнала.
+-- Кнопка магазина за Robux (ReplicatedStorage.Shared.Shop.Gui) — под кнопкой журнала.
 -- На ПК мышь в LockFirstPerson заперта в центре, поэтому магазин открывается клавишей B (как журнал — Tab)
 local shopButton = new("TextButton", {
 	Name = "ShopButton",

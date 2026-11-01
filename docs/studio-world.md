@@ -10,6 +10,7 @@ Rojo этим не управляет: всё хранится в местах �
 - **`Blockout.BackpackShop`** (−21.5, 1, −23), в левом дальнем углу зоны Yard, прилавком к дорожке (поворот 35°): меши `Shop_<материал>`, коллизия `CollisionSlab`, `CollisionBody`, `CollisionPropsL/R`, свет `LampA/B`, `LanternL/R`, пар `SteamVent`.
 - **`SnowYard.UpgradeShop`** (−19.8, 4.4, −20.5): невидимый Part-якорь у прилавка, в нём `UpgradePrompt` и `ShopBillboard`. **Скрипты ищут именно его, не удалять.**
 - **`Manholes`**: `Manhole1` (−14, 8), `Manhole2` (15, −12). PrimaryPart `Lid` с `PointLight`, `Steam`, `ManholeBillboard`.
+- **`PassShowcase`**: пропуска на постаментах: `Pass_VIP` у сарая, `Pass_BigBackpack` у лавки, `Pass_AutoSell` (уменьшенная копия мешей снегоплавилки) и `Pass_X2Cash` (монеты и табличка `X2Sign`) у снегоплавилки. Деталь с тегом `ShopPass` и атрибутом `ShopPassKey` несёт `PassPrompt` и `PassBillboard` или `SignGui`. Всего 37 деталей, без коллизии только декор.
 - **`ToolShop`**: `Structure` и `Shelves` с `Shelf_Shovel`, `Shelf_Blower`, `Shelf_Vacuum`. На полке `PromptAnchor` (атрибут `ShopToolId`, `BuyPrompt`, `PriceBillboard`) и витрина `Display`.
 - **`SpawnLocation`** (0, 1.5, 37): на тротуаре, вне зоны Yard.
 - **`Blockout`** (редизайн 2026-11-01):

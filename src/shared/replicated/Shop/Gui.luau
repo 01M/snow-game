@@ -81,6 +81,11 @@ local function loadPrice(id: number, infoType: Enum.InfoType, onReady: (number) 
 	end)
 end
 
+-- Цена пасса для витрины в мире (PassShowcaseClient)
+function Gui.loadPassPrice(pass, onReady: (number) -> ())
+	loadPrice(pass.Id, Enum.InfoType.GamePass, onReady)
+end
+
 local function refreshPasses()
 	for pass, button in passButtons do
 		local owned = Shop.hasPass(player, pass.Key)

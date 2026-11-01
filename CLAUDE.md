@@ -45,7 +45,7 @@
 |---|---|---|---|
 | **shared** | Analytics, SaveStore | Locale (+Strings), Shop (+Gui) | ChatTagClient, LocaleClient, SnowfallClient |
 | **lobby** | LobbyServer, LobbyCashServer, ShopServer | Lobby/Maps, Lobby/Remotes | LobbyHudClient, LobbyMenuClient |
-| **house** | SnowGame/: BlowServer, SnowField, PileServer, ToolServer, ToolShopServer, MelterServer, UpgradeShopServer, LeaderstatsServer, PlayerData, MatchServer, ShopServer, AnalyticsHooks, OnboardingServer | SnowGame/: Config, ZoneConfig, Remotes | GameHudClient, HideCoreGui, MatchEndClient, SnowMeshClient, SnowParticles, ToolClient, ToolShopClient, UpgradeShopClient |
+| **house** | SnowGame/: BlowServer, SnowField, PileServer, ToolServer, ToolShopServer, MelterServer, UpgradeShopServer, LeaderstatsServer, PlayerData, MatchServer, ShopServer, AnalyticsHooks, OnboardingServer | SnowGame/: Config, ZoneConfig, Remotes | GameHudClient, HideCoreGui, MatchEndClient, PassShowcaseClient, SnowMeshClient, SnowParticles, ToolClient, ToolShopClient, UpgradeShopClient |
 
 **Магазин за Robux** — два разных серверных скрипта и общие модули, это не дубль:
 

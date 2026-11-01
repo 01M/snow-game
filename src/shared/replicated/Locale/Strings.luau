@@ -230,6 +230,11 @@ return {
 		ru = "Магазин откроется совсем скоро!",
 	},
 	["Shop.Price"] = { en = "R$ {price}", ru = "R$ {price}" },
+	["Shop.PassOnly"] = { en = "Pass only", ru = "Только по пропуску" },
+	["Shop.PassOnlyPrice"] = { en = "Pass only · R$ {price}", ru = "Только по пропуску · R$ {price}" },
+	["Shop.GetPass"] = { en = "Get pass", ru = "Получить пропуск" },
+	["Shop.X2Sign.On"] = { en = "x2 Cash: ON", ru = "×2 Cash: ВКЛ" },
+	["Shop.X2Sign.Off"] = { en = "x2 Cash: OFF", ru = "×2 Cash: ВЫКЛ" },
 	["Shop.BoostActive"] = { en = "⚡ Boost x2: {time}", ru = "⚡ Буст ×2: {time}" },
 	["Shop.BlizzardActive"] = { en = "🌨️ Blizzard x2: {time}", ru = "🌨️ Метель ×2: {time}" },
 	["Shop.BlizzardBy"] = {

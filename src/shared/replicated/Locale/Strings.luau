@@ -379,4 +379,7 @@ return {
 	["Lobby.World.Shop"] = { en = "Shop", ru = "Магазин" },
 	["Lobby.World.Upgrades"] = { en = "Upgrades", ru = "Апгрейды" },
 	["Lobby.World.Records"] = { en = "Records & Rewards", ru = "Рекорды и награды" },
+	["Lobby.Records.Title"] = { en = "Top players", ru = "Лучшие игроки" },
+	["Lobby.Records.Empty"] = { en = "No records yet", ru = "Рекордов пока нет" },
+	["Lobby.Hud.Throw"] = { en = "Throw", ru = "Бросить" },
 }

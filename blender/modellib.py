@@ -100,6 +100,23 @@ def box(mat, size, m=None, bevel=0.05, segments=1):
     buckets[mat].add(verts, faces, m)
 
 
+def solid(mat, verts, faces, m=None):
+    """Замкнутое выпуклое тело: если грани вывернуты, разворачивает, иначе в игре они не видны."""
+    vs = [Vector(v) for v in verts]
+    volume = 0.0
+    for f in faces:
+        for i in range(1, len(f) - 1):
+            volume += vs[f[0]].dot(vs[f[i]].cross(vs[f[i + 1]]))
+    if volume < 0:
+        faces = [list(reversed(f)) for f in faces]
+    buckets[mat].add(verts, faces, m)
+
+
+def hexa(mat, low, high, m=None):
+    """Шестигранник: low и high — по 4 вершины в одном порядке."""
+    solid(mat, list(low) + list(high), [[0, 1, 2, 3], [4, 5, 6, 7], [0, 1, 5, 4], [1, 2, 6, 5], [2, 3, 7, 6], [3, 0, 4, 7]], m)
+
+
 def fillet(points, radius, steps=6):
     """Полилиния со скруглёнными углами (для труб)."""
     pts = [Vector(p) for p in points]

@@ -17,7 +17,7 @@ local SnowballFx = Remotes:WaitForChild("SnowballFx") :: RemoteEvent
 
 local player = Players.LocalPlayer
 local camera = workspace.CurrentCamera
-local AIM_LIFT = Vector3.new(0, 0.1, 0) -- чуть выше прицела: снежок падает по дуге
+local AIM_DISTANCE = 160 -- дальше прицел считается «в небо»
 
 local folder = Instance.new("Folder")
 folder.Name = "LocalSnowballs"
@@ -109,14 +109,27 @@ RunService.RenderStepped:Connect(function(dt: number)
 	end
 end)
 
-local function throwAt(screen: Vector2)
-	local ray = camera:ViewportPointToRay(screen.X, screen.Y)
-	ThrowSnowball:FireServer((ray.Direction + AIM_LIFT).Unit)
+-- Снежок летит из головы, а прицел идёт из камеры: сначала находим точку под прицелом, потом целимся в неё
+local function throwAlong(ray: Ray)
+	local character = player.Character
+	local head = character and character:FindFirstChild("Head")
+	if not character or not head or not head:IsA("BasePart") then
+		return
+	end
+	local params = RaycastParams.new()
+	params.FilterType = Enum.RaycastFilterType.Exclude
+	params.FilterDescendantsInstances = { character }
+	-- Луч начинаем на уровне игрока: всё, что между камерой и им (стена двора за спиной, ветки), не цель
+	local start = ray.Origin + ray.Direction * math.max(0, (head.Position - ray.Origin):Dot(ray.Direction))
+	local hit = workspace:Raycast(start, ray.Direction * AIM_DISTANCE, params)
+	local target = if hit then hit.Position else start + ray.Direction * AIM_DISTANCE
+	ThrowSnowball:FireServer(Snowball.aim(head.Position, target))
 end
 
 UserInputService.InputBegan:Connect(function(input: InputObject, processed: boolean)
 	if not processed and input.UserInputType == Enum.UserInputType.MouseButton1 then
-		throwAt(Vector2.new(input.Position.X, input.Position.Y))
+		-- Position считается без верхней полосы Roblox, это учитывает ScreenPointToRay
+		throwAlong(camera:ScreenPointToRay(input.Position.X, input.Position.Y))
 	end
 end)
 
@@ -137,7 +150,7 @@ if UserInputService.TouchEnabled then
 	corner.CornerRadius = UDim.new(0.5, 0)
 	corner.Parent = button
 	button.Activated:Connect(function()
-		local size = camera.ViewportSize
-		throwAt(size / 2)
+		local center = camera.ViewportSize / 2
+		throwAlong(camera:ViewportPointToRay(center.X, center.Y))
 	end)
 end

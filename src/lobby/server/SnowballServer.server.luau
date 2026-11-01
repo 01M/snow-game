@@ -44,8 +44,13 @@ ThrowSnowball.OnServerEvent:Connect(function(player: Player, direction: unknown)
 	params.FilterType = Enum.RaycastFilterType.Exclude
 	params.FilterDescendantsInstances = { character }
 	nextId += 1
-	local ball: Ball =
-		{ id = nextId, pos = head.Position + unit * 2, vel = unit * Snowball.Speed, born = now, params = params }
+	local ball: Ball = {
+		id = nextId,
+		pos = head.Position + unit * Snowball.SpawnOffset,
+		vel = unit * Snowball.Speed,
+		born = now,
+		params = params,
+	}
 	table.insert(balls, ball)
 	SnowballFx:FireAllClients("throw", ball.id, ball.pos, ball.vel, player.UserId)
 end)

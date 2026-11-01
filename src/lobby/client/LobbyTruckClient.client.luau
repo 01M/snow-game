@@ -1,7 +1,9 @@
 --!strict
--- Грузовики очереди оживают по состоянию площадки (QueueState): группа набирается — мигают маячки,
--- идёт отсчёт — маячки чаще, кузов трясётся, из трубы дым. Только показ, сами площадки на месте.
+-- Грузовики очереди оживают по состоянию площадки (QueueState). Только показ, сами площадки на месте.
+-- Пусто — всё выключено. Настройка — маячки мягко дышат. Отсчёт — маячки чаще, из трубы дымок,
+-- за RUMBLE_TIME секунд до отправки плавно заводится двигатель: кабина подрагивает, дыма больше.
 -- Модель: Blockout.QueuePads.QueueN.Truck (детали Beacon, в Metal вложение Exhaust с ParticleEmitter).
+-- Трясутся только кабина и кузов (SHAKING): настил Pad, трап и колёса стоят, иначе они мерцают друг о друга.
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 
@@ -9,13 +11,35 @@ local QueueState =
 	ReplicatedStorage:WaitForChild("Lobby"):WaitForChild("Remotes"):WaitForChild("QueueState") :: RemoteEvent
 local PadsFolder = workspace:WaitForChild("Blockout"):WaitForChild("QueuePads")
 
-local BEACON_ON = Color3.fromRGB(220, 110, 15)
+local BEACON_DIM = Color3.fromRGB(150, 74, 20)
+local BEACON_BRIGHT = Color3.fromRGB(235, 120, 20)
 local BEACON_OFF = Color3.fromRGB(120, 72, 30)
-local PERIOD = { setup = 0.8, starting = 0.3, teleporting = 0.2 } :: { [string]: number }
+local LIGHT_BRIGHTNESS = 2
+local PULSE_PERIOD = { setup = 1.8, starting = 0.8, teleporting = 0.5 } :: { [string]: number }
+local RUMBLE_TIME = 4 -- сек до отправки, когда заводится двигатель
+local RUMBLE_SIZE = 0.05 -- studs
+local SMOKE_IDLE, SMOKE_FULL = 3, 18 -- частиц в секунду
+local FADE_SPEED = 3 -- как быстро значения догоняют цель
 
-type Truck = { model: Model, base: CFrame, beacons: { BasePart }, smoke: ParticleEmitter? }
+local SHAKING =
+	{ Body = true, Glass = true, Snow = true, Light = true, Beacon = true, Metal = false } :: { [string]: boolean }
+for _, bulb in { "BulbRed", "BulbGold", "BulbGreen", "BulbBlue" } do
+	SHAKING[bulb] = true
+end
 
-local phases: { [number]: string } = {}
+type ShakePart = { part: BasePart, base: CFrame }
+type Truck = {
+	model: Model,
+	shaking: { ShakePart },
+	beacons: { BasePart },
+	smoke: ParticleEmitter?,
+	pulse: number, -- 0..1, яркость маячков
+	rumble: number, -- 0..1, сила тряски
+	lit: boolean,
+}
+type Pad = { phase: string, departAt: number }
+
+local pads: { [number]: Pad } = {}
 local trucks: { [number]: Truck } = {}
 
 -- С включённым стримингом модели может ещё не быть, поэтому ищем при каждом обращении, пока не найдём
@@ -28,16 +52,20 @@ local function getTruck(index: number): Truck?
 		local pad = folder:FindFirstChild("Pad")
 		local model = folder:FindFirstChild("Truck")
 		if pad and pad:GetAttribute("QueueIndex") == index and model and model:IsA("Model") then
-			local beacons = {}
-			local smoke: ParticleEmitter? = nil
+			local truck: Truck =
+				{ model = model, shaking = {}, beacons = {}, smoke = nil, pulse = 0, rumble = 0, lit = false }
 			for _, d in model:GetDescendants() do
-				if d:IsA("BasePart") and d.Name == "Beacon" then
-					table.insert(beacons, d)
+				if d:IsA("BasePart") then
+					if SHAKING[d.Name] then
+						table.insert(truck.shaking, { part = d, base = d.CFrame })
+					end
+					if d.Name == "Beacon" then
+						table.insert(truck.beacons, d)
+					end
 				elseif d:IsA("ParticleEmitter") then
-					smoke = d
+					truck.smoke = d
 				end
 			end
-			local truck: Truck = { model = model, base = model:GetPivot(), beacons = beacons, smoke = smoke }
 			trucks[index] = truck
 			return truck
 		end
@@ -45,50 +73,79 @@ local function getTruck(index: number): Truck?
 	return nil
 end
 
-local function setBeacons(truck: Truck, on: boolean)
+local function applyBeacons(truck: Truck)
+	local lit = truck.pulse > 0.02
 	for _, beacon in truck.beacons do
-		beacon.Color = if on then BEACON_ON else BEACON_OFF
-		beacon.Material = if on then Enum.Material.Neon else Enum.Material.SmoothPlastic
+		if lit then
+			beacon.Color = BEACON_DIM:Lerp(BEACON_BRIGHT, truck.pulse)
+		elseif truck.lit then
+			beacon.Color = BEACON_OFF
+		end
+		if lit ~= truck.lit then
+			beacon.Material = if lit then Enum.Material.Neon else Enum.Material.SmoothPlastic
+		end
 		local light = beacon:FindFirstChildOfClass("PointLight")
 		if light then
-			light.Enabled = on
+			light.Enabled = lit
+			light.Brightness = LIGHT_BRIGHTNESS * truck.pulse
 		end
+	end
+	truck.lit = lit
+end
+
+local function applyRumble(truck: Truck, now: number)
+	-- Только вниз: кузов никогда не поднимается выше своего места и не протыкает настил
+	local down = truck.rumble * RUMBLE_SIZE * (0.5 + 0.25 * math.sin(now * 47) + 0.25 * math.sin(now * 31))
+	local side = truck.rumble * RUMBLE_SIZE * 0.4 * math.sin(now * 37)
+	local offset = CFrame.new(side, -down, 0)
+	for _, item in truck.shaking do
+		item.part.CFrame = offset * item.base
 	end
 end
 
-local function rest(index: number)
-	local truck = getTruck(index)
-	if truck then
-		setBeacons(truck, false)
-		truck.model:PivotTo(truck.base)
-		if truck.smoke then
-			truck.smoke.Enabled = false
-		end
+QueueState.OnClientEvent:Connect(function(index: number, state: { phase: string, timeLeft: number })
+	if PULSE_PERIOD[state.phase] then
+		pads[index] = { phase = state.phase, departAt = os.clock() + (state.timeLeft or 0) }
+	else
+		pads[index] = nil
 	end
-end
-
-QueueState.OnClientEvent:Connect(function(index: number, state: { phase: string })
-	if PERIOD[state.phase] then
-		phases[index] = state.phase
-	elseif phases[index] then
-		phases[index] = nil
-		rest(index)
-	end
+	getTruck(index)
 end)
 
-RunService.Heartbeat:Connect(function()
+RunService.Heartbeat:Connect(function(dt: number)
 	local now = os.clock()
-	for index, phase in phases do
-		local truck = getTruck(index)
-		if truck then
-			setBeacons(truck, now % PERIOD[phase] < PERIOD[phase] / 2)
-			local running = phase ~= "setup"
-			if truck.smoke then
-				truck.smoke.Enabled = running
+	local blend = math.min(1, dt * FADE_SPEED)
+	for index, truck in trucks do
+		local pad = pads[index]
+		local targetPulse, targetRumble, smokeRate = 0, 0, 0
+		if pad then
+			local period = PULSE_PERIOD[pad.phase]
+			-- Не до нуля: пока площадка занята, маячок дышит и не переключается в выключенный вид
+			targetPulse = 0.6 + 0.4 * math.cos(now / period * 2 * math.pi)
+			if pad.phase ~= "setup" then
+				local closeness = 1 - math.clamp((pad.departAt - now) / RUMBLE_TIME, 0, 1)
+				if pad.phase == "teleporting" then
+					closeness = 1
+				end
+				targetRumble = closeness * closeness
+				smokeRate = SMOKE_IDLE + (SMOKE_FULL - SMOKE_IDLE) * targetRumble
 			end
-			if running then
-				truck.model:PivotTo(truck.base * CFrame.new(0, math.sin(now * 41) * 0.05, math.cos(now * 33) * 0.04))
-			end
+		end
+		-- Разгораемся и гаснем плавно; пульс быстрее общего затухания, поэтому за ним идём втрое резвее
+		truck.pulse += (targetPulse - truck.pulse) * (if pad then math.min(1, blend * 3) else blend)
+		local wasShaking = truck.rumble > 0
+		truck.rumble += (targetRumble - truck.rumble) * blend
+		if truck.rumble < 0.005 and targetRumble == 0 then
+			truck.rumble = 0
+		end
+
+		applyBeacons(truck)
+		if truck.rumble > 0 or wasShaking then
+			applyRumble(truck, now)
+		end
+		if truck.smoke then
+			truck.smoke.Enabled = smokeRate > 0
+			truck.smoke.Rate = smokeRate
 		end
 	end
 end)

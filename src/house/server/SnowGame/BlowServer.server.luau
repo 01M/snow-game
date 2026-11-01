@@ -1,5 +1,5 @@
--- BlowServer: снег зон — карты высот (SnowField). Сопло срезает снег в конусе перед игроком.
--- Зона делится на «порции» (площадь / GridStep², для Yard 900, как считает GameHudClient):
+-- BlowServer: снег зон — карты высот (SnowField), у зоны их несколько (ZoneConfig). Сопло срезает снег в конусе перед игроком.
+-- Зона делится на «порции» (весь снег зоны / Config.SnowPortionVolume):
 -- каждая собранная порция = +1 в рюкзак, +1 к Score зоны. Число порций — в IntValue Total зоны.
 -- Зоны открываются по очереди (State "locked" → "active" → "finished"), с открытием зоны исчезают её ворота.
 -- Клиенты рисуют снег сами (SnowMeshClient), сервер шлёт им изменения высот через SnowSync.
@@ -29,42 +29,13 @@ local MATCH_MODE = true
 -- Зона считается очищенной, когда осталось меньше этой доли снега (чтобы не искать крошки)
 local FINISH_REMAINING_RATIO = 0.01
 
--- Число порций зоны: площадь / GridStep² (для квадратного Yard совпадает с формулой GameHudClient = 900)
-local function countPortions(zc): number
-	local sx, sz = SnowField.zoneSize(zc)
-	return math.max(1, math.floor(sx * sz / (zc.GridStep * zc.GridStep) + 0.5))
-end
-
--- Детали, под которыми снега нет (столбы, будки, дом): стоят на земле и торчат выше неё.
--- Снег вырезается по всему прямоугольнику детали, поэтому предметы в зонах лежат вне этих папок и стоят прямо в снегу,
--- а место, куда не дотянуться (под машиной, сараем), задаёт невидимая деталь с атрибутом SnowBlock
-local function collectObstacles(groundY: number): { BasePart }
+-- Детали, под которыми снега нет: атрибут SnowBlock. Предмет без атрибута просто стоит в снегу,
+-- атрибут нужен там, куда инструментом не дотянуться (под машиной, лавкой, плавилкой)
+local function collectObstacles(): { BasePart }
 	local list = {}
-	local roots = { yard }
-	local blockout = workspace:FindFirstChild("Blockout")
-	if blockout then
-		for _, name in { "Decor", "House", "Fences" } do
-			local f = blockout:FindFirstChild(name)
-			if f then
-				table.insert(roots, f)
-			end
-		end
-	end
-	for _, root in roots do
-		for _, p in root:GetDescendants() do
-			if p:IsA("BasePart") and (p.Transparency < 1 or p:GetAttribute("SnowBlock")) then
-				-- Высота по миру, а не Size.Y: у лежащего цилиндра люка Size.Y — это диаметр
-				local cf, size = p.CFrame, p.Size
-				local halfY = (
-					math.abs(cf.RightVector.Y) * size.X
-					+ math.abs(cf.UpVector.Y) * size.Y
-					+ math.abs(cf.LookVector.Y) * size.Z
-				) / 2
-				local bottom, top = p.Position.Y - halfY, p.Position.Y + halfY
-				if bottom < groundY + 3 and top > groundY + 0.2 then
-					table.insert(list, p)
-				end
-			end
+	for _, p in workspace:GetDescendants() do
+		if p:IsA("BasePart") and p:GetAttribute("SnowBlock") then
+			table.insert(list, p)
 		end
 	end
 	return list
@@ -103,10 +74,12 @@ end
 -- Zone setup
 -- ============================================================
 local zones = {}
-local obstacles = collectObstacles(zoneConfig.Zones[1].GroundTopY)
+local allFields = {} -- в порядке ZoneConfig.Fields: индекс — номер поля в SnowSync
+local obstacles = collectObstacles()
+local manholeParts = PileServer.manholeParts()
+local snowSeed = math.random() * 1000 -- общий для всех полей: снег совпадает на общих линиях
 
 for zoneIndex, zc in ipairs(zoneConfig.Zones) do
-	local sx, sz = SnowField.zoneSize(zc)
 	local initialState = zoneIndex == 1 and "active" or "locked"
 
 	local zoneFolder = Instance.new("Folder")
@@ -127,29 +100,37 @@ for zoneIndex, zc in ipairs(zoneConfig.Zones) do
 	zoneState.Value = initialState
 	zoneState.Parent = zoneFolder
 
-	local portions = countPortions(zc)
+	local fields = {}
+	local total = 0
+	for _, fc in zc.Fields do
+		local field = SnowField.new(fc, config)
+		field:blockParts(obstacles, 0)
+		-- На тёплых люках теплотрассы снег не лежит
+		field:meltDiscs(manholeParts, 0.5, 3)
+		field:fill(snowSeed)
+		total += field.total
+		table.insert(fields, field)
+		table.insert(allFields, field)
+	end
+
+	local portions = math.max(1, math.floor(total / config.SnowPortionVolume + 0.5))
 	local zoneTotal = Instance.new("IntValue")
 	zoneTotal.Name = "Total"
 	zoneTotal.Value = portions
 	zoneTotal.Parent = zoneFolder
 
 	-- Invisible zone bounds part for player detection
+	local ground = zc.Fields[1]
 	local bounds = Instance.new("Part")
 	bounds.Name = "ZoneBounds"
-	bounds.Size = Vector3.new(sx, 50, sz)
-	bounds.Position = Vector3.new(zc.Center.X, zc.GroundTopY + 25, zc.Center.Z)
+	bounds.Size = Vector3.new(ground.SizeX, 50, ground.SizeZ)
+	bounds.Position = Vector3.new(ground.Center.X, ground.GroundTopY + 25, ground.Center.Z)
 	bounds.Transparency = 1
 	bounds.CanCollide = false
 	bounds.CanTouch = false
 	bounds.CanQuery = false
 	bounds.Anchored = true
 	bounds.Parent = zoneFolder
-
-	local field = SnowField.new(zc, config)
-	field:blockParts(obstacles, 0.4)
-	-- На тёплых люках теплотрассы снег не лежит
-	field:meltDiscs(PileServer.manholeParts(), 0.5, 3)
-	field:fill()
 
 	table.insert(zones, {
 		index = zoneIndex,
@@ -158,9 +139,10 @@ for zoneIndex, zc in ipairs(zoneConfig.Zones) do
 		score = zoneScore,
 		stateValue = zoneState,
 		bounds = bounds,
-		field = field,
+		fields = fields,
+		total = total, -- сумма высот всех полей в начале цикла
 		portions = portions,
-		portionVolume = field.total / portions,
+		portionVolume = total / portions,
 		state = initialState,
 		cleared = false, -- снег снят; зона завершится, когда в ней не останется куч
 	})
@@ -174,19 +156,27 @@ local function startRegen(zone)
 	zone.stateValue.Value = "regenerating"
 
 	task.delay(zone.config.RegenDelay, function()
-		local field = zone.field
-		local target = field:computeFresh()
+		local targets = {}
+		for k, field in zone.fields do
+			targets[k] = field:computeFresh()
+		end
 		local steps = 25
-		local step = {}
 		for s = 1, steps do
-			for i, v in target do
-				step[i] = v * s / steps
+			for k, field in zone.fields do
+				local step = {}
+				for i, v in targets[k] do
+					step[i] = v * s / steps
+				end
+				field:setAll(step)
 			end
-			field:setAll(step)
 			task.wait(zone.config.RegenDuration / steps)
 		end
-		field.total = field.remaining
-		zone.portionVolume = field.total / zone.portions
+		zone.total = 0
+		for _, field in zone.fields do
+			field.total = field.remaining
+			zone.total += field.total
+		end
+		zone.portionVolume = zone.total / zone.portions
 		zone.score.Value = 0
 		zone.cleared = false
 
@@ -226,7 +216,16 @@ local function tryFinish(zone)
 		startRegen(zone)
 		return
 	end
-	if PileServer.countIn(zone.config.Center, zone.field.sx, zone.field.sz) == 0 then
+	-- Куча, задвинутая за пределы формы (в стену дома), зону не держит: её оттуда не достать
+	local piles = PileServer.countIn(function(x: number, z: number): boolean
+		for _, fc in zone.config.Fields do
+			if fc:depthAt(x, z) > 0 then
+				return true
+			end
+		end
+		return false
+	end)
+	if piles == 0 then
 		finishZone(zone)
 	end
 end
@@ -288,10 +287,17 @@ local function isHoldMode(player: Player, toolCfg): boolean
 end
 
 -- Счёт зоны = сколько целых порций убрано с начала цикла (по карте высот, общий для всех игроков)
+local function zoneRemaining(zone): number
+	local sum = 0
+	for _, field in zone.fields do
+		sum += field.remaining
+	end
+	return sum
+end
+
 local function updateZoneScore(zone)
-	local field = zone.field
-	local cleared = field.remaining <= 0 and zone.portions
-		or math.floor((field.total - field.remaining) / zone.portionVolume + 1e-6)
+	local remaining = zoneRemaining(zone)
+	local cleared = remaining <= 0 and zone.portions or math.floor((zone.total - remaining) / zone.portionVolume + 1e-6)
 	local score = math.clamp(cleared, 0, zone.portions)
 	local delta = score - zone.score.Value
 	if delta ~= 0 then
@@ -422,8 +428,8 @@ snowSync.OnServerEvent:Connect(function(player: Player, kind: any)
 		return
 	end
 	lastFullRequest[player] = now
-	for _, zone in ipairs(zones) do
-		snowSync:FireClient(player, "full", zone.index, zone.field:serializeFull())
+	for fieldIndex, field in allFields do
+		snowSync:FireClient(player, "full", fieldIndex, field:serializeFull())
 	end
 end)
 
@@ -432,10 +438,10 @@ Players.PlayerRemoving:Connect(function(player)
 end)
 
 local function flushDeltas()
-	for _, zone in ipairs(zones) do
-		local delta = zone.field:collectDelta()
+	for fieldIndex, field in allFields do
+		local delta = field:collectDelta()
 		if delta then
-			snowSync:FireAllClients("delta", zone.index, delta)
+			snowSync:FireAllClients("delta", fieldIndex, delta)
 		end
 	end
 end
@@ -548,71 +554,73 @@ local function cutSnow(player: Player, tool: Tool?, toolCfg, stats, rateMax: num
 		if zone.state ~= "active" or gained >= freePortions then
 			continue
 		end
-		local field = zone.field
-		local zc = zone.config
-		if
-			math.abs(origin.X - zc.Center.X) > field.sx / 2 + scanRadius
-			or math.abs(origin.Z - zc.Center.Z) > field.sz / 2 + scanRadius
-		then
-			continue
-		end
 		local pv = zone.portionVolume
 		local before = gained
 
-		field:forEachNear(origin, scanRadius, function(i, wx, wz)
-			if gained >= freePortions or field.h[i] <= 0 then
-				return
-			end
-			-- Дистанция — от игрока, угол — от вершины конуса у сопла
-			local rx, rz = wx - origin.X, wz - origin.Z
-			local distRoot = math.sqrt(rx * rx + rz * rz)
-			if distRoot < minDist then
-				return
-			end
-			local dx, dz = wx - apex.X, wz - apex.Z
-			local t
-			if strip then
-				-- Полоса: впереди сопла, не дальше reach от игрока по взгляду, сбоку не дальше halfWidth
-				local fwd = dx * look.X + dz * look.Z
-				local side = math.abs(dx * look.Z - dz * look.X)
-				if fwd < 0 or rx * look.X + rz * look.Z > reach or side > halfWidth then
-					return
-				end
-				t = 1 - side / halfWidth
-			else
-				if distRoot > reach then
-					return
-				end
-				local dist = math.sqrt(dx * dx + dz * dz)
-				if dist < 0.05 then
-					return
-				end
-				local dot = (dx * look.X + dz * look.Z) / dist
-				if dot < coneCos then
-					return
-				end
-				t = (dot - coneCos) / (1 - coneCos)
+		for _, field in zone.fields do
+			local center = field.zc.Center
+			if
+				math.abs(origin.X - center.X) > field.sx / 2 + scanRadius
+				or math.abs(origin.Z - center.Z) > field.sz / 2 + scanRadius
+			then
+				continue
 			end
 
-			-- Сильнее в центре конуса (полосы) и ближе к соплу
-			local d = math.min(distRoot / range, 1)
-			local rate = rateMax * (config.EdgeMeltRatio + (1 - config.EdgeMeltRatio) * t) * (1 - 0.5 * d * d)
-
-			local got = field:remove(i, math.min(rate, (freePortions - gained) * pv))
-			if got > 0 then
-				gained += got / pv
-				-- Случайные точки для комьев снега (reservoir sampling, до 4 штук)
-				touched += 1
-				if #samples < 4 then
-					table.insert(samples, field:pointPos(i))
+			field:forEachNear(origin, scanRadius, function(i, wx, wz)
+				if gained >= freePortions or field.h[i] <= 0 then
+					return
+				end
+				-- Дистанция — от игрока, угол — от вершины конуса у сопла
+				local rx, rz = wx - origin.X, wz - origin.Z
+				local distRoot = math.sqrt(rx * rx + rz * rz)
+				if distRoot < minDist then
+					return
+				end
+				local dx, dz = wx - apex.X, wz - apex.Z
+				local t
+				if strip then
+					-- Полоса: впереди сопла, не дальше reach от игрока по взгляду, сбоку не дальше halfWidth
+					local fwd = dx * look.X + dz * look.Z
+					local side = math.abs(dx * look.Z - dz * look.X)
+					if fwd < 0 or rx * look.X + rz * look.Z > reach or side > halfWidth then
+						return
+					end
+					t = 1 - side / halfWidth
 				else
-					local j = math.random(touched)
-					if j <= 4 then
-						samples[j] = field:pointPos(i)
+					if distRoot > reach then
+						return
+					end
+					local dist = math.sqrt(dx * dx + dz * dz)
+					if dist < 0.05 then
+						return
+					end
+					local dot = (dx * look.X + dz * look.Z) / dist
+					if dot < coneCos then
+						return
+					end
+					t = (dot - coneCos) / (1 - coneCos)
+				end
+
+				-- Сильнее в центре конуса (полосы) и ближе к соплу
+				local d = math.min(distRoot / range, 1)
+				local rate = rateMax * (config.EdgeMeltRatio + (1 - config.EdgeMeltRatio) * t) * (1 - 0.5 * d * d)
+
+				local got = field:remove(i, math.min(rate, (freePortions - gained) * pv))
+				if got > 0 then
+					gained += got / pv
+					-- Случайные точки для комьев снега (reservoir sampling, до 4 штук)
+					touched += 1
+					if #samples < 4 then
+						table.insert(samples, field:pointPos(i))
+					else
+						local j = math.random(touched)
+						if j <= 4 then
+							samples[j] = field:pointPos(i)
+						end
 					end
 				end
-			end
-		end)
+			end)
+		end
 
 		if gained > before then
 			table.insert(hitZones, zone)
@@ -655,10 +663,11 @@ local function cutSnow(player: Player, tool: Tool?, toolCfg, stats, rateMax: num
 	end
 
 	for _, zone in hitZones do
-		local field = zone.field
 		-- Зона почти пуста → доочищаем крошки; завершится, когда уберут и кучи (tryFinish)
-		if field.remaining <= field.total * FINISH_REMAINING_RATIO then
-			field:clear()
+		if zoneRemaining(zone) <= zone.total * FINISH_REMAINING_RATIO then
+			for _, field in zone.fields do
+				field:clear()
+			end
 			updateZoneScore(zone)
 			zone.cleared = true
 			tryFinish(zone)

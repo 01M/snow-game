@@ -136,9 +136,8 @@
 Найдено при чистке 2026-10-31, в коде пока не менялось.
 
 - `Config.luau`: не используются `SnowCellFolder`, `CellSize`, `GridStep`, `ParticleLifetime`.
-- `ZoneConfig.luau`, зона Yard: не используются `CellSize`, `SnowDepthMin`, `SnowDepthMax`.
 - `BlowServer`: атрибуты зоны `DisplayName` и `Order` никто не читает (и поле `ZoneConfig.DisplayName` ради них); при `MATCH_MODE = true` не вызывается `startRegen`, и вместе с ней не нужны `RegenDelay`, `RegenDuration`.
-- `GameHudClient`: считает `zoneTotal` сам вместо `Total` зоны, поэтому Yard обязана быть первой и квадратной. Комментарий в строке 2 называет множитель заглушкой, он настоящий.
+- `GameHudClient`: комментарий в строке 2 называет множитель заглушкой, он настоящий.
 - `LobbyHudClient`: комментарий в строке 3 не упоминает работающий магазин.
 - Атрибут workspace `BlizzardBy` (`ShopServer` матча) и строку `Shop.BlizzardBy` никто не читает.
 - Старые копии в ServerStorage: House Map `_Backup_BeforeTools`, `_Candidates`, `_OldBaseplateTexture`, `_OldCollector`, `_OldSnowblower`, `_OldSnowmelter`, `_OldSunsetSky`, `_OldToolModels`, `_OldUpgradeShop`, `_OldHouse`, `_OldPineUnions`, `_OldFencePillars`, `_OldFenceCaps`, `_OldNeighbors`, `_OldLamps`; Lobby `_Candidates`, `_OldBaseplateTexture`, `_OldSky`.

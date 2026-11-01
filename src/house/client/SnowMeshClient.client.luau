@@ -1,4 +1,8 @@
--- SnowMeshClient: рисует снег каждой зоны одним гладким EditableMesh по карте высот с сервера (SnowSync).
+-- SnowMeshClient: рисует снег каждой зоны одним гладким EditableMesh по картам высот её полей (ZoneConfig, сервер шлёт их через SnowSync).
+-- Вершины и треугольники есть только там, где проходит форма поля.
+-- Бюджет памяти EditableMesh общий на всю игру и зависит от устройства, причём даже пустой меш расходует его заметно:
+-- поэтому один меш на зону, подробно рисуется только открытая зона, закрытая — редкой сеткой (LOCKED_STRIDE),
+-- у очищенной меш удаляется. Смена — по State зоны.
 -- Следы: локально продавливает снег под ногами всех персонажей (только визуал, на счёт не влияет).
 -- Запасной вариант: если EditableMesh или MeshPart не создать (лимит памяти на слабом телефоне, выключены
 -- Mesh / Image APIs), снег зоны рисуется блоками BLOCK_SIZE × BLOCK_SIZE studs (высота — средняя под блоком, без следов).
@@ -12,17 +16,22 @@ local snowGame = ReplicatedStorage:WaitForChild("SnowGame")
 local config = require(snowGame:WaitForChild("Config"))
 local zoneConfig = require(snowGame:WaitForChild("ZoneConfig"))
 local snowSync = snowGame:WaitForChild("Remotes"):WaitForChild("SnowSync")
+local yard = workspace:WaitForChild("SnowYard")
 
 local QUANT = config.SnowHeightQuant
 local Y_LIFT = 0.02 -- чтобы пустое место не мерцало с землёй
-local SKIRT_BOTTOM = -0.25 -- низ «юбки» по краям зоны, ниже уровня земли
+local SKIRT_BOTTOM = -0.25 -- низ «юбки» по краям поля, ниже уровня земли
 local UV_SCALE = 1 / 8
 local HIDE_BELOW = 0.08 -- снег тоньше этого прячем под землю, чтобы было видно расчищенное место
 local HIDDEN_Y = SKIRT_BOTTOM
 -- Цвет по толщине: тонкий/примятый снег серо-голубой, свежий белый (иначе при ровном свете глубину не видно)
 local COLOR_FRESH = Color3.fromRGB(255, 255, 255)
 local COLOR_THIN = Color3.fromRGB(176, 190, 214)
-local COLOR_FULL_DEPTH = 0.7
+local COLOR_FULL_DEPTH = 0.3 -- тонкий слой на площадке и тротуаре тоже должен быть белым, иначе виден край зоны
+
+local LOCKED_STRIDE = 4 -- шаг сетки закрытой зоны, точек
+local ALWAYS_FINE_BELOW = 400 -- поле с меньшим числом точек всегда подробное: редкая сетка его потеряет
+local BUILD_CHUNK = 24 -- рядов сетки за кадр при сборке меша, чтобы открытие зоны не давало рывка
 
 -- Следы: каждый шаг приминает снег, повторные проходы топчут тропу глубже
 local STEP_LENGTH = 1.0
@@ -32,137 +41,184 @@ local FOOT_MAX_RATIO = 0.75 -- не глубже этой доли слоя, ч�
 local FOOT_SIDE = 0.5
 local COLOR_TRAMPLED = Color3.fromRGB(150, 166, 198) -- примятый снег темнее, чтобы тропу было видно
 
-local BLOCK_SIZE = 4 -- размер блока запасного снега, studs (все 4 зоны ≈ 950 блоков)
+local BLOCK_SIZE = 4 -- размер блока запасного снега, studs
 
 local snowFolder = Instance.new("Folder")
 snowFolder.Name = "LocalSnow"
 snowFolder.Parent = workspace
 
-local zones = {} -- [zoneIndex] = state
+local fields = {} -- [fieldIndex] = состояние поля
+local zones = {} -- [zoneIndex] = общий меш полей зоны
+for zoneIndex, zc in zoneConfig.Zones do
+	zones[zoneIndex] = {
+		config = zc,
+		state = yard:WaitForChild(zc.Name):WaitForChild("State"),
+		fields = {},
+		em = nil,
+		part = nil,
+		stride = nil, -- шаг сетки нарисованного меша
+		blocks = false, -- рисуется запасными блоками
+		building = false,
+		finished = false,
+	}
+end
 
-local function buildZone(zoneIndex: number)
-	local zc = zoneConfig.Zones[zoneIndex]
+local function buildField(fieldIndex: number)
+	local zc = zoneConfig.Fields[fieldIndex]
 	if not zc then
 		return nil
 	end
 	local res = config.SnowGridRes
 	-- Та же сетка, что в SnowField на сервере: nx × nz точек, индекс = ix * nz + iz
-	local sx, sz = zc.SizeX or zc.Size, zc.SizeZ or zc.Size
+	local sx, sz = zc.SizeX, zc.SizeZ
 	local nx = math.floor(sx / res + 0.5) + 1
 	local nz = math.floor(sz / res + 0.5) + 1
 	local halfX, halfZ = sx / 2, sz / 2
 	local count = nx * nz
 
-	local forceBlocks = RunService:IsStudio() and workspace:GetAttribute("DebugSnowBlocks") == true
-	local ok, em = false, nil
-	if not forceBlocks then
-		ok, em = pcall(function()
-			return AssetService:CreateEditableMesh()
-		end)
-	end
-	if not ok or not em then
-		if not forceBlocks then
-			warn("[SnowMeshClient] EditableMesh недоступен, снег будет блоками:", em)
+	-- Точки формы поля: вокруг них строится меш
+	local inShape = table.create(count, false)
+	for ix = 0, nx - 1 do
+		for iz = 0, nz - 1 do
+			local wx, wz = zc.Center.X - halfX + ix * res, zc.Center.Z - halfZ + iz * res
+			inShape[ix * nz + iz + 1] = zc:depthAt(wx, wz) > 0
 		end
-		local zb = {
-			zc = zc,
-			nx = nx,
-			nz = nz,
-			count = count,
-			res = res,
-			halfX = halfX,
-			halfZ = halfZ,
-			srv = table.create(count, 0),
-			dirty = {},
-			part = nil,
-			useBlocks = true,
-		}
-		zones[zoneIndex] = zb
-		return zb
 	end
 
+	local zone = zones[zc.ZoneIndex]
+	local ground = zone.config.Fields[1]
 	local z = {
 		zc = zc,
+		zone = zone,
+		-- Начало координат меша зоны — центр её первого поля на уровне земли
+		offset = Vector3.new(
+			zc.Center.X - ground.Center.X,
+			zc.GroundTopY - ground.GroundTopY,
+			zc.Center.Z - ground.Center.Z
+		),
 		nx = nx,
 		nz = nz,
 		count = count,
 		res = res,
 		halfX = halfX,
 		halfZ = halfZ,
-		em = em,
-		verts = table.create(count),
+		inShape = inShape,
 		srv = table.create(count, 0), -- высоты с сервера
 		foot = table.create(count, 0), -- глубина локальных следов
 		dirty = {},
-		part = nil,
+		mesh = nil, -- { em, stride, verts, colors }: вершины этого поля в меше зоны
+		part = nil, -- MeshPart зоны или папка запасных блоков поля
+		hasFull = false, -- пришла полная карта
+		useBlocks = false,
 	}
 
-	local function localXZ(i: number)
+	function z.localXZ(i: number)
 		local idx = i - 1
 		return (idx // nz) * res - halfX, (idx % nz) * res - halfZ
 	end
-	z.localXZ = localXZ
+
+	fields[fieldIndex] = z
+	table.insert(zone.fields, z)
+	return z
+end
+
+-- Номера рядов сетки с шагом stride: первый и последний есть всегда
+local function gridSteps(n: number, stride: number): { number }
+	local steps = {}
+	for k = 0, n - 1, stride do
+		table.insert(steps, k)
+	end
+	if steps[#steps] ~= n - 1 then
+		table.insert(steps, n - 1)
+	end
+	return steps
+end
+
+local function fillMesh(z, mesh)
+	local em = mesh.em
+	local nx, nz, inShape, halfX, halfZ = z.nx, z.nz, z.inShape, z.halfX, z.halfZ
+	local verts, colors = mesh.verts, mesh.colors
 
 	-- Вершины поверхности + автонормали + UV
-	local uvs = table.create(count)
-	local normals = table.create(count)
-	z.colors = table.create(count)
-	for i = 1, count do
-		local x, zz = localXZ(i)
-		z.verts[i] = em:AddVertex(Vector3.new(x, 0, zz))
+	local uvs = {}
+	local normals = {}
+	local function addVertex(i: number)
+		if verts[i] then
+			return
+		end
+		local x, zz = z.localXZ(i)
+		verts[i] = em:AddVertex(z.offset + Vector3.new(x, 0, zz))
 		normals[i] = em:AddNormal()
 		uvs[i] = em:AddUV(Vector2.new((x + halfX) * UV_SCALE, (zz + halfZ) * UV_SCALE))
-		z.colors[i] = em:AddColor(COLOR_FRESH, 1)
+		colors[i] = em:AddColor(COLOR_FRESH, 1)
 	end
 
 	local function tri(a: number, b: number, c: number)
-		local f = em:AddTriangle(z.verts[a], z.verts[b], z.verts[c])
+		local f = em:AddTriangle(verts[a], verts[b], verts[c])
 		em:SetFaceNormals(f, { normals[a], normals[b], normals[c] })
 		em:SetFaceUVs(f, { uvs[a], uvs[b], uvs[c] })
-		em:SetFaceColors(f, { z.colors[a], z.colors[b], z.colors[c] })
+		em:SetFaceColors(f, { colors[a], colors[b], colors[c] })
 	end
 
-	for ix = 0, nx - 2 do
-		for iz = 0, nz - 2 do
-			local a = ix * nz + iz + 1
-			local b = (ix + 1) * nz + iz + 1
-			local c = ix * nz + iz + 2
-			local d = (ix + 1) * nz + iz + 2
-			tri(a, c, b)
-			tri(b, c, d)
+	-- Клетка рисуется, если хотя бы один её угол в форме: точки вне формы уходят под землю и дают скат у стены
+	local xs, zs = gridSteps(nx, mesh.stride), gridSteps(nz, mesh.stride)
+	for kx = 1, #xs - 1 do
+		for kz = 1, #zs - 1 do
+			local a = xs[kx] * nz + zs[kz] + 1
+			local b = xs[kx + 1] * nz + zs[kz] + 1
+			local c = xs[kx] * nz + zs[kz + 1] + 1
+			local d = xs[kx + 1] * nz + zs[kz + 1] + 1
+			if inShape[a] or inShape[b] or inShape[c] or inShape[d] then
+				addVertex(a)
+				addVertex(b)
+				addVertex(c)
+				addVertex(d)
+				tri(a, c, b)
+				tri(b, c, d)
+			end
+		end
+		if kx % BUILD_CHUNK == 0 then
+			task.wait()
 		end
 	end
 
-	-- «Юбка» по периметру: боковая стенка снега до земли (двусторонняя, чтобы не думать о порядке обхода)
+	-- «Юбка» по периметру сетки там, где есть снег: боковая стенка до земли (двусторонняя, чтобы не думать о порядке обхода)
 	local ring = {}
-	for iz = 0, nz - 1 do
+	for _, iz in zs do
 		table.insert(ring, iz + 1)
 	end -- ix = 0
-	for ix = 1, nx - 1 do
-		table.insert(ring, ix * nz + nz)
+	for k = 2, #xs do
+		table.insert(ring, xs[k] * nz + nz)
 	end -- iz = nz-1
-	for iz = nz - 2, 0, -1 do
-		table.insert(ring, (nx - 1) * nz + iz + 1)
+	for k = #zs - 1, 1, -1 do
+		table.insert(ring, (nx - 1) * nz + zs[k] + 1)
 	end -- ix = nx-1
-	for ix = nx - 2, 1, -1 do
-		table.insert(ring, ix * nz + 1)
+	for k = #xs - 1, 2, -1 do
+		table.insert(ring, xs[k] * nz + 1)
 	end -- iz = 0
-	z.bottom = {}
 	local bottomV, bottomN, bottomUV = {}, {}, {}
-	for k, i in ring do
-		local x, zz = localXZ(i)
-		bottomV[k] = em:AddVertex(Vector3.new(x, SKIRT_BOTTOM, zz))
+	local function addBottom(k: number)
+		if bottomV[k] then
+			return
+		end
+		local x, zz = z.localXZ(ring[k])
+		bottomV[k] = em:AddVertex(z.offset + Vector3.new(x, SKIRT_BOTTOM, zz))
 		bottomN[k] = em:AddNormal()
 		bottomUV[k] = em:AddUV(Vector2.new((x + halfX) * UV_SCALE, (zz + halfZ) * UV_SCALE + 0.1))
 	end
 	for k = 1, #ring do
 		local k2 = k % #ring + 1
 		local t1, t2 = ring[k], ring[k2]
+		if not (verts[t1] and verts[t2] and inShape[t1] and inShape[t2]) then
+			continue
+		end
+		addBottom(k)
+		addBottom(k2)
 		local quads = {
 			{
-				z.verts[t1],
+				verts[t1],
 				bottomV[k],
-				z.verts[t2],
+				verts[t2],
 				normals[t1],
 				bottomN[k],
 				normals[t2],
@@ -171,7 +227,7 @@ local function buildZone(zoneIndex: number)
 				uvs[t2],
 			},
 			{
-				z.verts[t2],
+				verts[t2],
 				bottomV[k],
 				bottomV[k2],
 				normals[t2],
@@ -191,23 +247,24 @@ local function buildZone(zoneIndex: number)
 			em:SetFaceUVs(f2, { q[9], q[8], q[7] })
 		end
 	end
-
-	zones[zoneIndex] = z
-	return z
 end
 
 -- Обновить одну вершину: высота (сервер минус следы) и цвет по толщине
 local function applyVertex(z, i: number)
+	local mesh = z.mesh
+	if not mesh or not mesh.verts[i] then
+		return
+	end
 	local srv = z.srv[i]
 	local h = srv - z.foot[i]
 	local y = srv < HIDE_BELOW and HIDDEN_Y or math.max(0, h)
 	local x, zz = z.localXZ(i)
-	z.em:SetPosition(z.verts[i], Vector3.new(x, y, zz))
+	mesh.em:SetPosition(mesh.verts[i], z.offset + Vector3.new(x, y, zz))
 	local color = COLOR_THIN:Lerp(COLOR_FRESH, math.clamp(h / COLOR_FULL_DEPTH, 0, 1))
 	if srv > 0 and z.foot[i] > 0 then
 		color = color:Lerp(COLOR_TRAMPLED, math.clamp(z.foot[i] / srv * 2.5, 0, 1))
 	end
-	z.em:SetColor(z.colors[i], color)
+	mesh.em:SetColor(mesh.colors[i], color)
 end
 
 -- ============================================================
@@ -227,6 +284,15 @@ local function makeBlocks(z)
 			local iz0, iz1 = cz * B, math.min((cz + 1) * B, z.nz - 1)
 			local x0, x1 = ix0 * z.res - z.halfX, ix1 * z.res - z.halfX
 			local z0, z1 = iz0 * z.res - z.halfZ, iz1 * z.res - z.halfZ
+			local inShape = false
+			for ix = ix0, ix1 do
+				for iz = iz0, iz1 do
+					inShape = inShape or z.inShape[ix * z.nz + iz + 1]
+				end
+			end
+			if not inShape then
+				continue
+			end
 			local p = Instance.new("Part")
 			p.Name = "Block"
 			p.Anchored = true
@@ -284,6 +350,9 @@ local function updateBlocks(z)
 	local groundY = z.zc.GroundTopY
 	for k in touched do
 		local cell = z.cells[k]
+		if not cell then
+			continue
+		end
 		local sum, n = 0, 0
 		for ix = cell.ix0, cell.ix1 do
 			for iz = cell.iz0, cell.iz1 do
@@ -304,26 +373,89 @@ local function updateBlocks(z)
 	end
 end
 
--- Первая полная карта: выставить вершины и создать MeshPart
-local function createPart(z)
-	for i in z.verts do
-		applyVertex(z, i)
+-- ============================================================
+-- Показ зоны: сетка нужной густоты по её состоянию
+-- ============================================================
+local function destroyDrawing(zone)
+	for _, z in zone.fields do
+		if z.useBlocks and z.part then
+			z.part:Destroy()
+		end
+		z.part = nil
+		z.mesh = nil
+		table.clear(z.dirty)
 	end
-	table.clear(z.dirty)
+	if zone.part then
+		zone.part:Destroy()
+		zone.part = nil
+	end
+	if zone.em then
+		zone.em:Destroy()
+		zone.em = nil
+	end
+end
 
-	local ok, part = pcall(function()
-		return AssetService:CreateMeshPartAsync(Content.fromObject(z.em), {
+local function showBlocks(zone)
+	destroyDrawing(zone)
+	zone.blocks = true
+	for _, z in zone.fields do
+		makeBlocks(z)
+	end
+end
+
+-- Собрать меш с шагом stride и заменить им прежний. Нет памяти или API — запасные блоки
+local function showMesh(zone, stride: number)
+	local name = zone.config.Name
+	local ok, em = pcall(function()
+		return AssetService:CreateEditableMesh()
+	end)
+	if not ok or not em then
+		warn("[SnowMeshClient] EditableMesh недоступен, снег будет блоками:", name, em)
+		showBlocks(zone)
+		return
+	end
+	local meshes = {}
+	for _, z in zone.fields do
+		local mesh = { em = em, stride = z.count >= ALWAYS_FINE_BELOW and stride or 1, verts = {}, colors = {} }
+		local filled, err = pcall(fillMesh, z, mesh)
+		if not filled then
+			warn(
+				"[SnowMeshClient] не удалось собрать меш, снег будет блоками:",
+				name,
+				err
+			)
+			em:Destroy()
+			showBlocks(zone)
+			return
+		end
+		meshes[z] = mesh
+	end
+
+	for z, mesh in meshes do
+		z.mesh = mesh
+		for i in mesh.verts do
+			applyVertex(z, i)
+		end
+		table.clear(z.dirty)
+	end
+
+	local part
+	ok, part = pcall(function()
+		return AssetService:CreateMeshPartAsync(Content.fromObject(em), {
 			CollisionFidelity = Enum.CollisionFidelity.Box,
 		})
 	end)
 	if not ok or not part then
-		warn("[SnowMeshClient] не удалось создать MeshPart, снег будет блоками:", part)
-		z.em:Destroy()
-		z.em = nil
-		makeBlocks(z)
+		warn(
+			"[SnowMeshClient] не удалось создать MeshPart, снег будет блоками:",
+			name,
+			part
+		)
+		em:Destroy()
+		showBlocks(zone)
 		return
 	end
-	part.Name = "Snow_" .. z.zc.Name
+	part.Name = "Snow_" .. name
 	part.Anchored = true
 	part.CanCollide = false
 	part.CanTouch = false
@@ -332,19 +464,69 @@ local function createPart(z)
 	part.Color = Color3.fromRGB(255, 255, 255) -- цвет задают вершины
 	-- Вершины рисуются относительно начала координат меша (а не центра габаритов):
 	-- y = 0 в меше — это поверхность земли (проверено в play mode 2026-10-14)
-	local c = z.zc.Center
-	part.Position = Vector3.new(c.X, z.zc.GroundTopY + Y_LIFT, c.Z)
+	local ground = zone.config.Fields[1]
+	part.Position = Vector3.new(ground.Center.X, ground.GroundTopY + Y_LIFT, ground.Center.Z)
 	part.Parent = snowFolder
-	z.part = part
+
+	local oldPart, oldEm = zone.part, zone.em
+	zone.part, zone.em, zone.stride = part, em, stride
+	for _, z in zone.fields do
+		z.part = part
+	end
+	if oldPart then
+		oldPart:Destroy()
+	end
+	if oldEm then
+		oldEm:Destroy()
+	end
 end
 
-snowSync.OnClientEvent:Connect(function(kind: string, zoneIndex: number, data: buffer)
+local function refreshZone(zone)
+	if zone.finished or zone.building or #zone.fields < #zone.config.Fields then
+		return
+	end
+	for _, z in zone.fields do
+		if not z.hasFull then
+			return
+		end
+	end
+	local state = zone.state.Value
+	if state == "finished" then
+		-- Снег зоны убран и обратно не вернётся: память можно отдать следующей зоне
+		zone.finished = true
+		destroyDrawing(zone)
+		return
+	end
+	if zone.blocks then
+		return
+	end
+	if RunService:IsStudio() and workspace:GetAttribute("DebugSnowBlocks") == true then
+		showBlocks(zone)
+		return
+	end
+	local stride = state == "locked" and LOCKED_STRIDE or 1
+	if zone.stride == stride then
+		return
+	end
+	zone.building = true
+	showMesh(zone, stride)
+	zone.building = false
+	refreshZone(zone) -- пока собирали, зона могла смениться
+end
+
+for _, zone in zones do
+	zone.state.Changed:Connect(function()
+		refreshZone(zone)
+	end)
+end
+
+snowSync.OnClientEvent:Connect(function(kind: string, fieldIndex: number, data: buffer)
 	if typeof(data) ~= "buffer" then
 		return
 	end
-	local z = zones[zoneIndex]
+	local z = fields[fieldIndex]
 	if kind == "full" then
-		z = z or buildZone(zoneIndex)
+		z = z or buildField(fieldIndex)
 		if not z then
 			return
 		end
@@ -353,16 +535,11 @@ snowSync.OnClientEvent:Connect(function(kind: string, zoneIndex: number, data: b
 			z.srv[i] = buffer.readu8(data, i - 1) * QUANT
 			z.dirty[i] = true
 		end
-		if not z.part then
-			if z.useBlocks then
-				makeBlocks(z)
-			else
-				createPart(z)
-			end
-		end
+		z.hasFull = true
+		refreshZone(z.zone)
 	elseif kind == "delta" then
 		-- До полной карты изменения не нужны: она их уже содержит
-		if not z or not z.part then
+		if not z or not z.hasFull then
 			return
 		end
 		local total = z.count
@@ -380,8 +557,8 @@ end)
 task.spawn(function()
 	for _ = 1, 10 do
 		local ready = true
-		for zi in zoneConfig.Zones do
-			if not (zones[zi] and zones[zi].part) then
+		for fi in zoneConfig.Fields do
+			if not (fields[fi] and fields[fi].hasFull) then
 				ready = false
 			end
 		end
@@ -399,8 +576,9 @@ end)
 local walkers = {} -- [Model] = { last = Vector3, side = 1 }
 
 local function stamp(pos: Vector3)
-	for _, z in zones do
-		if not z.part or z.useBlocks then
+	for _, z in fields do
+		-- Следы только на подробной сетке: в закрытую зону не зайти
+		if not z.mesh or z.useBlocks or z.mesh.stride ~= 1 then
 			continue
 		end
 		local c = z.zc.Center
@@ -463,8 +641,8 @@ RunService.Heartbeat:Connect(function(dt)
 		end
 	end
 
-	-- Применить изменения высот к вершинам
-	for _, z in zones do
+	-- Применить изменения высот к вершинам полей
+	for _, z in fields do
 		if not z.part or next(z.dirty) == nil then
 			continue
 		end

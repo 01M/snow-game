@@ -98,15 +98,8 @@ end
 -- Данные
 -- ============================================================
 local mainZone = zoneConfig.Zones[1]
-local zoneTotal = 0
-do
-	local per = 0
-	local halfExtent = (mainZone.Size - mainZone.GridStep) / 2
-	for _ = -halfExtent, halfExtent, mainZone.GridStep do
-		per += 1
-	end
-	zoneTotal = per * per
-end
+-- Сколько порций в зоне, считает сервер (BlowServer)
+local zoneTotal = workspace:WaitForChild("SnowYard"):WaitForChild(mainZone.Name):WaitForChild("Total").Value
 
 local function getStat(name)
 	local ls = player:FindFirstChild("leaderstats")

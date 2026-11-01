@@ -285,12 +285,12 @@ function PileServer.take(
 	return taken, sample
 end
 
--- Сколько куч лежит внутри прямоугольника (зона считается чистой только без куч)
-function PileServer.countIn(center: Vector3, sx: number, sz: number): number
+-- Сколько куч лежит там, где inside(x, z) (зона считается чистой только без куч)
+function PileServer.countIn(inside: (number, number) -> boolean): number
 	local n = 0
 	for _, pile in piles do
 		local p = pile.part.Position
-		if math.abs(p.X - center.X) <= sx / 2 and math.abs(p.Z - center.Z) <= sz / 2 then
+		if inside(p.X, p.Z) then
 			n += 1
 		end
 	end

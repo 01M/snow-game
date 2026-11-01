@@ -13,6 +13,7 @@ local zoneConfig = require(snowGame:WaitForChild("ZoneConfig"))
 local SnowField = require(script.Parent:WaitForChild("SnowField"))
 local ToolServer = require(script.Parent:WaitForChild("ToolServer"))
 local PileServer = require(script.Parent:WaitForChild("PileServer"))
+local FindServer = require(script.Parent:WaitForChild("FindServer"))
 local remotes = snowGame:WaitForChild("Remotes")
 local blowState = remotes:WaitForChild("BlowState")
 local blowParticles = remotes:WaitForChild("BlowParticles")
@@ -149,6 +150,8 @@ for zoneIndex, zc in ipairs(zoneConfig.Zones) do
 		cleared = false, -- снег снят; зона завершится, когда в ней не останется куч
 	})
 end
+
+FindServer.start(zones)
 
 -- ============================================================
 -- Regeneration / finish
@@ -616,6 +619,7 @@ local function cutSnow(player: Player, tool: Tool?, toolCfg, stats, rateMax: num
 				local got = field:remove(i, math.min(rate, (freePortions - gained) * pv))
 				if got > 0 then
 					gained += got / pv
+					FindServer.onCut(player, field, i)
 					-- Случайные точки для комьев снега (reservoir sampling, до 4 штук)
 					touched += 1
 					if #samples < 4 then
@@ -677,6 +681,7 @@ local function cutSnow(player: Player, tool: Tool?, toolCfg, stats, rateMax: num
 			for _, field in zone.fields do
 				field:clear()
 			end
+			FindServer.claimZone(player, zone)
 			updateZoneScore(zone)
 			zone.cleared = true
 			tryFinish(zone)

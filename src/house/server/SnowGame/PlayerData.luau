@@ -1,6 +1,6 @@
 -- Сохранение прогресса игрока в DataStore (общий для всех мест experience).
 -- Схема: { Cash, UpgradeLevel, OwnedTools = { id }, ToolUpgrades = { [toolId] = { [upgradeId] = уровень } },
---   Purchases = { id чека }, BoostUntil = os.time, OnboardingStep = пройдено шагов Config.Onboarding, Session = { Job, Time } }. OwnedTools/ToolUpgrades держит и проверяет ToolServer.
+--   Purchases = { id чека }, BoostUntil = os.time, OnboardingStep = пройдено шагов Config.Onboarding, Collection = { id находки }, Session = { Job, Time } }. OwnedTools/ToolUpgrades держит и проверяет ToolServer.
 -- Purchases — последние MAX_PURCHASES чеков покупок за Robux (чтобы повтор ProcessReceipt не выдал товар дважды),
 -- BoostUntil — конец личного буста ×2 Cash (атрибут игрока BoostUntil). Лобби пишет покупки в тот же ключ само (ShopServer).
 -- Session — блокировка: писать может только сервер, который загрузил игрока.
@@ -11,6 +11,7 @@ local ServerScriptService = game:GetService("ServerScriptService")
 
 local SaveStore = require(ServerScriptService:WaitForChild("Shared"):WaitForChild("SaveStore"))
 local ToolServer = require(script.Parent:WaitForChild("ToolServer"))
+local Finds = require(game:GetService("ReplicatedStorage"):WaitForChild("SnowGame"):WaitForChild("Finds"))
 
 local LOAD_ATTEMPTS = 6 -- последняя попытка забирает блокировку силой
 local SAVE_ATTEMPTS = 3
@@ -37,6 +38,19 @@ local function toCount(v)
 	return math.max(0, math.floor(v))
 end
 
+-- Только известные id находок, без повторов
+local function sanitizeCollection(raw)
+	local list = {}
+	if typeof(raw) == "table" then
+		for _, item in Finds.Items do
+			if table.find(raw, item.Id) then
+				table.insert(list, item.Id)
+			end
+		end
+	end
+	return list
+end
+
 local function snapshot(player)
 	local data = loaded[player]
 	local ls = player:FindFirstChild("leaderstats")
@@ -57,6 +71,10 @@ local function snapshot(player)
 	local onboarding = player:GetAttribute("OnboardingStep")
 	if onboarding ~= nil then
 		data.OnboardingStep = toCount(onboarding)
+	end
+	local collection = player:GetAttribute("Collection")
+	if collection ~= nil then
+		data.Collection = sanitizeCollection(string.split(collection, ","))
 	end
 	return data
 end
@@ -97,6 +115,7 @@ function PlayerData.load(player)
 				Purchases = typeof(result.Purchases) == "table" and result.Purchases or {},
 				BoostUntil = toCount(result.BoostUntil),
 				OnboardingStep = toCount(result.OnboardingStep),
+				Collection = sanitizeCollection(result.Collection),
 			}
 			loaded[player] = data
 			released[player] = nil
@@ -107,6 +126,7 @@ function PlayerData.load(player)
 				ToolUpgrades = data.ToolUpgrades,
 				BoostUntil = data.BoostUntil,
 				OnboardingStep = data.OnboardingStep,
+				Collection = data.Collection,
 			}
 		end
 		if not ok and RunService:IsStudio() and string.find(tostring(result), "403") then
@@ -191,6 +211,7 @@ saveImpl = function(player, release)
 				old.Purchases = data.Purchases
 				old.BoostUntil = data.BoostUntil
 				old.OnboardingStep = data.OnboardingStep
+				old.Collection = data.Collection
 				old.Session = not release and { Job = jobId, Time = os.time() } or nil
 				return old
 			end)

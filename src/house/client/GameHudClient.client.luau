@@ -2,7 +2,7 @@
 -- HUD: текущая задача (цепочка Config.Onboarding, считает OnboardingServer; карточка скрывается, когда цепочка пройдена), «След. перк» (заглушка), прогресс двора, деньги с множителем (заглушка x1.00),
 -- кнопка журнала, мешок снега, таймер матча (workspace.MatchStartTime/MatchEndTime ставит MatchServer).
 -- Журнал: «Журнал» (задачи + игроки), «Апгрейды» (инструменты из Config.Tools — Remotes.BuyToolUpgrade, рюкзак — Remotes.BuyUpgrade),
--- «Коллекция» (заглушка), «Подсказки».
+-- «Коллекция» (находки ReplicatedStorage.SnowGame.Finds, атрибут игрока Collection), «Подсказки».
 -- Тексты — через Locale (ReplicatedStorage.Shared.Locale): Hud.*, Task.*, Journal.*, Upgrade.*, Tool.*, Zone.*, Collection.*, Tip.*
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -13,6 +13,7 @@ local TweenService = game:GetService("TweenService")
 local snowGame = ReplicatedStorage:WaitForChild("SnowGame")
 local config = require(snowGame:WaitForChild("Config"))
 local zoneConfig = require(snowGame:WaitForChild("ZoneConfig"))
+local finds = require(snowGame:WaitForChild("Finds"))
 local buyRemote = snowGame:WaitForChild("Remotes"):WaitForChild("BuyUpgrade")
 local buyToolUpgradeRemote = snowGame:WaitForChild("Remotes"):WaitForChild("BuyToolUpgrade")
 local HttpService = game:GetService("HttpService")
@@ -1084,9 +1085,9 @@ buyButton.Activated:Connect(function()
 	end
 end)
 
--- ---------- Коллекция (заглушка) ----------
+-- ---------- Коллекция ----------
 local collectionPage = pages.Collection
-local COLLECTION = { "Yard", "Veranda", "Shed", "Driveway", "SideYard", "Backyard" } -- зоны из ZoneConfig
+local collectionRows = {}
 
 local collectionList = new("ScrollingFrame", {
 	Position = UDim2.fromOffset(16, 16),
@@ -1103,46 +1104,45 @@ local collectionList = new("ScrollingFrame", {
 	new("UIPadding", { PaddingTop = UDim.new(0, 3), PaddingLeft = UDim.new(0, 3) }),
 })
 
-for i, zoneName in ipairs(COLLECTION) do
+for i, item in ipairs(finds.Items) do
 	local entry = new("Frame", {
 		LayoutOrder = i,
 		Size = UDim2.new(1, -12, 0, 92),
 		BackgroundColor3 = C.white,
 		Parent = collectionList,
 	}, { corner(12), border(C.gray, 2) })
-	new("Frame", {
+	local iconLabel = label({
+		Size = UDim2.fromScale(1, 1),
+		Text = "❄",
+		TextSize = 34,
+		TextColor3 = C.gray,
+		TextXAlignment = Enum.TextXAlignment.Center,
+	})
+	local iconFrame = new("Frame", {
 		AnchorPoint = Vector2.new(0, 0.5),
 		Position = UDim2.new(0, 14, 0.5, 0),
 		Size = UDim2.fromOffset(64, 64),
 		BackgroundColor3 = C.lock,
 		Parent = entry,
-	}, {
-		corner("full"),
-		label({
-			Size = UDim2.fromScale(1, 1),
-			Text = "❄",
-			TextSize = 34,
-			TextColor3 = C.gray,
-			TextXAlignment = Enum.TextXAlignment.Center,
-		}),
-	})
-	label({
+	}, { corner("full"), iconLabel })
+	local nameLabel = label({
 		Position = UDim2.fromOffset(92, 16),
 		Size = UDim2.new(1, -100, 0, 28),
-		Text = upperRu(L("Zone." .. zoneName)),
+		Text = L("Collection.Unknown"),
 		Font = Enum.Font.GothamBlack,
 		TextSize = 19,
 		TextTruncate = Enum.TextTruncate.AtEnd,
 		Parent = entry,
 	})
-	label({
+	local statusLabel = label({
 		Position = UDim2.fromOffset(92, 50),
 		Size = UDim2.new(1, -100, 0, 24),
-		Text = L("Collection.Chance"),
+		Text = L("Collection.NotFound"),
 		TextSize = 16,
 		TextColor3 = C.inkSoft,
 		Parent = entry,
 	})
+	collectionRows[i] = { item = item, frame = iconFrame, icon = iconLabel, name = nameLabel, status = statusLabel }
 end
 
 label({
@@ -1157,7 +1157,7 @@ label({
 label({
 	Position = UDim2.fromOffset(400, 64),
 	Size = UDim2.fromOffset(345, 230),
-	Text = L("Collection.Text"),
+	Text = L("Collection.Text", { cash = finds.SetCash }),
 	TextSize = 19,
 	TextWrapped = true,
 	TextYAlignment = Enum.TextYAlignment.Top,
@@ -1173,16 +1173,35 @@ label({
 	TextXAlignment = Enum.TextXAlignment.Center,
 	Parent = collectionPage,
 })
-label({
+local collectionCount = label({
 	Position = UDim2.fromOffset(400, 350),
 	Size = UDim2.fromOffset(345, 50),
-	Text = "0 / " .. #COLLECTION,
+	Text = "0 / " .. #finds.Items,
 	Font = Enum.Font.GothamBlack,
 	TextSize = 40,
 	TextColor3 = C.white,
 	TextXAlignment = Enum.TextXAlignment.Center,
 	Parent = collectionPage,
 }, { textOutline(3) })
+
+local function refreshCollection()
+	local have = string.split(player:GetAttribute("Collection") or "", ",")
+	local count = 0
+	for _, row in collectionRows do
+		local found = table.find(have, row.item.Id) ~= nil
+		if found then
+			count += 1
+		end
+		row.frame.BackgroundColor3 = found and C.greenSoft or C.lock
+		row.icon.Text = found and row.item.Icon or "❄"
+		row.icon.TextColor3 = found and C.ink or C.gray
+		row.name.Text = found and upperRu(L("Find.Item." .. row.item.Id)) or L("Collection.Unknown")
+		row.status.Text = found and L("Collection.Have") or L("Collection.NotFound")
+	end
+	collectionCount.Text = count .. " / " .. #finds.Items
+end
+player:GetAttributeChangedSignal("Collection"):Connect(refreshCollection)
+refreshCollection()
 
 -- ---------- Подсказки ----------
 local tipsPage = pages.Tips

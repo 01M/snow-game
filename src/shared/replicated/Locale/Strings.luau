@@ -151,13 +151,33 @@ return {
 	["Zone.SideYard"] = { en = "Side Yard", ru = "Боковой двор" },
 	["Zone.Backyard"] = { en = "Backyard", ru = "Задний двор" },
 
-	-- Вкладка «Коллекция» (заглушка)
-	["Collection.Chance"] = { en = "chance ???  ·  soon!", ru = "шанс ???  ·  скоро!" },
-	["Collection.Title"] = { en = "SNOWFLAKES 💡", ru = "СНЕЖИНКИ 💡" },
+	-- Вкладка «Коллекция» и находки (Finds, FindClient)
+	["Collection.Unknown"] = { en = "???", ru = "???" },
+	["Collection.NotFound"] = { en = "not found yet", ru = "ещё не найдено" },
+	["Collection.Have"] = { en = "found ✓", ru = "найдено ✓" },
+	["Collection.Title"] = { en = "LOST THINGS 💡", ru = "ПОТЕРЯННЫЕ ВЕЩИ 💡" },
 	["Collection.Text"] = {
-		en = "A special rare snowflake can appear in every zone.\n\nCollect them all to earn a special badge!\n\nComing soon.",
-		ru = "В каждой зоне может появиться особая редкая снежинка.\n\nСобери всю коллекцию и получи особый значок!\n\nСкоро в игре.",
+		en = "People lost things in the snow. Clear it to find them!\n\nA snowman is also hiding somewhere on the lot.\n\nFind everything for {cash} Cash.",
+		ru = "Под снегом лежат потерянные вещи. Убирай снег и найдёшь их!\n\nА где-то на участке прячется снеговик.\n\nЗа всю коллекцию: {cash} Cash.",
 	},
+	["Find.PickUp"] = { en = "Pick up", ru = "Подобрать" },
+	["Find.Ice"] = { en = "Ice chunk! +{n} snow", ru = "Ледышка! +{n} снега" },
+	["Find.Gold"] = { en = "Golden snowflake! +{cash} Cash", ru = "Золотая снежинка! +{cash} Cash" },
+	["Find.New"] = { en = "New find: {name}!", ru = "Новая находка: {name}!" },
+	["Find.Duplicate"] = { en = "{name} again: +{cash} Cash", ru = "Снова {name}: +{cash} Cash" },
+	["Find.SetDone"] = {
+		en = "Collection complete! +{cash} Cash",
+		ru = "Коллекция собрана! +{cash} Cash",
+	},
+	["Find.Item.Mitten"] = { en = "Mitten", ru = "варежка" },
+	["Find.Item.Keys"] = { en = "Keys", ru = "ключи" },
+	["Find.Item.Teddy"] = { en = "Teddy bear", ru = "плюшевый мишка" },
+	["Find.Item.Scarf"] = { en = "Scarf", ru = "шарф" },
+	["Find.Item.Hat"] = { en = "Top hat", ru = "цилиндр" },
+	["Find.Item.Glasses"] = { en = "Sunglasses", ru = "тёмные очки" },
+	["Find.Item.Clock"] = { en = "Alarm clock", ru = "будильник" },
+	["Find.Item.Trumpet"] = { en = "Trumpet", ru = "труба" },
+	["Find.Item.Gnome"] = { en = "Hidden snowman", ru = "снеговик-гном" },
 	["Collection.Found"] = { en = "FOUND:", ru = "НАЙДЕНО:" },
 
 	-- Вкладка «Подсказки»

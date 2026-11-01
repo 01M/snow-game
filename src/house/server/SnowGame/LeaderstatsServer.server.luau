@@ -49,6 +49,8 @@ local function onPlayerAdded(player: Player)
 	player:SetAttribute("BoostUntil", data.BoostUntil or 0)
 	-- Цепочка задач новичка (OnboardingServer)
 	player:SetAttribute("OnboardingStep", data.OnboardingStep or 0)
+	-- Коллекция находок (FindServer)
+	player:SetAttribute("Collection", table.concat(data.Collection or {}, ","))
 
 	-- Инструменты: бесплатные + купленные, выдаёт ToolServer
 	ToolServer.setLoaded(player, data.OwnedTools, data.ToolUpgrades)

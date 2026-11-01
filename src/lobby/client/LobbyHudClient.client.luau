@@ -239,25 +239,28 @@ local musicBtn, musicLabel = squareButton(row, 3, 96, "🎵", "Music", L("Common
 comingSoon(classBtn, L("Lobby.Hud.Classes"))
 comingSoon(statsBtn, L("Lobby.Hud.Stats"))
 
--- Музыка: звук SoundService.LobbyMusic, выключение только у этого игрока
+-- Музыка: звук SoundService.LobbyMusic, выключение только у этого игрока.
+-- Пока SoundId пустой, музыки и кнопки нет. Новый трек: вписать rbxassetid://<id> в SoundId этого звука в Studio.
+local music = SoundService:FindFirstChild("LobbyMusic")
 local musicOn = true
 local function applyMusic()
 	musicLabel.Text = musicOn and L("Common.On") or L("Common.Off")
 	musicLabel.TextColor3 = musicOn and GREEN or RED
-	local music = SoundService:FindFirstChild("LobbyMusic")
-	if music then
-		music.Volume = musicOn and (music:GetAttribute("BaseVolume") or 0.4) or 0
-		if musicOn and not music.IsPlaying then
-			music:Play()
-		end
+	music.Volume = musicOn and (music:GetAttribute("BaseVolume") or 0.4) or 0
+	if musicOn and not music.IsPlaying then
+		music:Play()
 	end
 end
-musicBtn.Activated:Connect(function()
-	bounce(musicBtn)
-	musicOn = not musicOn
+if music and music.SoundId ~= "" then
+	musicBtn.Activated:Connect(function()
+		bounce(musicBtn)
+		musicOn = not musicOn
+		applyMusic()
+	end)
 	applyMusic()
-end)
-applyMusic()
+else
+	musicBtn.Visible = false
+end
 
 -- Справа внизу: Отзыв / Обновления
 local bottom = column("BottomRight", Vector2.new(1, 1), UDim2.new(1, -20, 1, -20), 12)

@@ -47,7 +47,7 @@ Rojo этим не управляет: всё хранится в местах �
 ## Lobby
 
 - `Blockout`: `QueuePads` (`Queue1`–`Queue5`: `Pad`, `Sign`, `PostL`, `PostR`), `BackgroundHouses`, `Fence`, `Lawn`, `LeftStalls`, `RightArea`, `SpawnArea`, `Decor` (`Trees` — 76 ёлок, `SnowCaps`, `FencePillars`, `Lamps`, `Snowman`).
-- `SoundService.LobbyMusic`: rbxassetid 1837484932. `[не проверено]` APM «You're In Style».
+- `SoundService.LobbyMusic`: сейчас `SoundId` пустой, трек выбирает Олег. Новый трек — вписать `rbxassetid://<id>` в `SoundId`, код менять не нужно. Раньше стоял 1837484932, `[не проверено]` APM «You're In Style».
 - Устройство табличек и правила об именах — в `docs/systems.md`, раздел «Лобби».
 - `[не проверено]` Стартовое место сменить нельзя: лобби опубликовано поверх старого Snow через Publish As → Overwrite.
 

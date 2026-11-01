@@ -63,7 +63,7 @@ def lathe(mat, profile, seg=32, m=None, start=0.0):
         for k in range(seg):
             k2 = (k + 1) % seg
             if len(a) == 1:
-                faces.append([a[0], b[k], b[k2]])
+                faces.append([a[0], b[k2], b[k]])
             elif len(b) == 1:
                 faces.append([a[k], a[k2], b[0]])
             else:
@@ -100,16 +100,97 @@ def box(mat, size, m=None, bevel=0.05, segments=1):
     buckets[mat].add(verts, faces, m)
 
 
+def face_normal(vs, f):
+    n = Vector((0, 0, 0))
+    for i, a in enumerate(f):
+        p, q = vs[a], vs[f[(i + 1) % len(f)]]
+        n += p.cross(q)
+    return n
+
+
 def solid(mat, verts, faces, m=None):
-    """Замкнутое выпуклое тело: если грани вывернуты, разворачивает, иначе в игре они не видны."""
+    """Выпуклое тело: каждая грань разворачивается наружу от центра, иначе в игре она не видна."""
     vs = [Vector(v) for v in verts]
-    volume = 0.0
+    c = sum(vs, Vector()) / len(vs)
+    out = []
     for f in faces:
-        for i in range(1, len(f) - 1):
-            volume += vs[f[0]].dot(vs[f[i]].cross(vs[f[i + 1]]))
-    if volume < 0:
-        faces = [list(reversed(f)) for f in faces]
-    buckets[mat].add(verts, faces, m)
+        fc = sum((vs[i] for i in f), Vector()) / len(f)
+        out.append(list(reversed(f)) if face_normal(vs, f).dot(fc - c) < 0 else list(f))
+    buckets[mat].add(verts, out, m)
+
+
+def loft(mat, rings, m=None, caps=True):
+    """Оболочка по кольцам с одинаковым числом точек: грани наружу от оси колец."""
+    n = len(rings[0])
+    verts = [Vector(p) for ring in rings for p in ring]
+    centers = [sum((Vector(p) for p in ring), Vector()) / n for ring in rings]
+    faces = []
+    for r in range(len(rings) - 1):
+        axis = (centers[r] + centers[r + 1]) / 2
+        for k in range(n):
+            k2 = (k + 1) % n
+            f = [r * n + k, r * n + k2, (r + 1) * n + k2, (r + 1) * n + k]
+            fc = sum((verts[i] for i in f), Vector()) / 4
+            faces.append(list(reversed(f)) if face_normal(verts, f).dot(fc - axis) < 0 else f)
+    if caps:
+        for ring_index, other in ((0, 1), (len(rings) - 1, len(rings) - 2)):
+            f = [ring_index * n + k for k in range(n)]
+            outward = centers[ring_index] - centers[other]
+            faces.append(list(reversed(f)) if face_normal(verts, f).dot(outward) < 0 else f)
+    buckets[mat].add([tuple(v) for v in verts], faces, m)
+
+
+def patch(mat, grid, away_from, m=None):
+    """Лоскут поверхности по сетке точек: грани смотрят от точки away_from (функция от центра грани или Vector)."""
+    rows, cols = len(grid), len(grid[0])
+    verts = [Vector(p) for row in grid for p in row]
+    faces = []
+    for i in range(rows - 1):
+        for j in range(cols - 1):
+            f = [i * cols + j, i * cols + j + 1, (i + 1) * cols + j + 1, (i + 1) * cols + j]
+            fc = sum((verts[k] for k in f), Vector()) / 4
+            ref = away_from(fc) if callable(away_from) else away_from
+            faces.append(list(reversed(f)) if face_normal(verts, f).dot(fc - ref) < 0 else f)
+    buckets[mat].add([tuple(v) for v in verts], faces, m)
+
+
+def check_normals(objects):
+    """Печатает вывернутые грани: Cycles их рисует, а Roblox нет, поэтому на рендере брак не виден."""
+    total = 0
+    for o in objects:
+        bm = bmesh.new()
+        bm.from_mesh(o.data)
+        inconsistent = sum(1 for e in bm.edges if len(e.link_loops) == 2 and e.link_loops[0].vert == e.link_loops[1].vert)
+        inverted = 0
+        seen = set()
+        for start in bm.faces:
+            if start.index in seen:
+                continue
+            seen.add(start.index)
+            stack, island, closed = [start], [], True
+            while stack:
+                f = stack.pop()
+                island.append(f)
+                for e in f.edges:
+                    if len(e.link_faces) != 2:
+                        closed = False
+                    for g in e.link_faces:
+                        if g.index not in seen:
+                            seen.add(g.index)
+                            stack.append(g)
+            if closed:
+                volume = 0.0
+                for f in island:
+                    co = [v.co for v in f.verts]
+                    for i in range(1, len(co) - 1):
+                        volume += co[0].dot(co[i].cross(co[i + 1]))
+                if volume < -1e-6:
+                    inverted += 1
+        bm.free()
+        if inconsistent or inverted:
+            print(f"BAD NORMALS {o.name}: inconsistent edges {inconsistent}, inverted islands {inverted}")
+            total += 1
+    print("NORMALS", "OK" if total == 0 else f"BAD in {total} meshes")
 
 
 def hexa(mat, low, high, m=None):
@@ -202,7 +283,7 @@ def blob(mat, half, m=None, e=0.5, nu=20, nv=12):
     top = len(verts) - 1
     for k in range(nu):
         k2 = (k + 1) % nu
-        faces.append([0, 1 + k, 1 + k2])
+        faces.append([0, 1 + k2, 1 + k])
         faces.append([top - nu + k, top - nu + k2, top])
     for j in range(nv - 2):
         for k in range(nu):
@@ -258,6 +339,7 @@ def finish(prefix, materials, out, name, render=False, views=None, target=(0, 0,
         print(f"{mat_name}: {len(mesh.vertices)} verts, {sum(len(p.vertices) - 2 for p in mesh.polygons)} tris")
 
     print("TOTAL tris:", sum(sum(len(p.vertices) - 2 for p in o.data.polygons) for o in objects))
+    check_normals(objects)
 
     os.makedirs(out, exist_ok=True)
     for o in objects:

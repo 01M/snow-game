@@ -62,7 +62,8 @@ local function collectObstacles(groundY: number): { BasePart }
 	return list
 end
 
--- Ворота зоны исчезают (сами детали не удаляем, только прячем на время матча) вместе с табличкой «Закрыто»
+-- Ворота зоны исчезают (сами детали не удаляем, только прячем на время матча) вместе с табличкой «Закрыто».
+-- Сама деталь ворот — невидимая коллизия, видимые меши лежат внутри неё
 local function openGate(gateName: string?)
 	local blockout = workspace:FindFirstChild("Blockout")
 	if not gateName or not blockout then
@@ -79,9 +80,11 @@ local function openGate(gateName: string?)
 			p.CanCollide = false
 			p.CanQuery = false
 			p.CanTouch = false
-			for _, gui in p:GetDescendants() do
-				if gui:IsA("BillboardGui") or gui:IsA("SurfaceGui") then
-					gui.Enabled = false
+			for _, child in p:GetDescendants() do
+				if child:IsA("BillboardGui") or child:IsA("SurfaceGui") then
+					child.Enabled = false
+				elseif child:IsA("BasePart") then
+					child.Transparency = 1
 				end
 			end
 		end

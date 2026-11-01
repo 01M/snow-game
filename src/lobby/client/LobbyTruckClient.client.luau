@@ -21,8 +21,16 @@ local RUMBLE_SIZE = 0.05 -- studs
 local SMOKE_IDLE, SMOKE_FULL = 3, 18 -- частиц в секунду
 local FADE_SPEED = 3 -- как быстро значения догоняют цель
 
-local SHAKING =
-	{ Body = true, Glass = true, Snow = true, Light = true, Beacon = true, Metal = false } :: { [string]: boolean }
+local SHAKING = {
+	Body = true,
+	Cream = true,
+	Yellow = true,
+	TailLight = true,
+	Glass = true,
+	Snow = true,
+	Light = true,
+	Beacon = true,
+} :: { [string]: boolean }
 for _, bulb in { "BulbRed", "BulbGold", "BulbGreen", "BulbBlue" } do
 	SHAKING[bulb] = true
 end

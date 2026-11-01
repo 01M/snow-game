@@ -35,7 +35,9 @@ local function countPortions(zc): number
 	return math.max(1, math.floor(sx * sz / (zc.GridStep * zc.GridStep) + 0.5))
 end
 
--- Детали, под которыми снега нет (столбы, будки, дом): стоят на земле и торчат выше неё
+-- Детали, под которыми снега нет (столбы, будки, дом): стоят на земле и торчат выше неё.
+-- Снег вырезается по всему прямоугольнику детали, поэтому предметы в зонах лежат вне этих папок и стоят прямо в снегу,
+-- а место, куда не дотянуться (под машиной, сараем), задаёт невидимая деталь с атрибутом SnowBlock
 local function collectObstacles(groundY: number): { BasePart }
 	local list = {}
 	local roots = { yard }
@@ -50,8 +52,14 @@ local function collectObstacles(groundY: number): { BasePart }
 	end
 	for _, root in roots do
 		for _, p in root:GetDescendants() do
-			if p:IsA("BasePart") and p.Transparency < 1 then
-				local halfY = p.Size.Y / 2 -- детали декора не наклонены сильно, хватает Size.Y
+			if p:IsA("BasePart") and (p.Transparency < 1 or p:GetAttribute("SnowBlock")) then
+				-- Высота по миру, а не Size.Y: у лежащего цилиндра люка Size.Y — это диаметр
+				local cf, size = p.CFrame, p.Size
+				local halfY = (
+					math.abs(cf.RightVector.Y) * size.X
+					+ math.abs(cf.UpVector.Y) * size.Y
+					+ math.abs(cf.LookVector.Y) * size.Z
+				) / 2
 				local bottom, top = p.Position.Y - halfY, p.Position.Y + halfY
 				if bottom < groundY + 3 and top > groundY + 0.2 then
 					table.insert(list, p)
@@ -140,7 +148,7 @@ for zoneIndex, zc in ipairs(zoneConfig.Zones) do
 	local field = SnowField.new(zc, config)
 	field:blockParts(obstacles, 0.4)
 	-- На тёплых люках теплотрассы снег не лежит
-	field:blockParts(PileServer.manholeParts(), 0.6)
+	field:meltDiscs(PileServer.manholeParts(), 0.5, 3)
 	field:fill()
 
 	table.insert(zones, {

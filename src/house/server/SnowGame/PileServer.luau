@@ -103,7 +103,7 @@ local function getManholes()
 end
 local manholes = getManholes()
 
--- Детали люков (для SnowField:blockParts — на тёплом люке снега нет)
+-- Детали люков (для SnowField:meltDiscs — на тёплом люке снега нет)
 function PileServer.manholeParts(): { BasePart }
 	local list = {}
 	if manholeFolder then

@@ -32,6 +32,7 @@ function SnowField.new(zc, config)
 		h = table.create(count, 0),
 		sent = table.create(count, 0), -- последнее отправленное квантованное значение
 		blocked = {}, -- точки под препятствиями: снега там нет никогда
+		falloff = {}, -- множитель высоты вокруг проталин (0..1), см. meltDiscs
 		dirty = {},
 		total = 0, -- сумма высот в начале цикла
 		remaining = 0, -- текущая сумма высот
@@ -66,6 +67,34 @@ function SnowField:blockParts(parts: { BasePart }, margin: number)
 		for ix = ixMin, ixMax do
 			for iz = izMin, izMax do
 				self.blocked[ix * self.nz + iz + 1] = true
+			end
+		end
+	end
+end
+
+-- Круглые проталины вокруг лежащих цилиндров (диаметр по Y/Z): снега нет в радиусе детали + margin,
+-- дальше он плавно нарастает на ширине soft, поэтому края нет
+function SnowField:meltDiscs(parts: { BasePart }, margin: number, soft: number)
+	local res = self.res
+	for _, p in parts do
+		local pos = p.Position
+		local radius = math.max(p.Size.Y, p.Size.Z) / 2 + margin
+		local outer = radius + soft
+		local ixMin = math.max(0, math.ceil((pos.X - outer - self.x0) / res))
+		local ixMax = math.min(self.nx - 1, math.floor((pos.X + outer - self.x0) / res))
+		local izMin = math.max(0, math.ceil((pos.Z - outer - self.z0) / res))
+		local izMax = math.min(self.nz - 1, math.floor((pos.Z + outer - self.z0) / res))
+		for ix = ixMin, ixMax do
+			for iz = izMin, izMax do
+				local i = ix * self.nz + iz + 1
+				local dx, dz = self.x0 + ix * res - pos.X, self.z0 + iz * res - pos.Z
+				local d = math.sqrt(dx * dx + dz * dz)
+				if d <= radius then
+					self.blocked[i] = true
+				elseif d < outer then
+					local t = (d - radius) / soft
+					self.falloff[i] = math.min(self.falloff[i] or 1, t * t * (3 - 2 * t))
+				end
 			end
 		end
 	end
@@ -136,7 +165,8 @@ function SnowField:computeFresh(seed: number?): { number }
 	for ix = 0, nx - 1 do
 		for iz = 0, nz - 1 do
 			local i = ix * nz + iz + 1
-			target[i] = self.blocked[i] and 0 or self:freshHeight(ix, iz, seed)
+			local h = self.blocked[i] and 0 or self:freshHeight(ix, iz, seed) * (self.falloff[i] or 1)
+			target[i] = h >= self.config.SnowMinHeight and h or 0
 		end
 	end
 	return target

@@ -4,11 +4,11 @@ Rojo этим не управляет: всё хранится в местах �
 
 ## House Map: Workspace
 
-- **`SnowYard`** (в edit mode): `Score` (IntValue, порции всех зон), `YardPlatform` (земля, верх Y = 1), `Snowmelter`, `BackpackShop`, `UpgradeShop`, `Manholes`.
+- **`SnowYard`** (в edit mode): `Score` (IntValue, порции всех зон), `YardPlatform` (земля, верх Y = 1), `Snowmelter`, `UpgradeShop`, `Manholes`.
 - **В runtime** там появляются папки зон `Yard`, `Driveway`, `SideYard`, `Backyard` (`ZoneBounds`, `Score`, `Total`, `State`) и `Piles`. Клиенты создают `workspace.LocalSnow`.
-- **`Snowmelter`** (10, 1, −38): меши `Melter_<материал>` без коллизии, коллизия — невидимые `CollisionBody`, `CollisionBase`. Пар `SteamVent`, `HopperVent`. `SellZone` — невидимая зона продажи 14×8×14.
-- **`BackpackShop`** (24, 1, −38): меши `Shop_<материал>`, коллизия `CollisionSlab`, `CollisionBody`, `CollisionPropsL/R`, свет `LampA/B`, `LanternL/R`, пар `SteamVent`.
-- **`UpgradeShop`** (24, 4.4, −35): невидимый Part-якорь у прилавка, в нём `UpgradePrompt` и `ShopBillboard`. **Скрипты ищут именно его, не удалять.**
+- **`Snowmelter`** (17, 1, −38), справа от двери: меши `Melter_<материал>` без коллизии, коллизия — невидимые `CollisionBody`, `CollisionBase`. Пар `SteamVent`, `HopperVent`. `SellZone` — невидимая зона продажи 14×8×14.
+- **`Blockout.BackpackShop`** (−21.5, 1, −23), в левом дальнем углу зоны Yard, прилавком к дорожке (поворот 35°): меши `Shop_<материал>`, коллизия `CollisionSlab`, `CollisionBody`, `CollisionPropsL/R`, свет `LampA/B`, `LanternL/R`, пар `SteamVent`.
+- **`SnowYard.UpgradeShop`** (−19.8, 4.4, −20.5): невидимый Part-якорь у прилавка, в нём `UpgradePrompt` и `ShopBillboard`. **Скрипты ищут именно его, не удалять.**
 - **`Manholes`**: `Manhole1` (−14, 8), `Manhole2` (15, −12). PrimaryPart `Lid` с `PointLight`, `Steam`, `ManholeBillboard`.
 - **`ToolShop`**: `Structure` и `Shelves` с `Shelf_Shovel`, `Shelf_Blower`, `Shelf_Vacuum`. На полке `PromptAnchor` (атрибут `ShopToolId`, `BuyPrompt`, `PriceBillboard`) и витрина `Display`.
 - **`SpawnLocation`** (0, 1.5, 37): на тротуаре, вне зоны Yard.
@@ -19,8 +19,8 @@ Rojo этим не управляет: всё хранится в местах �
   - `Street` (дорога, тротуары, `YardCurb`, `RoadMarks`), `StreetLamps`, `Snowbanks`, `ParkedCars`, `Trees` (72 ёлки одним мешем).
   - `Neighborhood`: 22 соседних дома трёх видов, Persistent. `Town` (Persistent, начало в (0, 0, 0)): `blender/town.py`, 8 секторов вокруг участка по 7 мешей: земля на холмах, улицы, дома, окна, деревья.
   - `Zones`, `PorchHub`, `LawnBase`. Земля: `YardPlatform`, `Zone3`, `Zone4` — Grass, `Zone2` — Concrete, `PorchGround` — Cobblestone.
-  - `Decor`: `Props` (предметы, камни, терраса), `FrontPath`, `Snowman`, `Mailbox`.
-- **Снег и препятствия:** `collectObstacles` убирает снег под видимыми деталями из `Decor`, `House`, `Fences`, `SnowYard`, причём по всему прямоугольнику детали. Поэтому большие меши (`HouseModel`, `Trees`, `FenceModel`, `Town`) лежат вне этих папок: иначе дыра в снеге была бы размером с весь меш. Предметы внутри зон кладём в `Decor.Props`; дорожки и камни с верхом ниже Y = 1.2 снег не вырезают.
+  - `Props`: предметы в зонах, камни, терраса. `Decor`: `SnowBlocks`, `FrontPath`, `Snowman`, `Mailbox`.
+- **Снег и препятствия:** `collectObstacles` убирает снег под видимыми деталями из `Decor`, `House`, `Fences`, `SnowYard`, причём по всему прямоугольнику детали. Поэтому всё, что стоит в зонах или рядом (`HouseModel`, `Trees`, `FenceModel`, `Town`, `Props`, `BackpackShop`), лежит вне этих папок: предмет просто стоит в снегу, без выреза вокруг. Снег под ним достаётся инструментом, он не упирается в коллизию. Если до середины предмета не дотянуться (машина, поленница, лавка), в `Decor.SnowBlocks` кладём невидимую деталь с атрибутом `SnowBlock`: она меньше предмета, поэтому вырез снаружи не виден. Такие детали не поворачиваем, вырез идёт по прямоугольнику в осях мира. Дорожки и камни с верхом ниже Y = 1.2 снег не вырезают. У люков круглая проталина с плавным краем: `SnowField:meltDiscs`.
 - `ServerStorage.WorldKit`: образцы моделей из `blender/world_kit.py`, новые предметы клонируются отсюда. Старые объекты там же: `_OldHouse`, `_OldPineUnions`, `_OldFencePillars`, `_OldFenceCaps`, `_OldNeighbors`, `_OldLamps`.
 - `[не проверено]` Декор ставился как Anchored без коллизии. Служебные подписи блокаута выключены, подписи зон и ворот оставлены.
 

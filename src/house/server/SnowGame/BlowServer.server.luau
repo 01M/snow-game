@@ -1,7 +1,7 @@
 -- BlowServer: снег зон — карты высот (SnowField), у зоны их несколько (ZoneConfig). Сопло срезает снег в конусе перед игроком.
 -- Зона делится на «порции» (весь снег зоны / Config.SnowPortionVolume):
 -- каждая собранная порция = +1 в рюкзак, +1 к Score зоны. Число порций — в IntValue Total зоны.
--- Зоны открываются по очереди (State "locked" → "active" → "finished"), с открытием зоны исчезают её ворота.
+-- Зоны открываются этапами (ZoneConfig Stage, State "locked" → "active" → "finished"), с открытием зоны исчезают её ворота.
 -- Клиенты рисуют снег сами (SnowMeshClient), сервер шлёт им изменения высот через SnowSync.
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -28,6 +28,8 @@ local MATCH_MODE = true
 
 -- Зона считается очищенной, когда осталось меньше этой доли снега (чтобы не искать крошки)
 local FINISH_REMAINING_RATIO = 0.01
+-- В маленькой зоне (веранда, сарай) 1% — несколько точек, поэтому не меньше этой доли порции
+local FINISH_REMAINING_PORTIONS = 0.5
 
 -- Детали, под которыми снега нет: атрибут SnowBlock. Предмет без атрибута просто стоит в снегу,
 -- атрибут нужен там, куда инструментом не дотянуться (под машиной, лавкой, плавилкой)
@@ -80,7 +82,7 @@ local manholeParts = PileServer.manholeParts()
 local snowSeed = math.random() * 1000 -- общий для всех полей: снег совпадает на общих линиях
 
 for zoneIndex, zc in ipairs(zoneConfig.Zones) do
-	local initialState = zoneIndex == 1 and "active" or "locked"
+	local initialState = zc.Stage == 1 and "active" or "locked"
 
 	local zoneFolder = Instance.new("Folder")
 	zoneFolder.Name = zc.Name
@@ -189,21 +191,27 @@ local function finishZone(zone)
 	zone.state = "finished"
 	zone.stateValue.Value = "finished"
 
-	-- Открыть следующую закрытую зону
+	-- Этап ещё не очищен целиком: следующий подождёт
 	for _, z in ipairs(zones) do
-		if z.state == "locked" then
-			z.state = "active"
-			z.stateValue.Value = "active"
-			openGate(z.config.Gate)
+		if z.state == "active" then
 			return
 		end
 	end
 
+	-- Открыть следующий этап: первая закрытая зона и зоны с тем же Stage
+	local nextStage
 	for _, z in ipairs(zones) do
-		if z.state ~= "finished" then
-			return
+		if z.state == "locked" and (not nextStage or z.config.Stage == nextStage) then
+			nextStage = z.config.Stage
+			z.state = "active"
+			z.stateValue.Value = "active"
+			openGate(z.config.Gate)
 		end
 	end
+	if nextStage then
+		return
+	end
+
 	workspace:SetAttribute("MatchState", "finished")
 end
 
@@ -664,7 +672,8 @@ local function cutSnow(player: Player, tool: Tool?, toolCfg, stats, rateMax: num
 
 	for _, zone in hitZones do
 		-- Зона почти пуста → доочищаем крошки; завершится, когда уберут и кучи (tryFinish)
-		if zoneRemaining(zone) <= zone.total * FINISH_REMAINING_RATIO then
+		local finishAt = math.max(zone.total * FINISH_REMAINING_RATIO, zone.portionVolume * FINISH_REMAINING_PORTIONS)
+		if zoneRemaining(zone) <= finishAt then
 			for _, field in zone.fields do
 				field:clear()
 			end

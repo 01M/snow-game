@@ -5,7 +5,7 @@ Rojo этим не управляет: всё хранится в местах �
 ## House Map: Workspace
 
 - **`SnowYard`** (в edit mode): `Score` (IntValue, порции всех зон), `YardPlatform` (земля, верх Y = 1), `Snowmelter`, `UpgradeShop`, `Manholes`.
-- **В runtime** там появляются папки зон `Yard`, `Driveway`, `SideYard`, `Backyard` (`ZoneBounds`, `Score`, `Total`, `State`) и `Piles`. Клиенты создают `workspace.LocalSnow`.
+- **В runtime** там появляются папки зон `Yard`, `Veranda`, `Shed`, `Driveway`, `SideYard`, `Backyard` (`ZoneBounds`, `Score`, `Total`, `State`) и `Piles`. Клиенты создают `workspace.LocalSnow`.
 - **`Snowmelter`** (17, 1, −38), справа от двери: меши `Melter_<материал>` без коллизии, коллизия — невидимые `CollisionBody`, `CollisionBase`. Пар `SteamVent`, `HopperVent`. `SellZone` — невидимая зона продажи 14×8×14.
 - **`Blockout.BackpackShop`** (−21.5, 1, −23), в левом дальнем углу зоны Yard, прилавком к дорожке (поворот 35°): меши `Shop_<материал>`, коллизия `CollisionSlab`, `CollisionBody`, `CollisionPropsL/R`, свет `LampA/B`, `LanternL/R`, пар `SteamVent`.
 - **`SnowYard.UpgradeShop`** (−19.8, 4.4, −20.5): невидимый Part-якорь у прилавка, в нём `UpgradePrompt` и `ShopBillboard`. **Скрипты ищут именно его, не удалять.**

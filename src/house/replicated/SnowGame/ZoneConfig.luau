@@ -3,8 +3,9 @@
 -- Поле лежит на одной высоте GroundTopY. Его форма — объединение прямоугольников Areas минус Cuts, края включены,
 -- поэтому снег доходит до стен и заборов, а веранда и ступени — отдельные поля на своей высоте.
 -- Depth — толщина снега в прямоугольнике относительно Config.SnowBaseDepth, Drift — сила сугробов у краёв формы.
--- Первое поле зоны — земля (по нему стоит ZoneBounds). Соседние поля делят общую линию под забором или воротами.
--- Зоны открываются по очереди в порядке списка: первая сразу, каждая следующая — когда очищена предыдущая.
+-- Первое поле зоны — самое большое (по нему стоит ZoneBounds). Соседние поля делят общую линию под забором или воротами.
+-- Stage — этап: зоны этапа открываются вместе и рисуются одним мешем (SnowMeshClient), поэтому веранда и сарай
+-- не тратят бюджет мешей. Первый этап открыт сразу, следующий — когда очищены все зоны предыдущего.
 -- Gate — имя ворот в Workspace.Blockout.Fences (и их снега <Gate>_Snow в Blockout.SnowCaps), которые исчезают, когда зона открывается.
 -- Число порций зоны = весь снег зоны / Config.SnowPortionVolume, BlowServer кладёт его в IntValue Total зоны.
 
@@ -57,6 +58,7 @@ local ZoneConfig = {
 	Zones = {
 		{
 			Name = "Yard",
+			Stage = 1,
 			DisplayName = "Двор",
 			RegenDelay = 5, -- seconds after full clear before regen starts
 			RegenDuration = 8, -- seconds for cells to regrow
@@ -74,17 +76,36 @@ local ZoneConfig = {
 						rect(-27, -12, -51, -42), -- сарай
 					},
 				}),
+			},
+		},
+		{
+			Name = "Veranda", -- вместе со ступенями; заднее крыльцо стоит за домом и остаётся в зоне Backyard
+			Stage = 1,
+			DisplayName = "Веранда",
+			RegenDelay = 5,
+			RegenDuration = 8,
+			Fields = {
 				makeField("Veranda", 2.4, {
 					rect(-10, 10, -52, -46, 0.5),
 					rect(-4, 4, -46, -45, 0.5),
 				}, { Drift = 0.3 }),
 				makeField("StepUpper", 1.93, { rect(-4, 4, -45, -44, 0.4) }, { Drift = 0 }),
 				makeField("StepLower", 1.47, { rect(-4, 4, -44, -43, 0.4) }, { Drift = 0 }),
+			},
+		},
+		{
+			Name = "Shed",
+			Stage = 1,
+			DisplayName = "Сарай",
+			RegenDelay = 5,
+			RegenDuration = 8,
+			Fields = {
 				makeField("Shed", 1.4, { rect(-26, -13, -51, -42, 0.4) }, { Drift = 0.3 }),
 			},
 		},
 		{
 			Name = "Driveway", -- Blockout.Zones.Zone2_Driveway
+			Stage = 2,
 			DisplayName = "Подъездная дорожка",
 			RegenDelay = 5,
 			RegenDuration = 8,
@@ -95,6 +116,7 @@ local ZoneConfig = {
 		},
 		{
 			Name = "SideYard", -- Blockout.Zones.Zone3_SideYard
+			Stage = 3,
 			DisplayName = "Боковой двор",
 			RegenDelay = 5,
 			RegenDuration = 8,
@@ -105,6 +127,7 @@ local ZoneConfig = {
 		},
 		{
 			Name = "Backyard", -- Blockout.Zones.Zone4_Backyard
+			Stage = 4,
 			DisplayName = "Задний двор",
 			RegenDelay = 5,
 			RegenDuration = 8,
@@ -123,13 +146,33 @@ local ZoneConfig = {
 		},
 	},
 	Fields = {}, -- все поля подряд: индекс в этом списке — номер поля в SnowSync
+	Stages = {}, -- [Stage] = { Name, Zones, Fields }: Name и первое поле — от первой зоны этапа
 }
 
-for zoneIndex, zone in ZoneConfig.Zones do
-	for _, field in zone.Fields do
-		field.ZoneIndex = zoneIndex
-		table.insert(ZoneConfig.Fields, field)
+for _, zone in ZoneConfig.Zones do
+	local stage = ZoneConfig.Stages[zone.Stage]
+	if not stage then
+		stage = { Name = zone.Name, Zones = {}, Fields = {} }
+		ZoneConfig.Stages[zone.Stage] = stage
 	end
+	table.insert(stage.Zones, zone)
+	for _, field in zone.Fields do
+		field.Stage = zone.Stage
+		table.insert(ZoneConfig.Fields, field)
+		table.insert(stage.Fields, field)
+	end
+end
+
+-- Зона, чьей формы касается точка; nil — между зонами (под стеной, за участком)
+function ZoneConfig.zoneAt(x: number, z: number)
+	for _, zone in ZoneConfig.Zones do
+		for _, field in zone.Fields do
+			if field:depthAt(x, z) > 0 then
+				return zone
+			end
+		end
+	end
+	return nil
 end
 
 return ZoneConfig

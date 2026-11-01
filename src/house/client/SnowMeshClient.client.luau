@@ -1,11 +1,11 @@
--- SnowMeshClient: рисует снег каждой зоны одним гладким EditableMesh по картам высот её полей (ZoneConfig, сервер шлёт их через SnowSync).
+-- SnowMeshClient: рисует снег каждого этапа (зон, которые открываются вместе) одним гладким EditableMesh по картам высот его полей (ZoneConfig, сервер шлёт их через SnowSync).
 -- Вершины и треугольники есть только там, где проходит форма поля.
 -- Бюджет памяти EditableMesh общий на всю игру и зависит от устройства, причём даже пустой меш расходует его заметно:
--- поэтому один меш на зону, подробно рисуется только открытая зона, закрытая — редкой сеткой (LOCKED_STRIDE),
--- у очищенной меш удаляется. Смена — по State зоны.
+-- поэтому один меш на этап, подробно рисуется только открытый этап, закрытый — редкой сеткой (LOCKED_STRIDE),
+-- у очищенного целиком меш удаляется. Смена — по State его зон.
 -- Следы: локально продавливает снег под ногами всех персонажей (только визуал, на счёт не влияет).
 -- Запасной вариант: если EditableMesh или MeshPart не создать (лимит памяти на слабом телефоне, выключены
--- Mesh / Image APIs), снег зоны рисуется блоками BLOCK_SIZE × BLOCK_SIZE studs (высота — средняя под блоком, без следов).
+-- Mesh / Image APIs), снег этапа рисуется блоками BLOCK_SIZE × BLOCK_SIZE studs (высота — средняя под блоком, без следов).
 -- В Studio его можно включить атрибутом workspace DebugSnowBlocks = true до запуска.
 local AssetService = game:GetService("AssetService")
 local Players = game:GetService("Players")
@@ -48,11 +48,15 @@ snowFolder.Name = "LocalSnow"
 snowFolder.Parent = workspace
 
 local fields = {} -- [fieldIndex] = состояние поля
-local zones = {} -- [zoneIndex] = общий меш полей зоны
-for zoneIndex, zc in zoneConfig.Zones do
-	zones[zoneIndex] = {
-		config = zc,
-		state = yard:WaitForChild(zc.Name):WaitForChild("State"),
+local stages = {} -- [Stage] = общий меш полей этапа
+for stageIndex, sc in zoneConfig.Stages do
+	local states = {}
+	for _, zc in sc.Zones do
+		table.insert(states, yard:WaitForChild(zc.Name):WaitForChild("State"))
+	end
+	stages[stageIndex] = {
+		config = sc,
+		states = states,
 		fields = {},
 		em = nil,
 		part = nil,
@@ -85,12 +89,12 @@ local function buildField(fieldIndex: number)
 		end
 	end
 
-	local zone = zones[zc.ZoneIndex]
-	local ground = zone.config.Fields[1]
+	local stage = stages[zc.Stage]
+	local ground = stage.config.Fields[1]
 	local z = {
 		zc = zc,
-		zone = zone,
-		-- Начало координат меша зоны — центр её первого поля на уровне земли
+		stage = stage,
+		-- Начало координат меша этапа — центр его первого поля на уровне земли
 		offset = Vector3.new(
 			zc.Center.X - ground.Center.X,
 			zc.GroundTopY - ground.GroundTopY,
@@ -106,8 +110,8 @@ local function buildField(fieldIndex: number)
 		srv = table.create(count, 0), -- высоты с сервера
 		foot = table.create(count, 0), -- глубина локальных следов
 		dirty = {},
-		mesh = nil, -- { em, stride, verts, colors }: вершины этого поля в меше зоны
-		part = nil, -- MeshPart зоны или папка запасных блоков поля
+		mesh = nil, -- { em, stride, verts, colors }: вершины этого поля в меше этапа
+		part = nil, -- MeshPart этапа или папка запасных блоков поля
 		hasFull = false, -- пришла полная карта
 		useBlocks = false,
 	}
@@ -118,7 +122,7 @@ local function buildField(fieldIndex: number)
 	end
 
 	fields[fieldIndex] = z
-	table.insert(zone.fields, z)
+	table.insert(stage.fields, z)
 	return z
 end
 
@@ -374,10 +378,10 @@ local function updateBlocks(z)
 end
 
 -- ============================================================
--- Показ зоны: сетка нужной густоты по её состоянию
+-- Показ этапа: сетка нужной густоты по его состоянию
 -- ============================================================
-local function destroyDrawing(zone)
-	for _, z in zone.fields do
+local function destroyDrawing(stage)
+	for _, z in stage.fields do
 		if z.useBlocks and z.part then
 			z.part:Destroy()
 		end
@@ -385,37 +389,37 @@ local function destroyDrawing(zone)
 		z.mesh = nil
 		table.clear(z.dirty)
 	end
-	if zone.part then
-		zone.part:Destroy()
-		zone.part = nil
+	if stage.part then
+		stage.part:Destroy()
+		stage.part = nil
 	end
-	if zone.em then
-		zone.em:Destroy()
-		zone.em = nil
+	if stage.em then
+		stage.em:Destroy()
+		stage.em = nil
 	end
 end
 
-local function showBlocks(zone)
-	destroyDrawing(zone)
-	zone.blocks = true
-	for _, z in zone.fields do
+local function showBlocks(stage)
+	destroyDrawing(stage)
+	stage.blocks = true
+	for _, z in stage.fields do
 		makeBlocks(z)
 	end
 end
 
 -- Собрать меш с шагом stride и заменить им прежний. Нет памяти или API — запасные блоки
-local function showMesh(zone, stride: number)
-	local name = zone.config.Name
+local function showMesh(stage, stride: number)
+	local name = stage.config.Name
 	local ok, em = pcall(function()
 		return AssetService:CreateEditableMesh()
 	end)
 	if not ok or not em then
 		warn("[SnowMeshClient] EditableMesh недоступен, снег будет блоками:", name, em)
-		showBlocks(zone)
+		showBlocks(stage)
 		return
 	end
 	local meshes = {}
-	for _, z in zone.fields do
+	for _, z in stage.fields do
 		local mesh = { em = em, stride = z.count >= ALWAYS_FINE_BELOW and stride or 1, verts = {}, colors = {} }
 		local filled, err = pcall(fillMesh, z, mesh)
 		if not filled then
@@ -425,7 +429,7 @@ local function showMesh(zone, stride: number)
 				err
 			)
 			em:Destroy()
-			showBlocks(zone)
+			showBlocks(stage)
 			return
 		end
 		meshes[z] = mesh
@@ -452,7 +456,7 @@ local function showMesh(zone, stride: number)
 			part
 		)
 		em:Destroy()
-		showBlocks(zone)
+		showBlocks(stage)
 		return
 	end
 	part.Name = "Snow_" .. name
@@ -464,13 +468,13 @@ local function showMesh(zone, stride: number)
 	part.Color = Color3.fromRGB(255, 255, 255) -- цвет задают вершины
 	-- Вершины рисуются относительно начала координат меша (а не центра габаритов):
 	-- y = 0 в меше — это поверхность земли (проверено в play mode 2026-10-14)
-	local ground = zone.config.Fields[1]
+	local ground = stage.config.Fields[1]
 	part.Position = Vector3.new(ground.Center.X, ground.GroundTopY + Y_LIFT, ground.Center.Z)
 	part.Parent = snowFolder
 
-	local oldPart, oldEm = zone.part, zone.em
-	zone.part, zone.em, zone.stride = part, em, stride
-	for _, z in zone.fields do
+	local oldPart, oldEm = stage.part, stage.em
+	stage.part, stage.em, stage.stride = part, em, stride
+	for _, z in stage.fields do
 		z.part = part
 	end
 	if oldPart then
@@ -481,43 +485,58 @@ local function showMesh(zone, stride: number)
 	end
 end
 
-local function refreshZone(zone)
-	if zone.finished or zone.building or #zone.fields < #zone.config.Fields then
+-- Зоны этапа открываются вместе: закрыт — если закрыта любая, очищен — если очищены все
+local function stageState(stage): string
+	local state = "finished"
+	for _, s in stage.states do
+		if s.Value == "locked" then
+			return "locked"
+		elseif s.Value ~= "finished" then
+			state = "active"
+		end
+	end
+	return state
+end
+
+local function refreshStage(stage)
+	if stage.finished or stage.building or #stage.fields < #stage.config.Fields then
 		return
 	end
-	for _, z in zone.fields do
+	for _, z in stage.fields do
 		if not z.hasFull then
 			return
 		end
 	end
-	local state = zone.state.Value
+	local state = stageState(stage)
 	if state == "finished" then
-		-- Снег зоны убран и обратно не вернётся: память можно отдать следующей зоне
-		zone.finished = true
-		destroyDrawing(zone)
+		-- Снег этапа убран и обратно не вернётся: память можно отдать следующему
+		stage.finished = true
+		destroyDrawing(stage)
 		return
 	end
-	if zone.blocks then
+	if stage.blocks then
 		return
 	end
 	if RunService:IsStudio() and workspace:GetAttribute("DebugSnowBlocks") == true then
-		showBlocks(zone)
+		showBlocks(stage)
 		return
 	end
 	local stride = state == "locked" and LOCKED_STRIDE or 1
-	if zone.stride == stride then
+	if stage.stride == stride then
 		return
 	end
-	zone.building = true
-	showMesh(zone, stride)
-	zone.building = false
-	refreshZone(zone) -- пока собирали, зона могла смениться
+	stage.building = true
+	showMesh(stage, stride)
+	stage.building = false
+	refreshStage(stage) -- пока собирали, этап мог смениться
 end
 
-for _, zone in zones do
-	zone.state.Changed:Connect(function()
-		refreshZone(zone)
-	end)
+for _, stage in stages do
+	for _, s in stage.states do
+		s.Changed:Connect(function()
+			refreshStage(stage)
+		end)
+	end
 end
 
 snowSync.OnClientEvent:Connect(function(kind: string, fieldIndex: number, data: buffer)
@@ -536,7 +555,7 @@ snowSync.OnClientEvent:Connect(function(kind: string, fieldIndex: number, data: 
 			z.dirty[i] = true
 		end
 		z.hasFull = true
-		refreshZone(z.zone)
+		refreshStage(z.stage)
 	elseif kind == "delta" then
 		-- До полной карты изменения не нужны: она их уже содержит
 		if not z or not z.hasFull then

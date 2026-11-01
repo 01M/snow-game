@@ -143,6 +143,8 @@ return {
 
 	-- Зоны (ZoneConfig, ключ Zone.<Name>)
 	["Zone.Yard"] = { en = "Yard", ru = "Двор" },
+	["Zone.Veranda"] = { en = "Porch", ru = "Веранда" },
+	["Zone.Shed"] = { en = "Shed", ru = "Сарай" },
 	["Zone.Driveway"] = { en = "Driveway", ru = "Подъездная дорожка" },
 	["Zone.SideYard"] = { en = "Side Yard", ru = "Боковой двор" },
 	["Zone.Backyard"] = { en = "Backyard", ru = "Задний двор" },

@@ -107,15 +107,15 @@ local function getStat(name)
 	return v and v.Value or 0
 end
 
-local function getZoneFolder()
+local function getZoneValue(zone, name: string)
 	local yard = workspace:FindFirstChild("SnowYard")
-	return yard and yard:FindFirstChild(mainZone.Name)
+	local folder = yard and yard:FindFirstChild(zone.Name)
+	local value = folder and folder:FindFirstChild(name)
+	return value and value.Value or 0
 end
 
 local function getZoneCleared()
-	local zone = getZoneFolder()
-	local score = zone and zone:FindFirstChild("Score")
-	return score and score.Value or 0
+	return getZoneValue(mainZone, "Score")
 end
 
 local function getUpgradePrice()
@@ -276,6 +276,7 @@ local perkBar = makeBar("PerkBar", 142, L("Hud.NextPerk"))
 perkBar.right.Text = "0/3"
 
 local zoneBar = makeBar("ZoneBar", 198, L("Zone." .. mainZone.Name))
+local barZone = mainZone -- зона, в которой стоит игрок; вне зон остаётся прежняя
 
 -- Деньги и множитель (справа сверху)
 local multiplierLabel = label({
@@ -1093,7 +1094,7 @@ end)
 
 -- ---------- Коллекция (заглушка) ----------
 local collectionPage = pages.Collection
-local COLLECTION = { "Yard", "Driveway", "SideYard", "Backyard" } -- зоны из ZoneConfig
+local COLLECTION = { "Yard", "Veranda", "Shed", "Driveway", "SideYard", "Backyard" } -- зоны из ZoneConfig
 
 local collectionList = new("ScrollingFrame", {
 	Position = UDim2.fromOffset(16, 16),
@@ -1323,15 +1324,19 @@ local function refreshHud()
 	end
 	taskText.Text = current or L("Hud.AllTasksDone")
 
-	-- зона
-	local cleared = getZoneCleared()
-	local pct = zoneTotal > 0 and math.clamp(cleared / zoneTotal, 0, 1) or 0
+	-- зона, в которой стоит игрок
+	local hrp = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+	local standing = hrp and zoneConfig.zoneAt(hrp.Position.X, hrp.Position.Z)
+	if standing and standing ~= barZone then
+		barZone = standing
+		zoneBar.title.Text = L("Zone." .. barZone.Name)
+	end
+	local cleared, total = getZoneValue(barZone, "Score"), getZoneValue(barZone, "Total")
+	local pct = total > 0 and math.clamp(cleared / total, 0, 1) or 0
 	zoneBar.fill.Size = UDim2.fromScale(pct, 1)
 	zoneBar.pct.Text = string.format("%.1f%%", pct * 100)
-	local zone = getZoneFolder()
-	local state = zone and zone:FindFirstChild("State")
-	zoneBar.right.Text = (state and state.Value == "finished") and L("Hud.Cleared")
-		or string.format("%d/%d", cleared, zoneTotal)
+	zoneBar.right.Text = getZoneValue(barZone, "State") == "finished" and L("Hud.Cleared")
+		or string.format("%d/%d", cleared, total)
 
 	-- таймер
 	local startTime = workspace:GetAttribute("MatchStartTime")

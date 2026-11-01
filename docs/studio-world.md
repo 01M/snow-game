@@ -46,7 +46,21 @@ Rojo этим не управляет: всё хранится в местах �
 
 ## Lobby
 
-- `Blockout`: `QueuePads` (`Queue1`–`Queue5`: `Pad`, `Sign`, `PostL`, `PostR`), `BackgroundHouses`, `Fence`, `Lawn`, `LeftStalls`, `RightArea`, `SpawnArea`, `Decor` (`Trees` — 76 ёлок, `SnowCaps`, `FencePillars`, `Lamps`, `Snowman`).
+Редизайн 2026-11-02: снегоуборочное депо в том же стиле, что карта «Дом». Двор x ±60, z −60..40.
+
+- `SpawnLocation` (0, 0.3, 30): невидимая, на круглой площади у ворот, смотрит на грузовики. Фонари и ёлка стоят так, чтобы из камеры у точки появления были видны все пять табличек.
+- `Blockout.QueuePads.Queue1`–`Queue5`, ряд на z = −30, x = −48..48 с шагом 24:
+  - `Pad` — деревянный настил кузова (верх Y ≈ 1.42), `QueueIndex`, `PadGui`. Видимые доски кузова — сама эта деталь.
+  - `Sign` (центр y = 11, z = −36.1) — табло над кузовом, `BoardGui`.
+  - `Truck` — меши грузовика: `Beacon` с выключенным `PointLight`, в `Metal` вложение `Exhaust` с дымом. Их включает `LobbyTruckClient`.
+  - `TruckCollision` — невидимая коллизия и трап `Ramp`. Лежит отдельно от `Truck`, потому что тряска двигает только меши.
+  - Точка выталкивания (z = −18) — конец трапа, её не загораживать.
+- `Blockout.World`: `Plaza`, `BigTree` (32, 18), `ShopKiosk` (−48, 6), `UpgradeKiosk` (−48, −8), `Gazebo` (48, −1), `Hill` (начало −34, 27), `Fence`, `Houses`, `Street`, `Lamps`, `GardenLamps`, `Props`.
+- **Горка `Hill.Slide`:** `Chute` — 8 невидимых плит со скоростью `AssemblyLinearVelocity` 30 вниз по скату, поэтому спуск работает без скрипта. `Wall` не дают выпасть и зайти под жёлоб, `Stairs` — наклонная коллизия лестницы.
+- `Blockout.Records.Board` (тег `RecordsBoard`) — доска таблицы лучших в беседке, текст рисует `LobbyRecordsClient`.
+- `LeftStalls.ShopStall`, `LeftStalls.UpgradeStall`, `RightArea.Stage` теперь невидимые якоря подписей, в них остались `Localized` и `LocaleKey`.
+- `Blockout.Bounds` — невидимые стены двора. `Blockout.Town` — город из `town.fbx`, на том же месте, что на карте. `Decor`: `Trees` (76 ёлок одним мешем, как на карте), `Snowman`.
+- `ServerStorage`: `LobbyKit` (образцы из `blender/lobby.py`), `WorldKit`, `_OldLobby` (старые забор, дома, фонари, 30 ёлок `PineA` на union и прочее).
 - `SoundService.LobbyMusic`: сейчас `SoundId` пустой, трек выбирает Олег. Новый трек — вписать `rbxassetid://<id>` в `SoundId`, код менять не нужно. Раньше стоял 1837484932, `[не проверено]` APM «You're In Style».
 - Устройство табличек и правила об именах — в `docs/systems.md`, раздел «Лобби».
 - `[не проверено]` Стартовое место сменить нельзя: лобби опубликовано поверх старого Snow через Publish As → Overwrite.
@@ -86,6 +100,7 @@ Blender 5.2 из Steam: `C:\Program Files (x86)\Steam\steamapps\common\Blender\b
 - `blender/modellib.py` — общие детали и экспорт (`backpack_shop.py`, `house.py`, `world_kit.py`, `town.py`). `snowmelter.py` пока со своей копией.
 - **Вывернутые грани:** Cycles рисует грань с обеих сторон, Roblox только снаружи, поэтому на рендере такой брак не виден. `finish()` проверяет грани при каждой сборке: в логе должно быть `NORMALS OK`. Готовую модель смотреть в Play со всех сторон, а не только спереди.
 - `blender/world_kit.py` собирает набор предметов в один FBX, каждый со своим смещением; `world_kit.json` — центры мешей и смещения для сборки в Studio.
+- `blender/lobby.py` так же собирает предметы лобби: грузовик, ёлку, киоски, беседку, горку, площадь. В импортированном меше рама грузовика ещё старая, выше настила, поэтому `Pad` закрывает её сверху; в скрипте рама уже ниже.
 - Меш не может быть больше 2048 studs, поэтому `town.py` делит дальний план на сектора и печатает `too big`, если какой-то сектор вышел за предел.
 - **Импорт FBX** делает Олег: File → Import 3D с настройками по умолчанию, через MCP нельзя. `[не проверено]` Лицевая сторона (−Y в Blender) оказывается на −Z игры, поэтому фасад к двору (+Z) — поворот на 180° вокруг Y.
 - Дальше через MCP: `PivotTo`, цвет и материал по таблице `MATERIALS` из скрипта, Anchored, коллизия мешей выключена, вместо неё простые невидимые Parts.

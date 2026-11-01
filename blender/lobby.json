@@ -1,0 +1,464 @@
+{
+ "props": {
+  "Truck": [
+   -170,
+   0
+  ],
+  "BigTree": [
+   -115,
+   0
+  ],
+  "ShopKiosk": [
+   -75,
+   0
+  ],
+  "UpgradeKiosk": [
+   -45,
+   0
+  ],
+  "Gazebo": [
+   -10,
+   0
+  ],
+  "Hill": [
+   45,
+   0
+  ],
+  "Plaza": [
+   0,
+   110
+  ]
+ },
+ "centers": {
+  "Truck_Body": [
+   -170.0,
+   6.9,
+   8.15
+  ],
+  "Truck_Yellow": [
+   -170.0,
+   5.14,
+   2.216
+  ],
+  "Truck_Dark": [
+   -170.0,
+   8.375,
+   7.875
+  ],
+  "Truck_Metal": [
+   -170.0,
+   1.67,
+   6.92
+  ],
+  "Truck_Glass": [
+   -170.0,
+   11.752,
+   7.9
+  ],
+  "Truck_Wood": [
+   -170.0,
+   0.0,
+   1.25
+  ],
+  "Truck_Snow": [
+   -170.0,
+   14.66,
+   8.002
+  ],
+  "Truck_Light": [
+   -170.0,
+   20.075,
+   3.5
+  ],
+  "Truck_Beacon": [
+   -170.0,
+   6.5,
+   16.35
+  ],
+  "Truck_BulbRed": [
+   -171.393,
+   6.1,
+   14.821
+  ],
+  "Truck_BulbGold": [
+   -170.455,
+   6.1,
+   14.791
+  ],
+  "Truck_BulbGreen": [
+   -169.518,
+   6.1,
+   14.791
+  ],
+  "Truck_BulbBlue": [
+   -168.58,
+   6.1,
+   14.821
+  ],
+  "BigTree_Fir": [
+   -114.88,
+   0.0,
+   21.219
+  ],
+  "BigTree_Snow": [
+   -115.0,
+   0.0,
+   19.494
+  ],
+  "BigTree_WoodDark": [
+   -115.0,
+   0.0,
+   4.0
+  ],
+  "BigTree_Stone": [
+   -115.0,
+   0.0,
+   0.4
+  ],
+  "BigTree_Red": [
+   -114.445,
+   -0.342,
+   14.858
+  ],
+  "BigTree_Blue": [
+   -117.199,
+   -0.724,
+   16.482
+  ],
+  "BigTree_Gold": [
+   -114.373,
+   -0.208,
+   16.901
+  ],
+  "BigTree_Green": [
+   -113.764,
+   -0.254,
+   9.348
+  ],
+  "BigTree_BulbRed": [
+   -113.76,
+   0.356,
+   21.737
+  ],
+  "BigTree_BulbGold": [
+   -114.735,
+   1.182,
+   24.707
+  ],
+  "BigTree_BulbGreen": [
+   -115.721,
+   0.237,
+   21.739
+  ],
+  "BigTree_BulbBlue": [
+   -115.21,
+   -0.618,
+   21.952
+  ],
+  "ShopKiosk_Wood": [
+   -75.0,
+   -0.1,
+   5.725
+  ],
+  "ShopKiosk_WoodDark": [
+   -75.0,
+   -1.075,
+   2.775
+  ],
+  "ShopKiosk_Trim": [
+   -75.0,
+   -0.275,
+   4.2
+  ],
+  "ShopKiosk_Roof": [
+   -75.0,
+   0.0,
+   9.575
+  ],
+  "ShopKiosk_Snow": [
+   -75.0,
+   -0.664,
+   9.158
+  ],
+  "ShopKiosk_Light": [
+   -75.0,
+   3.95,
+   5.4
+  ],
+  "ShopKiosk_Red": [
+   -75.8,
+   -2.55,
+   8.95
+  ],
+  "ShopKiosk_Cream": [
+   -74.2,
+   -2.538,
+   5.738
+  ],
+  "ShopKiosk_Blue": [
+   -75.062,
+   -1.275,
+   4.24
+  ],
+  "ShopKiosk_Gold": [
+   -75.087,
+   -1.25,
+   9.587
+  ],
+  "ShopKiosk_Green": [
+   -75.7,
+   -1.1,
+   4.2
+  ],
+  "ShopKiosk_BulbRed": [
+   -76.187,
+   -7.1,
+   5.177
+  ],
+  "ShopKiosk_BulbGold": [
+   -75.387,
+   -7.1,
+   5.156
+  ],
+  "ShopKiosk_BulbGreen": [
+   -74.587,
+   -7.1,
+   5.156
+  ],
+  "ShopKiosk_BulbBlue": [
+   -73.787,
+   -7.1,
+   5.177
+  ],
+  "UpgradeKiosk_Wood": [
+   -45.0,
+   -0.1,
+   5.725
+  ],
+  "UpgradeKiosk_WoodDark": [
+   -45.0,
+   -1.075,
+   3.475
+  ],
+  "UpgradeKiosk_Trim": [
+   -45.0,
+   -0.275,
+   4.2
+  ],
+  "UpgradeKiosk_Roof": [
+   -45.0,
+   0.0,
+   9.575
+  ],
+  "UpgradeKiosk_Snow": [
+   -45.0,
+   -0.664,
+   9.158
+  ],
+  "UpgradeKiosk_Light": [
+   -45.0,
+   3.95,
+   5.4
+  ],
+  "UpgradeKiosk_Blue": [
+   -45.8,
+   -5.202,
+   5.89
+  ],
+  "UpgradeKiosk_Cream": [
+   -44.2,
+   -5.725,
+   6.75
+  ],
+  "UpgradeKiosk_Green": [
+   -49.6,
+   -3.807,
+   4.242
+  ],
+  "UpgradeKiosk_Purple": [
+   -44.5,
+   -3.865,
+   4.805
+  ],
+  "UpgradeKiosk_Gold": [
+   -43.33,
+   -0.288,
+   9.89
+  ],
+  "UpgradeKiosk_Dark": [
+   -45.137,
+   -0.199,
+   9.706
+  ],
+  "UpgradeKiosk_Metal": [
+   -45.164,
+   -0.47,
+   8.152
+  ],
+  "UpgradeKiosk_Red": [
+   -46.075,
+   3.65,
+   4.3
+  ],
+  "UpgradeKiosk_BulbRed": [
+   -46.187,
+   -7.1,
+   5.177
+  ],
+  "UpgradeKiosk_BulbGold": [
+   -45.387,
+   -7.1,
+   5.156
+  ],
+  "UpgradeKiosk_BulbGreen": [
+   -44.587,
+   -7.1,
+   5.156
+  ],
+  "UpgradeKiosk_BulbBlue": [
+   -43.787,
+   -7.1,
+   5.177
+  ],
+  "Gazebo_Wood": [
+   -10.0,
+   -1.385,
+   0.47
+  ],
+  "Gazebo_WoodDark": [
+   -10.0,
+   0.0,
+   9.3
+  ],
+  "Gazebo_Trim": [
+   -10.0,
+   0.0,
+   5.485
+  ],
+  "Gazebo_Roof": [
+   -10.0,
+   0.0,
+   13.15
+  ],
+  "Gazebo_Snow": [
+   -10.0,
+   0.0,
+   13.475
+  ],
+  "Gazebo_Light": [
+   -10.0,
+   0.0,
+   7.95
+  ],
+  "Gazebo_Gold": [
+   -10.0,
+   1.4,
+   9.95
+  ],
+  "Gazebo_Silver": [
+   -13.6,
+   1.4,
+   1.8
+  ],
+  "Gazebo_Bronze": [
+   -6.4,
+   1.4,
+   1.5
+  ],
+  "Gazebo_Stone": [
+   -10.0,
+   0.0,
+   0.2
+  ],
+  "Gazebo_BulbRed": [
+   -9.987,
+   0.0,
+   9.405
+  ],
+  "Gazebo_BulbGold": [
+   -9.987,
+   0.0,
+   9.365
+  ],
+  "Gazebo_BulbGreen": [
+   -9.987,
+   0.0,
+   9.365
+  ],
+  "Gazebo_BulbBlue": [
+   -9.987,
+   0.0,
+   9.405
+  ],
+  "Hill_Snow": [
+   46.267,
+   2.898,
+   9.89
+  ],
+  "Hill_Ice": [
+   47.55,
+   0.0,
+   6.884
+  ],
+  "Hill_Wood": [
+   34.938,
+   -3.0,
+   6.95
+  ],
+  "Hill_WoodDark": [
+   35.062,
+   -3.05,
+   8.465
+  ],
+  "Hill_Trim": [
+   38.6,
+   -9.0,
+   10.0
+  ],
+  "Hill_Light": [
+   28.4,
+   0.0,
+   20.875
+  ],
+  "Hill_Red": [
+   28.4,
+   0.0,
+   16.7
+  ],
+  "Hill_BulbRed": [
+   28.113,
+   -0.371,
+   19.186
+  ],
+  "Hill_BulbGold": [
+   28.113,
+   0.371,
+   19.186
+  ],
+  "Hill_BulbGreen": [
+   28.113,
+   -0.371,
+   19.113
+  ],
+  "Hill_BulbBlue": [
+   28.113,
+   0.371,
+   19.113
+  ],
+  "Plaza_Stone": [
+   0.0,
+   99.5,
+   0.15
+  ],
+  "Plaza_Light": [
+   0.0,
+   80.0,
+   0.32
+  ],
+  "Plaza_Snow": [
+   0.0,
+   101.0,
+   0.18
+  ]
+ }
+}

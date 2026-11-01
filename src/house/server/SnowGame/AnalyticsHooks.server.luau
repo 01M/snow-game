@@ -2,7 +2,7 @@
 -- Воронка новичка (шаги 4–9): загрузился → первый снег (SnowCollected) → первая продажа (Cash вырос)
 -- → первая покупка (Cash уменьшился) → двор очищен (SnowYard.Yard.State) → матч закончен (workspace.MatchState).
 -- Экономика: любое изменение Cash. Откуда/на что — по атрибуту, который поменялся вместе с Cash:
---   приход: IapCash вырос → пачка Cash за Robux (IAP, "CashPack"), ManholeCash вырос → "Manhole",
+--   приход: IapCash вырос → пачка Cash за Robux (IAP, "CashPack"), ManholeCash вырос → "Manhole", TaskCash вырос → "TaskReward",
 --   MatchState = "finished" → "MatchEndSale", иначе "SnowMelter";
 --   расход: новый id в OwnedTools → "Tool:<Id>", уровень в ToolUpgrades → "ToolUpgrade:<Tool>.<Upgrade>",
 --   BackpackUpgradeLevel вырос → "Backpack". Если появится новый источник или трата Cash — добавить сюда.
@@ -34,6 +34,7 @@ local function snapshot(player: Player)
 		backpackLevel = player:GetAttribute("BackpackUpgradeLevel") or 0,
 		manholeCash = player:GetAttribute("ManholeCash") or 0,
 		iapCash = player:GetAttribute("IapCash") or 0,
+		taskCash = player:GetAttribute("TaskCash") or 0,
 	}
 end
 
@@ -100,11 +101,13 @@ local function onPlayerAdded(player: Player)
 				local sku = "SnowMelter"
 				if now.manholeCash > last.manholeCash then
 					sku = "Manhole"
+				elseif now.taskCash > last.taskCash then
+					sku = "TaskReward"
 				elseif workspace:GetAttribute("MatchState") == "finished" then
 					sku = "MatchEndSale"
 				end
 				Analytics.cash(player, true, delta, value, ECONOMY.Gameplay, sku)
-				if sku ~= "MatchEndSale" then
+				if sku == "SnowMelter" or sku == "Manhole" then
 					Analytics.onboarding(player, "First sale")
 				end
 			else

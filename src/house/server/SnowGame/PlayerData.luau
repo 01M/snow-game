@@ -1,6 +1,6 @@
 -- Сохранение прогресса игрока в DataStore (общий для всех мест experience).
 -- Схема: { Cash, UpgradeLevel, OwnedTools = { id }, ToolUpgrades = { [toolId] = { [upgradeId] = уровень } },
---   Purchases = { id чека }, BoostUntil = os.time, Session = { Job, Time } }. OwnedTools/ToolUpgrades держит и проверяет ToolServer.
+--   Purchases = { id чека }, BoostUntil = os.time, OnboardingStep = пройдено шагов Config.Onboarding, Session = { Job, Time } }. OwnedTools/ToolUpgrades держит и проверяет ToolServer.
 -- Purchases — последние MAX_PURCHASES чеков покупок за Robux (чтобы повтор ProcessReceipt не выдал товар дважды),
 -- BoostUntil — конец личного буста ×2 Cash (атрибут игрока BoostUntil). Лобби пишет покупки в тот же ключ само (ShopServer).
 -- Session — блокировка: писать может только сервер, который загрузил игрока.
@@ -54,6 +54,10 @@ local function snapshot(player)
 	if boost ~= nil then
 		data.BoostUntil = toCount(boost)
 	end
+	local onboarding = player:GetAttribute("OnboardingStep")
+	if onboarding ~= nil then
+		data.OnboardingStep = toCount(onboarding)
+	end
 	return data
 end
 
@@ -92,6 +96,7 @@ function PlayerData.load(player)
 				ToolUpgrades = typeof(result.ToolUpgrades) == "table" and result.ToolUpgrades or {},
 				Purchases = typeof(result.Purchases) == "table" and result.Purchases or {},
 				BoostUntil = toCount(result.BoostUntil),
+				OnboardingStep = toCount(result.OnboardingStep),
 			}
 			loaded[player] = data
 			released[player] = nil
@@ -101,6 +106,7 @@ function PlayerData.load(player)
 				OwnedTools = data.OwnedTools,
 				ToolUpgrades = data.ToolUpgrades,
 				BoostUntil = data.BoostUntil,
+				OnboardingStep = data.OnboardingStep,
 			}
 		end
 		if not ok and RunService:IsStudio() and string.find(tostring(result), "403") then
@@ -184,6 +190,7 @@ saveImpl = function(player, release)
 				old.ToolUpgrades = data.ToolUpgrades
 				old.Purchases = data.Purchases
 				old.BoostUntil = data.BoostUntil
+				old.OnboardingStep = data.OnboardingStep
 				old.Session = not release and { Job = jobId, Time = os.time() } or nil
 				return old
 			end)

@@ -11,16 +11,18 @@ return {
 		en = "Backpack full! Sell your snow",
 		ru = "Рюкзак полный! Продай снег",
 	},
-	["Hud.AllTasksDone"] = { en = "All tasks done! ❄", ru = "Все задачи выполнены! ❄" },
+	["Hud.TaskDone"] = { en = "Done! +{cash} Cash", ru = "Готово! +{cash} Cash" },
 	["Hud.Cleared"] = { en = "CLEARED ✓", ru = "ОЧИЩЕНО ✓" },
 
-	-- Задачи матча
+	-- Цепочка задач новичка (Config.Onboarding)
 	["Task.Collect"] = { en = "Collect {goal} snow", ru = "Собери {goal} снега" },
 	["Task.Sell"] = {
 		en = "Sell {goal} snow at the Snow Melter",
 		ru = "Продай {goal} снега в снегоплавилке",
 	},
-	["Task.OpenJournal"] = { en = "Open the journal (Tab)", ru = "Открой журнал (Tab)" },
+	["Task.BuyShovel"] = { en = "Buy a Shovel in the shed", ru = "Купи Лопату в сарае" },
+	["Task.ClearVeranda"] = { en = "Clear the porch", ru = "Очисти веранду" },
+	["Task.ClearShed"] = { en = "Clear the shed", ru = "Очисти сарай" },
 	["Task.UpgradeBackpack"] = { en = "Upgrade your backpack", ru = "Улучши рюкзак" },
 	["Task.ClearYard"] = { en = "Clear the yard", ru = "Очисти двор" },
 

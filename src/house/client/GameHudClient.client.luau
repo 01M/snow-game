@@ -1,5 +1,5 @@
 -- GameHudClient: HUD матча и журнал-ноутбук (Tab) по референсу Clean all the Leaves.
--- HUD: текущая задача, «След. перк» (заглушка), прогресс двора, деньги с множителем (заглушка x1.00),
+-- HUD: текущая задача (цепочка Config.Onboarding, считает OnboardingServer; карточка скрывается, когда цепочка пройдена), «След. перк» (заглушка), прогресс двора, деньги с множителем (заглушка x1.00),
 -- кнопка журнала, мешок снега, таймер матча (workspace.MatchStartTime/MatchEndTime ставит MatchServer).
 -- Журнал: «Журнал» (задачи + игроки), «Апгрейды» (инструменты из Config.Tools — Remotes.BuyToolUpgrade, рюкзак — Remotes.BuyUpgrade),
 -- «Коллекция» (заглушка), «Подсказки».
@@ -8,6 +8,7 @@ local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local UserInputService = game:GetService("UserInputService")
 local TextChatService = game:GetService("TextChatService")
+local TweenService = game:GetService("TweenService")
 
 local snowGame = ReplicatedStorage:WaitForChild("SnowGame")
 local config = require(snowGame:WaitForChild("Config"))
@@ -98,9 +99,6 @@ end
 -- Данные
 -- ============================================================
 local mainZone = zoneConfig.Zones[1]
--- Сколько порций в зоне, считает сервер (BlowServer)
-local zoneTotal = workspace:WaitForChild("SnowYard"):WaitForChild(mainZone.Name):WaitForChild("Total").Value
-
 local function getStat(name)
 	local ls = player:FindFirstChild("leaderstats")
 	local v = ls and ls:FindFirstChild(name)
@@ -114,50 +112,14 @@ local function getZoneValue(zone, name: string)
 	return value and value.Value or 0
 end
 
-local function getZoneCleared()
-	return getZoneValue(mainZone, "Score")
-end
-
 local function getUpgradePrice()
 	return config.getUpgradePrice(player:GetAttribute("BackpackUpgradeLevel") or 0)
 end
 
-local journalOpened = false
-
--- Задачи матча: текущая — первая невыполненная
-local tasks = {
-	{
-		key = "Task.Collect",
-		goal = 5,
-		get = function()
-			return player:GetAttribute("SnowCollected") or 0
-		end,
-	},
-	{
-		key = "Task.Sell",
-		goal = 5,
-		get = function()
-			return player:GetAttribute("SnowSold") or 0
-		end,
-	},
-	{
-		key = "Task.OpenJournal",
-		goal = 1,
-		get = function()
-			return journalOpened and 1 or 0
-		end,
-	},
-	{
-		key = "Task.UpgradeBackpack",
-		goal = 1,
-		get = function()
-			return player:GetAttribute("UpgradesBought") or 0
-		end,
-	},
-	{ key = "Task.ClearYard", goal = zoneTotal, get = getZoneCleared },
-}
-for _, t in tasks do
-	t.text = L(t.key, { goal = t.goal })
+-- Цепочка задач новичка: шаг и прогресс считает сервер (OnboardingServer), здесь только тексты
+local tasks = {}
+for i, step in config.Onboarding do
+	tasks[i] = { text = L(step.Text, { goal = step.Goal }), reward = step.Reward }
 end
 
 -- ============================================================
@@ -177,8 +139,10 @@ local taskCard = new("Frame", {
 	Position = UDim2.new(0, 16, 0, 64),
 	Size = UDim2.new(0, 340, 0, 64),
 	BackgroundColor3 = C.paper,
+	Visible = false,
 	Parent = hud,
 }, { corner(14), border(C.outline, 3) })
+local taskCardScale = new("UIScale", { Parent = taskCard })
 
 new("Frame", {
 	Name = "Icon",
@@ -215,10 +179,38 @@ local taskText = label({
 	Size = UDim2.new(1, -74, 0, 26),
 	Text = "",
 	Font = Enum.Font.GothamBlack,
-	TextSize = 17,
-	TextTruncate = Enum.TextTruncate.AtEnd,
+	TextScaled = true, -- длинная задача мельчает, а не обрезается: счётчик в конце должен быть виден
 	Parent = taskCard,
+}, { new("UITextSizeConstraint", { MaxTextSize = 17, MinTextSize = 10 }) })
+
+-- Шаг выполнен: карточка на время показывает награду
+local TASK_TOAST_TIME = 2
+local taskToastUntil = 0
+local taskDoneSound = new("Sound", {
+	Name = "TaskDone",
+	SoundId = "rbxasset://sounds/electronicpingshort.wav",
+	Volume = 0.6,
+	Parent = hud,
 })
+
+local function showTaskDone(reward: number)
+	taskToastUntil = os.clock() + TASK_TOAST_TIME
+	taskCard.Visible = true
+	taskCard.BackgroundColor3 = C.greenSoft
+	taskText.Text = L("Hud.TaskDone", { cash = reward })
+	taskCardScale.Scale = 1.1
+	TweenService:Create(taskCardScale, TweenInfo.new(0.3, Enum.EasingStyle.Back), { Scale = 1 }):Play()
+	taskDoneSound:Play()
+end
+
+local shownStepsDone = player:GetAttribute("OnboardingStep")
+player:GetAttributeChangedSignal("OnboardingStep"):Connect(function()
+	local stepsDone = player:GetAttribute("OnboardingStep")
+	if shownStepsDone and stepsDone > shownStepsDone then
+		showTaskDone(tasks[stepsDone].reward)
+	end
+	shownStepsDone = stepsDone
+end)
 
 -- Прогресс-бары
 local function makeBar(name, y, title)
@@ -1260,7 +1252,6 @@ local function setJournalOpen(open)
 		chatWindow.Enabled = not open
 	end
 	if open then
-		journalOpened = true
 		if not currentPage then
 			showPage("Journal")
 		end
@@ -1309,20 +1300,28 @@ local function refreshHud()
 	bagHint.Text = full and L("Hud.BackpackFull") or L("Hud.CashPerSnow")
 	upgradeBadge.Visible = cash >= price
 
-	-- задачи
+	-- задачи: nil — данные ещё не загружены
+	local stepsDone = player:GetAttribute("OnboardingStep")
 	local current = nil
 	for i, t in ipairs(tasks) do
-		local value = math.min(t.get(), t.goal)
-		local done = value >= t.goal
+		local done = stepsDone ~= nil and i <= stepsDone
 		local row = taskRows[i]
 		row.check.Visible = done
 		row.text.TextColor3 = done and C.inkSoft or C.ink
-		row.progress.Text = string.format("(%d/%d)", value, t.goal)
-		if not done and not current then
-			current = string.format("%s (%d/%d)", t.text, value, t.goal)
+		row.progress.Text = ""
+		if stepsDone ~= nil and i == stepsDone + 1 then
+			local goal = player:GetAttribute("OnboardingGoal") or 1
+			local value = math.min(player:GetAttribute("OnboardingProgress") or 0, goal)
+			row.progress.Text = string.format("(%d/%d)", value, goal)
+			current = string.format("%s %s", t.text, row.progress.Text)
 		end
 	end
-	taskText.Text = current or L("Hud.AllTasksDone")
+	if os.clock() >= taskToastUntil then
+		-- Цепочка пройдена: карточка скрыта. Ежедневные задания встанут сюда, в current
+		taskCard.Visible = current ~= nil
+		taskCard.BackgroundColor3 = C.paper
+		taskText.Text = current or ""
+	end
 
 	-- зона, в которой стоит игрок
 	local hrp = player.Character and player.Character:FindFirstChild("HumanoidRootPart")

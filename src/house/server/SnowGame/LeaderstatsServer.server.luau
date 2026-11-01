@@ -47,6 +47,8 @@ local function onPlayerAdded(player: Player)
 	player:SetAttribute("BackpackUpgradeLevel", data.UpgradeLevel)
 	-- Личный буст ×2 Cash из магазина (мог быть куплен в лобби)
 	player:SetAttribute("BoostUntil", data.BoostUntil or 0)
+	-- Цепочка задач новичка (OnboardingServer)
+	player:SetAttribute("OnboardingStep", data.OnboardingStep or 0)
 
 	-- Инструменты: бесплатные + купленные, выдаёт ToolServer
 	ToolServer.setLoaded(player, data.OwnedTools, data.ToolUpgrades)

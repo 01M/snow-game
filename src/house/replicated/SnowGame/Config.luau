@@ -49,6 +49,20 @@ local Config = {
 	ParticleLifetime = 1.5,
 }
 
+-- Цепочка задач новичка (OnboardingServer, карточка задачи в HUD). Сохраняется число пройденных шагов,
+-- поэтому новые шаги — только в конец списка. Text — ключ Locale, Reward — Cash за шаг. Чем проверяется шаг:
+-- Stat — атрибут игрока вырос на Goal с начала шага; Tool — инструмент куплен;
+-- BackpackLevel — уровень рюкзака; Zone — зона очищена (прогресс — её Score и Total).
+Config.Onboarding = {
+	{ Id = "Collect", Text = "Task.Collect", Stat = "SnowCollected", Goal = 5, Reward = 5 },
+	{ Id = "Sell", Text = "Task.Sell", Stat = "SnowSold", Goal = 5, Reward = 5 },
+	{ Id = "BuyShovel", Text = "Task.BuyShovel", Tool = "Shovel", Reward = 5 },
+	{ Id = "ClearVeranda", Text = "Task.ClearVeranda", Zone = "Veranda", Reward = 15 },
+	{ Id = "UpgradeBackpack", Text = "Task.UpgradeBackpack", BackpackLevel = 1, Reward = 10 },
+	{ Id = "ClearShed", Text = "Task.ClearShed", Zone = "Shed", Reward = 15 },
+	{ Id = "ClearYard", Text = "Task.ClearYard", Zone = "Yard", Reward = 50 },
+}
+
 -- Инструменты уборки (порядок = слоты хотбара). Модели — ServerStorage.SnowTools.<Id> (Tool с атрибутом SnowToolId).
 -- Bare = true — не предмет: работает, когда в руках ничего нет (Рука, Config.BareTool), в Backpack не выдаётся.
 -- Range — макс. дальность от игрока, HalfAngle — полуугол конуса, MeltRate — срез за тик в центре конуса.

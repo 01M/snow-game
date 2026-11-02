@@ -234,6 +234,7 @@ return {
 	-- Магазины (ToolShopClient, UpgradeShopClient, подсказки ProximityPrompt)
 	["Shop.Owned"] = { en = "Owned", ru = "Куплено" },
 	["Shop.Buy"] = { en = "Buy", ru = "Купить" },
+	["Shop.CashPrice"] = { en = "{price} Cash", ru = "{price} Cash" },
 	["Shop.BackpackPrice"] = { en = "Backpack +{n}: {price} Cash", ru = "Рюкзак +{n}: {price} Cash" },
 	["Shop.UpgradeBackpack"] = { en = "Upgrade backpack", ru = "Улучшить рюкзак" },
 	["Shop.UpgradeShop"] = { en = "Upgrade Shop", ru = "Магазин апгрейдов" },

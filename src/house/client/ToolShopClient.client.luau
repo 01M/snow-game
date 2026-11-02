@@ -44,7 +44,7 @@ local function refresh()
 				price.Text = L("Shop.Owned")
 				price.TextColor3 = GOLD
 			else
-				price.Text = tool.Price .. " 💰"
+				price.Text = L("Shop.CashPrice", { price = tool.Price })
 				price.TextColor3 = cash() >= tool.Price and GREEN or RED
 			end
 		end

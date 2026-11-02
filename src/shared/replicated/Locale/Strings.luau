@@ -356,19 +356,13 @@ return {
 	},
 
 	-- HUD лобби (LobbyHudClient)
-	["Lobby.Hud.Play"] = { en = "▶ PLAY", ru = "▶ ИГРАТЬ" },
+	["Lobby.Hud.Play"] = { en = "PLAY", ru = "ИГРАТЬ" },
 	["Lobby.Hud.NoFreePads"] = {
 		en = "All pads are busy, try again in a moment",
 		ru = "Все площадки заняты, попробуй через пару секунд",
 	},
 	["Lobby.Hud.Shop"] = { en = "Shop", ru = "Магазин" },
 	["Lobby.Hud.Invite"] = { en = "Invite", ru = "Пригласить" },
-	["Lobby.Hud.Clans"] = { en = "Clans", ru = "Кланы" },
-	["Lobby.Hud.Classes"] = { en = "Classes", ru = "Классы" },
-	["Lobby.Hud.Stats"] = { en = "Stats", ru = "Статистика" },
-	["Lobby.Hud.Feedback"] = { en = "Feedback", ru = "Отзыв" },
-	["Lobby.Hud.Updates"] = { en = "Updates", ru = "Обновления" },
-	["Lobby.Hud.Soon"] = { en = "{name}: coming soon!", ru = "{name}: скоро!" },
 	["Lobby.Hud.InviteUnavailable"] = {
 		en = "Invites unavailable right now",
 		ru = "Приглашения сейчас недоступны",

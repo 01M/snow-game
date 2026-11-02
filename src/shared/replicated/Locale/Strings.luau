@@ -334,9 +334,9 @@ return {
 
 	-- Меню хозяина площадки (LobbyMenuClient)
 	["Lobby.Menu.Settings"] = { en = "GAME SETTINGS", ru = "НАСТРОЙКИ ИГРЫ" },
-	["Lobby.Menu.MaxPlayers"] = { en = "👥 MAX PLAYERS", ru = "👥 МАКС. ИГРОКОВ" },
+	["Lobby.Menu.MaxPlayers"] = { en = "MAX PLAYERS", ru = "МАКС. ИГРОКОВ" },
 	["Lobby.Menu.FriendsOnly"] = { en = "Friends\nonly", ru = "Только\nдрузья" },
-	["Lobby.Menu.Invite"] = { en = "👥 Invite\nfriends!", ru = "👥 Пригласить\nдрузей!" },
+	["Lobby.Menu.Invite"] = { en = "Invite\nfriends!", ru = "Пригласить\nдрузей!" },
 	["Lobby.Menu.Start"] = { en = "Start!", ru = "Начать!" },
 	["Lobby.Menu.MapSelect"] = { en = "MAP SELECT", ru = "ВЫБОР КАРТЫ" },
 	["Lobby.Menu.Chapter"] = { en = "CHAPTER {n}", ru = "ГЛАВА {n}" },

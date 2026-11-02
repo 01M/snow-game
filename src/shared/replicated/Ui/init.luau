@@ -40,7 +40,7 @@ Ui.Font = {
 	hand = Font.new("rbxasset://fonts/families/AmaticSC.json", Enum.FontWeight.Bold),
 }
 
-Ui.ATLAS = "rbxassetid://70491757384099"
+Ui.ATLAS = "rbxassetid://96388078216942"
 Ui.CELL = 128
 -- Номер клетки атласа; порядок как в assets/ui/icons.svg
 Ui.Icons = {
@@ -86,6 +86,8 @@ Ui.Icons = {
 	AlarmClock = 38,
 	Trumpet = 39,
 	Snowman = 40,
+	Gear = 41,
+	Map = 42,
 }
 -- Снежные шапки в строке 6 атласа: широкая и короткая
 local SNOW_CAP_WIDE = { Vector2.new(0, 768), Vector2.new(512, 128) }

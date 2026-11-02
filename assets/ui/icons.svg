@@ -1,7 +1,7 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
 <!-- Атлас иконок интерфейса. Клетка 128x128, иконка 112x112 (32 единицы x 3.5) с полем 8 px.
      Номер клетки i: x = (i % 8) * 128, y = floor(i / 8) * 128. Порядок совпадает с src/shared/replicated/Ui/Icons.luau.
-     Снежные шапки: строка 6 (y = 768). PNG: рендер этого SVG без фона (resvg), загружен как rbxassetid://70491757384099. -->
+     Снежные шапки: строка 6 (y = 768). PNG: рендер этого SVG без фона (resvg), загружен как rbxassetid://96388078216942. -->
 <defs>
 <style>.o{stroke:#0B0F1C;stroke-linejoin:round;stroke-linecap:round}</style>
 </defs>
@@ -304,6 +304,21 @@
 <circle cx="13.8" cy="8.5" r="1.1" fill="#0B0F1C"/><circle cx="18.2" cy="8.5" r="1.1" fill="#0B0F1C"/>
 <circle cx="16" cy="19.5" r="1.2" fill="#0B0F1C"/><circle cx="16" cy="23.5" r="1.2" fill="#0B0F1C"/>
 <path d="M10.5 14.5h11" stroke="#E2534A" stroke-width="2.6" stroke-linecap="round"/>
+</g>
+
+
+<!-- 41 Gear: настройки -->
+<g transform="translate(136 648) scale(3.5)">
+<path d="M14 3h4l.8 3.4 2.6 1.1 3-1.9 2.8 2.8-1.9 3 1.1 2.6L29 14v4l-3.4.8-1.1 2.6 1.9 3-2.8 2.8-3-1.9-2.6 1.1L18 29h-4l-.8-3.4-2.6-1.1-3 1.9-2.8-2.8 1.9-3-1.1-2.6L3 18v-4l3.4-.8 1.1-2.6-1.9-3 2.8-2.8 3 1.9 2.6-1.1z" fill="#AEB8C4" class="o" stroke-width="2.4"/>
+<circle cx="16" cy="16" r="4.5" fill="#1E2640" class="o" stroke-width="2.2"/>
+</g>
+
+<!-- 42 Map: карта -->
+<g transform="translate(264 648) scale(3.5)">
+<path d="M3 7l8-3 10 3 8-3v21l-8 3-10-3-8 3z" fill="#CFE9FF" class="o" stroke-width="2.6"/>
+<path d="M11 4v21M21 7v21" stroke="#0B0F1C" stroke-width="2"/>
+<path d="M5 18c3-1 4 2 6 1M13 12c2 1 4-1 6 0M23 20c1.5-1 3-1 4 0" stroke="#3DAA6B" stroke-width="2.2" fill="none" stroke-linecap="round"/>
+<circle cx="16" cy="18" r="2.4" fill="#E2534A" class="o" stroke-width="1.6"/>
 </g>
 
 <!-- Строка 6: снежные шапки. Широкая: x 0..512, y 768..896. Короткая: x 512..768. -->

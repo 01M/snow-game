@@ -1,7 +1,8 @@
 -- Список карт для выбора в лобби. PlaceId — place с картой в этом же experience.
 -- Название карты — в ReplicatedStorage.Shared.Locale.Strings, ключ Map.<Id>.
+-- Image — картинка карточки 16:9 (кадр карты из Play без интерфейса и табло).
 local Maps = {
-	{ Id = "House", PlaceId = 77433112786408 },
+	{ Id = "House", PlaceId = 77433112786408, Image = "rbxassetid://80144793808649" }, -- кадр карты: assets/ui/map_house.png
 }
 
 local byId = {}

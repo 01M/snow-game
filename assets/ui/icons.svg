@@ -1,7 +1,7 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
 <!-- Атлас иконок интерфейса. Клетка 128x128, иконка 112x112 (32 единицы x 3.5) с полем 8 px.
      Номер клетки i: x = (i % 8) * 128, y = floor(i / 8) * 128. Порядок совпадает с src/shared/replicated/Ui/Icons.luau.
-     Снежные шапки: строка 6 (y = 768). PNG: рендер этого SVG без фона (resvg), загружен как rbxassetid://75584506371122. -->
+     Снежные шапки: строка 6 (y = 768). PNG: рендер этого SVG без фона (resvg), загружен как rbxassetid://70491757384099. -->
 <defs>
 <style>.o{stroke:#0B0F1C;stroke-linejoin:round;stroke-linecap:round}</style>
 </defs>
@@ -217,6 +217,93 @@
 <path d="M10.5 11.5a5.5 5.5 0 1 1 8 4.9c-1.6.8-2.5 1.9-2.5 3.6v1" fill="none" class="o" stroke-width="7"/>
 <path d="M10.5 11.5a5.5 5.5 0 1 1 8 4.9c-1.6.8-2.5 1.9-2.5 3.6v1" fill="none" stroke="#E2534A" stroke-width="3.6" stroke-linecap="round"/>
 <circle cx="16" cy="27" r="3" fill="#E2534A" class="o" stroke-width="1.8"/>
+</g>
+
+
+<!-- 30 Range: линейка -->
+<g transform="translate(776 392) scale(3.5)">
+<rect x="2" y="11" width="28" height="11" rx="2.5" fill="#FFB443" class="o" stroke-width="2.6" transform="rotate(-30 16 16)"/>
+<g stroke="#0B0F1C" stroke-width="1.8" stroke-linecap="round" transform="rotate(-30 16 16)"><path d="M7 11v4M11 11v3M15 11v4M19 11v3M23 11v4"/></g>
+</g>
+
+<!-- 31 Width: стрелка в обе стороны -->
+<g transform="translate(904 392) scale(3.5)">
+<path d="M3 16l7-7v4h12V9l7 7-7 7v-4H10v4z" fill="#8FD3FF" class="o" stroke-width="2.6"/>
+</g>
+
+<!-- 32 Find: варежка -->
+<g transform="translate(8 520) scale(3.5)">
+<path d="M10 28V12a5 5 0 0 1 10 0v10.5a5.5 5.5 0 0 1-5.5 5.5z" fill="#E2534A" class="o" stroke-width="2.6"/>
+<path d="M20 18.5l3.2-3a2.6 2.6 0 0 1 3.6 3.7L20 25.5" fill="#E2534A" class="o" stroke-width="2.4"/>
+<rect x="8.5" y="24.5" width="13" height="5" rx="2" fill="#FFF3DE" class="o" stroke-width="2.2"/>
+<path d="M12 15h6M12 19h6" stroke="#FFF3DE" stroke-width="1.8" stroke-linecap="round"/>
+</g>
+
+<!-- 33 Find: ключи -->
+<g transform="translate(136 520) scale(3.5)">
+<circle cx="10" cy="10" r="6.5" fill="#FFB443" class="o" stroke-width="2.6"/>
+<circle cx="10" cy="10" r="2.2" fill="#0B0F1C"/>
+<path d="M14.5 14.5L27 27M21 21l3-3M24.5 24.5l2.5-2.5" fill="none" class="o" stroke-width="5.4"/>
+<path d="M14.5 14.5L27 27M21 21l3-3M24.5 24.5l2.5-2.5" fill="none" stroke="#FFB443" stroke-width="2.6" stroke-linecap="round"/>
+</g>
+
+<!-- 34 Find: мишка -->
+<g transform="translate(264 520) scale(3.5)">
+<circle cx="8" cy="8" r="4" fill="#C17A3A" class="o" stroke-width="2.4"/>
+<circle cx="24" cy="8" r="4" fill="#C17A3A" class="o" stroke-width="2.4"/>
+<circle cx="16" cy="16" r="11" fill="#C17A3A" class="o" stroke-width="2.6"/>
+<ellipse cx="16" cy="20" rx="5" ry="4" fill="#F1D3A8" class="o" stroke-width="2"/>
+<circle cx="12" cy="13.5" r="1.6" fill="#0B0F1C"/><circle cx="20" cy="13.5" r="1.6" fill="#0B0F1C"/>
+<circle cx="16" cy="18.5" r="1.5" fill="#0B0F1C"/>
+</g>
+
+<!-- 35 Find: шарф -->
+<g transform="translate(392 520) scale(3.5)">
+<path d="M5 9c6 3 16 3 22 0v6c-6 3-16 3-22 0z" fill="#3C8DD6" class="o" stroke-width="2.4"/>
+<path d="M18 14l-1 14h6l1-13" fill="#3C8DD6" class="o" stroke-width="2.4"/>
+<path d="M9 11v5M14 12v5M23 11v5" stroke="#FFF3DE" stroke-width="1.8" stroke-linecap="round"/>
+<path d="M17.5 28v2.5M20 28v2.5M22.5 28v2.5" stroke="#0B0F1C" stroke-width="1.6" stroke-linecap="round"/>
+</g>
+
+<!-- 36 Find: цилиндр -->
+<g transform="translate(520 520) scale(3.5)">
+<rect x="9" y="4" width="14" height="18" rx="2" fill="#3A3F52" class="o" stroke-width="2.6"/>
+<rect x="9" y="16" width="14" height="4" fill="#E2534A" class="o" stroke-width="2"/>
+<ellipse cx="16" cy="24" rx="13" ry="4.5" fill="#3A3F52" class="o" stroke-width="2.6"/>
+</g>
+
+<!-- 37 Find: очки -->
+<g transform="translate(648 520) scale(3.5)">
+<path d="M3 13h26" class="o" stroke-width="2.6"/>
+<rect x="3.5" y="12" width="11" height="9" rx="4" fill="#3A3F52" class="o" stroke-width="2.6"/>
+<rect x="17.5" y="12" width="11" height="9" rx="4" fill="#3A3F52" class="o" stroke-width="2.6"/>
+<path d="M6 15l3-1.5M20 15l3-1.5" stroke="#8FD3FF" stroke-width="1.8" stroke-linecap="round"/>
+</g>
+
+<!-- 38 Find: будильник -->
+<g transform="translate(776 520) scale(3.5)">
+<circle cx="7" cy="7" r="4" fill="#E2534A" class="o" stroke-width="2.4"/>
+<circle cx="25" cy="7" r="4" fill="#E2534A" class="o" stroke-width="2.4"/>
+<path d="M9 28l2-3M23 28l-2-3" class="o" stroke-width="2.6"/>
+<circle cx="16" cy="17" r="10" fill="#FFF3DE" class="o" stroke-width="2.8"/>
+<path d="M16 11.5V17l3.5 2.5" fill="none" class="o" stroke-width="2.6"/>
+</g>
+
+<!-- 39 Find: труба -->
+<g transform="translate(904 520) scale(3.5)">
+<path d="M3 14h14l9-6v16l-9-6H3z" fill="#FFB443" class="o" stroke-width="2.6"/>
+<path d="M8 14v-4M12 14v-4" class="o" stroke-width="2.6"/>
+<circle cx="8" cy="9" r="1.8" fill="#FFB443" class="o" stroke-width="1.6"/><circle cx="12" cy="9" r="1.8" fill="#FFB443" class="o" stroke-width="1.6"/>
+</g>
+
+<!-- 40 Find: снеговик -->
+<g transform="translate(8 648) scale(3.5)">
+<circle cx="16" cy="22" r="8" fill="#FFFFFF" class="o" stroke-width="2.6"/>
+<circle cx="16" cy="10" r="6" fill="#FFFFFF" class="o" stroke-width="2.6"/>
+<path d="M16 10.5l5 1.5-5 1z" fill="#FFB443" class="o" stroke-width="1.4"/>
+<circle cx="13.8" cy="8.5" r="1.1" fill="#0B0F1C"/><circle cx="18.2" cy="8.5" r="1.1" fill="#0B0F1C"/>
+<circle cx="16" cy="19.5" r="1.2" fill="#0B0F1C"/><circle cx="16" cy="23.5" r="1.2" fill="#0B0F1C"/>
+<path d="M10.5 14.5h11" stroke="#E2534A" stroke-width="2.6" stroke-linecap="round"/>
 </g>
 
 <!-- Строка 6: снежные шапки. Широкая: x 0..512, y 768..896. Короткая: x 512..768. -->

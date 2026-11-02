@@ -11,7 +11,7 @@ return {
 		ru = "ПОЛНЫЙ! НЕСИ НА ПЛАВИЛКУ",
 	},
 	["Hud.TaskDone"] = { en = "Done! +{cash} Cash", ru = "Готово! +{cash} Cash" },
-	["Hud.Cleared"] = { en = "CLEARED ✓", ru = "ОЧИЩЕНО ✓" },
+	["Hud.Cleared"] = { en = "CLEARED", ru = "ОЧИЩЕНО" },
 
 	-- Цепочка задач новичка (Config.Onboarding)
 	["Task.Collect"] = { en = "Collect {goal} snow", ru = "Собери {goal} снега" },
@@ -53,15 +53,15 @@ return {
 	["Upgrade.LevelLine"] = { en = "Level: {lv} / {max}", ru = "Уровень: {lv} / {max}" },
 	["Upgrade.Max"] = { en = "MAX", ru = "МАКС" },
 	["Upgrade.Bought"] = { en = "BOUGHT", ru = "КУПЛЕНО" },
-	["Upgrade.Buy"] = { en = "BUY ({price} 💰)", ru = "КУПИТЬ ({price} 💰)" },
-	["Upgrade.Need"] = { en = "NEED {price} 💰", ru = "НУЖНО {price} 💰" },
+	["Upgrade.Buy"] = { en = "BUY · {price} Cash", ru = "КУПИТЬ · {price} Cash" },
+	["Upgrade.Need"] = { en = "NEED {price} Cash", ru = "НУЖНО {price} Cash" },
 	["Upgrade.MaxButton"] = { en = "MAXED OUT", ru = "МАКСИМУМ" },
-	["Upgrade.BoughtButton"] = { en = "BOUGHT ✓", ru = "КУПЛЕНО ✓" },
+	["Upgrade.BoughtButton"] = { en = "BOUGHT", ru = "КУПЛЕНО" },
 	["Upgrade.LockedDesc"] = {
 		en = "Buy the {tool} in the shed by the Snow Melter to unlock its upgrades.",
 		ru = "Купи инструмент «{tool}» в сарае у снегоплавилки, чтобы открыть его апгрейды.",
 	},
-	["Upgrade.LockedButton"] = { en = "LOCKED 🔒", ru = "ЗАКРЫТО 🔒" },
+	["Upgrade.LockedButton"] = { en = "LOCKED", ru = "ЗАКРЫТО" },
 	["Upgrade.SoonDesc"] = {
 		en = "This upgrade unlocks later.",
 		ru = "Этот апгрейд откроется позже.",
@@ -153,8 +153,8 @@ return {
 	-- Вкладка «Коллекция» и находки (Finds, FindClient)
 	["Collection.Unknown"] = { en = "???", ru = "???" },
 	["Collection.NotFound"] = { en = "not found yet", ru = "ещё не найдено" },
-	["Collection.Have"] = { en = "found ✓", ru = "найдено ✓" },
-	["Collection.Title"] = { en = "LOST THINGS 💡", ru = "ПОТЕРЯННЫЕ ВЕЩИ 💡" },
+	["Collection.Have"] = { en = "found", ru = "найдено" },
+	["Collection.Title"] = { en = "LOST THINGS", ru = "ПОТЕРЯННЫЕ ВЕЩИ" },
 	["Collection.Text"] = {
 		en = "People lost things in the snow. Clear it to find them!\n\nA snowman is also hiding somewhere on the lot.\n\nFind everything for {cash} Cash.",
 		ru = "Под снегом лежат потерянные вещи. Убирай снег и найдёшь их!\n\nА где-то на участке прячется снеговик.\n\nЗа всю коллекцию: {cash} Cash.",
@@ -223,8 +223,8 @@ return {
 
 	-- Экран конца матча (MatchEndClient)
 	["MatchEnd.Title"] = { en = "YARD CLEARED!", ru = "ДВОР ОЧИЩЕН!" },
-	["MatchEnd.Snow"] = { en = "❄ Snow collected: {n}", ru = "❄ Собрано снега: {n}" },
-	["MatchEnd.Cash"] = { en = "💰 Earned: {n} Cash", ru = "💰 Заработано: {n} Cash" },
+	["MatchEnd.Snow"] = { en = "Snow collected: {n}", ru = "Собрано снега: {n}" },
+	["MatchEnd.Cash"] = { en = "Earned: {n} Cash", ru = "Заработано: {n} Cash" },
 	["MatchEnd.Countdown"] = {
 		en = "Back to the lobby in {n} s…",
 		ru = "Возврат в лобби через {n} сек…",

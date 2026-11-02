@@ -1,6 +1,7 @@
 -- Находки под снегом и коллекция (FindServer, FindClient, вкладка «Коллекция» журнала).
 -- Названия — Locale: Find.Item.<Id>. Items — слоты коллекции, порядок = порядок на вкладке; их id хранятся в сохранении,
 -- поэтому существующие id не менять. Hidden = true — не лежит под снегом: стоит в одном из GnomeSpots.
+-- Icon — имя иконки из атласа Ui (ReplicatedStorage.Shared.Ui, Ui.Icons).
 local Finds = {
 	IcePortions = 3, -- ледышка: столько порций сразу в рюкзак
 	IcePerPortions = 250, -- ледышек в зоне: её порции / это, но от 1 до IceMaxPerZone
@@ -11,15 +12,15 @@ local Finds = {
 	DuplicateCash = 25, -- за вещь, которая уже есть в коллекции
 	SetCash = 1000, -- за всю коллекцию, один раз
 	Items = {
-		{ Id = "Mitten", Icon = "🧤", Color = Color3.fromRGB(200, 60, 60) },
-		{ Id = "Keys", Icon = "🔑", Color = Color3.fromRGB(230, 190, 80) },
-		{ Id = "Teddy", Icon = "🧸", Color = Color3.fromRGB(170, 120, 80) },
-		{ Id = "Scarf", Icon = "🧣", Color = Color3.fromRGB(90, 150, 220) },
-		{ Id = "Hat", Icon = "🎩", Color = Color3.fromRGB(50, 50, 60) },
-		{ Id = "Glasses", Icon = "🕶️", Color = Color3.fromRGB(70, 70, 80) },
-		{ Id = "Clock", Icon = "⏰", Color = Color3.fromRGB(220, 90, 70) },
-		{ Id = "Trumpet", Icon = "🎺", Color = Color3.fromRGB(235, 185, 70) },
-		{ Id = "Gnome", Icon = "⛄", Color = Color3.fromRGB(235, 240, 250), Hidden = true },
+		{ Id = "Mitten", Icon = "Mitten", Color = Color3.fromRGB(200, 60, 60) },
+		{ Id = "Keys", Icon = "Keys", Color = Color3.fromRGB(230, 190, 80) },
+		{ Id = "Teddy", Icon = "Teddy", Color = Color3.fromRGB(170, 120, 80) },
+		{ Id = "Scarf", Icon = "Scarf", Color = Color3.fromRGB(90, 150, 220) },
+		{ Id = "Hat", Icon = "Hat", Color = Color3.fromRGB(50, 50, 60) },
+		{ Id = "Glasses", Icon = "Glasses", Color = Color3.fromRGB(70, 70, 80) },
+		{ Id = "Clock", Icon = "AlarmClock", Color = Color3.fromRGB(220, 90, 70) },
+		{ Id = "Trumpet", Icon = "Trumpet", Color = Color3.fromRGB(235, 185, 70) },
+		{ Id = "Gnome", Icon = "Snowman", Color = Color3.fromRGB(235, 240, 250), Hidden = true },
 	},
 	-- Снеговик-гном: одно случайное место на матч. Y — земля
 	GnomeSpots = {

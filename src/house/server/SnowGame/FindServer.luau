@@ -14,6 +14,7 @@ local snowGame = ReplicatedStorage:WaitForChild("SnowGame")
 local finds = require(snowGame:WaitForChild("Finds")) :: any
 local findEvent = snowGame:WaitForChild("Remotes"):WaitForChild("FindEvent") :: RemoteEvent
 local Shop = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Shop")) :: any
+local Ui = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Ui"))
 local PlayerData = require(script.Parent:WaitForChild("PlayerData")) :: any
 
 local MIN_SNOW = 0.3 -- находка лежит только там, где снег есть
@@ -151,12 +152,7 @@ local function reveal(find: any, player: Player)
 		icon.Size = UDim2.fromOffset(56, 56)
 		icon.StudsOffset = Vector3.new(0, 1.3, 0)
 		icon.MaxDistance = 40
-		local label = Instance.new("TextLabel")
-		label.Size = UDim2.fromScale(1, 1)
-		label.BackgroundTransparency = 1
-		label.TextScaled = true
-		label.Text = find.item.Icon
-		label.Parent = icon
+		Ui.icon(find.item.Icon, { Size = UDim2.fromScale(1, 1), Parent = icon })
 		icon.Parent = part
 		addPrompt(part, find.item, function(picker: Player)
 			if part.Parent and closeEnough(picker, part) and collect(picker, find.item) then

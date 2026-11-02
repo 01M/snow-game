@@ -8,6 +8,7 @@ local TweenService = game:GetService("TweenService")
 local snowGame = ReplicatedStorage:WaitForChild("SnowGame")
 local findEvent = snowGame:WaitForChild("Remotes"):WaitForChild("FindEvent") :: RemoteEvent
 local L = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Locale")).t
+local Ui = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Ui"))
 
 local player = Players.LocalPlayer
 
@@ -21,17 +22,17 @@ gui.Parent = player:WaitForChild("PlayerGui")
 
 local popup = Instance.new("TextLabel")
 popup.AnchorPoint = Vector2.new(0.5, 0.5)
-popup.Position = UDim2.fromScale(0.5, 0.2)
+popup.Position = UDim2.fromScale(0.5, 0.32) -- ниже центральной группы HUD (рюкзак, зона, «+N»)
 popup.Size = UDim2.new(0.7, 0, 0, 44)
 popup.BackgroundTransparency = 1
-popup.Font = Enum.Font.GothamBlack
+popup.FontFace = Ui.Font.heavy
 popup.TextScaled = true
-popup.TextColor3 = Color3.fromRGB(255, 225, 120)
+popup.TextColor3 = Ui.Color.amber
 popup.Visible = false
 popup.Parent = gui
 local stroke = Instance.new("UIStroke")
-stroke.Color = Color3.fromRGB(20, 32, 58)
-stroke.Thickness = 2.5
+stroke.Color = Ui.Color.outline
+stroke.Thickness = 3
 stroke.Parent = popup
 local scale = Instance.new("UIScale")
 scale.Parent = popup

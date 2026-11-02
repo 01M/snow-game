@@ -29,25 +29,26 @@ local playerGui = player:WaitForChild("PlayerGui")
 
 local MAX_PLAYERS = 4
 
+-- Цвета журнала-планшета (бумага, дерево); общие цвета — Ui.Color
 local C = {
 	white = Color3.fromRGB(255, 255, 255),
-	ink = Color3.fromRGB(38, 52, 84),
-	inkSoft = Color3.fromRGB(115, 130, 160),
-	outline = Color3.fromRGB(20, 32, 58),
-	paper = Color3.fromRGB(240, 247, 255),
-	row = Color3.fromRGB(226, 238, 252),
-	ice = Color3.fromRGB(120, 200, 255),
-	iceDark = Color3.fromRGB(45, 115, 200),
-	frame = Color3.fromRGB(80, 150, 225),
-	frameDark = Color3.fromRGB(35, 80, 150),
-	keys = Color3.fromRGB(30, 45, 75),
-	green = Color3.fromRGB(60, 180, 90),
-	greenSoft = Color3.fromRGB(215, 245, 222),
-	red = Color3.fromRGB(225, 60, 60),
-	gold = Color3.fromRGB(255, 205, 70),
-	gray = Color3.fromRGB(175, 185, 200),
-	barBg = Color3.fromRGB(30, 45, 70),
-	lock = Color3.fromRGB(222, 230, 242),
+	ink = Color3.fromRGB(42, 28, 16),
+	inkSoft = Color3.fromRGB(122, 100, 80),
+	outline = Color3.fromRGB(11, 15, 28),
+	paper = Color3.fromRGB(255, 248, 234),
+	row = Color3.fromRGB(243, 226, 196),
+	ice = Color3.fromRGB(143, 211, 255),
+	iceDark = Color3.fromRGB(60, 141, 214),
+	wood = Color3.fromRGB(201, 137, 74),
+	woodDark = Color3.fromRGB(168, 107, 51),
+	title = Color3.fromRGB(70, 45, 22),
+	green = Color3.fromRGB(61, 170, 107),
+	greenSoft = Color3.fromRGB(220, 242, 222),
+	red = Color3.fromRGB(226, 83, 74),
+	gold = Color3.fromRGB(255, 180, 67),
+	gray = Color3.fromRGB(200, 181, 150),
+	barBg = Color3.fromRGB(30, 38, 64),
+	lock = Color3.fromRGB(236, 222, 197),
 }
 
 -- ============================================================
@@ -75,13 +76,9 @@ local function border(color, thickness)
 	return new("UIStroke", { Color = color, Thickness = thickness, ApplyStrokeMode = Enum.ApplyStrokeMode.Border })
 end
 
-local function textOutline(thickness)
-	return new("UIStroke", { Color = C.outline, Thickness = thickness or 2 })
-end
-
 local function label(props, children)
 	props.BackgroundTransparency = props.BackgroundTransparency or 1
-	props.Font = props.Font or Enum.Font.GothamBold
+	props.FontFace = props.FontFace or Ui.Font.bold
 	props.TextColor3 = props.TextColor3 or C.ink
 	props.TextXAlignment = props.TextXAlignment or Enum.TextXAlignment.Left
 	return new("TextLabel", props, children)
@@ -538,7 +535,7 @@ local upgradeBadge = Ui.label({
 }, { Ui.corner("full"), Ui.border(2) })
 
 -- ============================================================
--- Журнал-ноутбук
+-- Журнал: деревянный планшет с зажимом, вкладки — закладки слева
 -- ============================================================
 local journal = new("ScreenGui", {
 	Name = "JournalGui",
@@ -578,70 +575,86 @@ end
 updateScale()
 workspace.CurrentCamera:GetPropertyChangedSignal("ViewportSize"):Connect(updateScale)
 
--- Крышка ноутбука
-local lid = new("Frame", {
-	Name = "Lid",
-	Position = UDim2.fromOffset(300, 20),
-	Size = UDim2.fromOffset(820, 520),
-	BackgroundColor3 = C.frame,
+-- Деревянный планшет «Снежной службы»: доска, лист бумаги, металлический зажим, снег сверху
+local board = new("Frame", {
+	Name = "Board",
+	Position = UDim2.fromOffset(300, 34),
+	Size = UDim2.fromOffset(840, 620),
+	BackgroundColor3 = C.white,
 	Parent = root,
-}, { corner(28), border(C.frameDark, 5) })
-
-new("Frame", {
-	Name = "Webcam",
-	AnchorPoint = Vector2.new(0.5, 0),
-	Position = UDim2.new(0.5, 0, 0, 12),
-	Size = UDim2.fromOffset(90, 16),
-	BackgroundColor3 = C.keys,
-	Parent = lid,
-}, { corner(6) })
+}, {
+	corner(30),
+	border(C.outline, 4),
+	new("UIGradient", {
+		Rotation = 90,
+		Color = ColorSequence.new({
+			ColorSequenceKeypoint.new(0, C.wood),
+			ColorSequenceKeypoint.new(0.975, C.wood),
+			ColorSequenceKeypoint.new(0.976, C.woodDark),
+			ColorSequenceKeypoint.new(1, C.woodDark),
+		}),
+	}),
+})
+-- волокна дерева: несколько тонких полос
+for i = 1, 7 do
+	new("Frame", {
+		Position = UDim2.new(0, 20, 0, 40 + i * 74),
+		Size = UDim2.new(1, -40, 0, 2),
+		BackgroundColor3 = C.woodDark,
+		BackgroundTransparency = 0.55,
+		BorderSizePixel = 0,
+		Parent = board,
+	})
+end
+Ui.snowCap(board, false, 40)
 
 local screen = new("Frame", {
 	Name = "Screen",
-	Position = UDim2.fromOffset(28, 40),
-	Size = UDim2.new(1, -56, 1, -64),
+	Position = UDim2.fromOffset(28, 82), -- ниже зажима
+	Size = UDim2.new(1, -56, 1, -112),
 	BackgroundColor3 = C.paper,
 	ClipsDescendants = true,
-	Parent = lid,
-}, { corner(16), border(C.frameDark, 3) })
+	Parent = board,
+}, { corner(10), border(C.outline, 3) })
 
--- Клавиатура
-local base = new("Frame", {
-	Name = "Base",
-	Position = UDim2.fromOffset(260, 540),
-	Size = UDim2.fromOffset(900, 110),
-	BackgroundColor3 = C.frame,
-	Parent = root,
-}, { corner(22), border(C.frameDark, 5) })
-
-local keys = new("Frame", {
-	Name = "Keys",
-	Position = UDim2.fromOffset(60, 14),
-	Size = UDim2.new(1, -120, 1, -28),
+-- зажим
+local clip = new("Frame", {
+	Name = "Clip",
+	AnchorPoint = Vector2.new(0.5, 0),
+	Position = UDim2.new(0.5, 0, 0, 18),
+	Size = UDim2.fromOffset(230, 62),
+	BackgroundColor3 = Color3.fromRGB(174, 184, 196),
+	ZIndex = 4,
+	Parent = board,
+}, { corner(16), border(C.outline, 4) })
+new("Frame", {
+	AnchorPoint = Vector2.new(0.5, 0),
+	Position = UDim2.new(0.5, 0, 0, 12),
+	Size = UDim2.new(1, -32, 0, 12),
+	BackgroundColor3 = Color3.fromRGB(134, 147, 163),
+	ZIndex = 5,
+	Parent = clip,
+}, { corner("full") })
+new("Frame", {
+	AnchorPoint = Vector2.new(0.5, 1),
+	Position = UDim2.new(0.5, 0, 0, 4),
+	Size = UDim2.fromOffset(96, 34),
 	BackgroundTransparency = 1,
-	Parent = base,
-}, {
-	new("UIGridLayout", {
-		CellSize = UDim2.fromOffset(62, 20),
-		CellPadding = UDim2.fromOffset(8, 8),
-		HorizontalAlignment = Enum.HorizontalAlignment.Center,
-	}),
-})
-for _ = 1, 33 do
-	new("Frame", { BackgroundColor3 = C.keys, Parent = keys }, { corner(5) })
-end
+	ZIndex = 3,
+	Parent = clip,
+}, { corner(18), border(C.outline, 7) })
 
-local closeButton = new("TextButton", {
+local closeButton = Ui.button({
 	Name = "Close",
-	Position = UDim2.fromOffset(300 + 820 - 44, 0),
-	Size = UDim2.fromOffset(72, 72),
-	BackgroundColor3 = C.red,
-	Text = "X",
-	Font = Enum.Font.GothamBlack,
-	TextSize = 40,
-	TextColor3 = C.white,
+	Color = "red",
+	Icon = "Close",
+	Radius = 18,
+	AnchorPoint = Vector2.new(0.5, 0.5),
+	Position = UDim2.fromOffset(300 + 840 - 14, 40),
+	Size = UDim2.fromOffset(68, 68),
 	Parent = root,
-}, { corner(14), border(C.outline, 4) })
+})
+closeButton.ZIndex = 6
 
 -- Вкладки слева
 local pages = {}
@@ -649,10 +662,10 @@ local tabButtons = {}
 local currentPage = nil
 
 local TABS = {
-	{ id = "Journal", text = L("Journal.Tab.Journal"), icon = "📜", color = Color3.fromRGB(70, 120, 230) },
-	{ id = "Upgrades", text = L("Journal.Tab.Upgrades"), icon = "⬆️", color = Color3.fromRGB(70, 190, 100) },
-	{ id = "Collection", text = L("Journal.Tab.Collection"), icon = "❄️", color = Color3.fromRGB(150, 110, 220) },
-	{ id = "Tips", text = L("Journal.Tab.Tips"), icon = "❓", color = Color3.fromRGB(150, 160, 180) },
+	{ id = "Journal", text = L("Journal.Tab.Journal"), icon = "Tasks", color = "green" },
+	{ id = "Upgrades", text = L("Journal.Tab.Upgrades"), icon = "Upgrade", color = "amber" },
+	{ id = "Collection", text = L("Journal.Tab.Collection"), icon = "Snow", color = "blue" },
+	{ id = "Tips", text = L("Journal.Tab.Tips"), icon = "Tips", color = "red" },
 }
 
 local function showPage(id)
@@ -662,39 +675,26 @@ local function showPage(id)
 	end
 	for tabId, btn in pairs(tabButtons) do
 		local selected = tabId == id
-		btn.Position = UDim2.fromOffset(selected and 50 or 20, btn.Position.Y.Offset)
-		btn.BackgroundTransparency = selected and 0 or 0.25
+		-- выбранная закладка выдвинута к листу
+		btn.Position = UDim2.fromOffset(selected and 92 or 64, btn.Position.Y.Offset)
 	end
 end
 
 for i, tab in ipairs(TABS) do
-	local btn = new("TextButton", {
+	local btn = Ui.button({
 		Name = tab.id .. "Tab",
-		Position = UDim2.fromOffset(20, 70 + (i - 1) * 100),
-		Size = UDim2.fromOffset(250, 68),
-		BackgroundColor3 = tab.color,
-		Text = "",
-		AutoButtonColor = true,
+		Color = tab.color,
+		Icon = tab.icon,
+		IconSize = 44,
+		Text = tab.text,
+		TextSize = 24,
+		Radius = 18,
+		Position = UDim2.fromOffset(64, 110 + (i - 1) * 92),
+		Size = UDim2.fromOffset(246, 72),
 		Parent = root,
-	}, {
-		corner(14),
-		border(C.outline, 4),
-		label({
-			Position = UDim2.fromOffset(10, 0),
-			Size = UDim2.new(0, 56, 1, 0),
-			Text = tab.icon,
-			TextSize = 36,
-			TextXAlignment = Enum.TextXAlignment.Center,
-		}),
-		label({
-			Position = UDim2.fromOffset(70, 0),
-			Size = UDim2.new(1, -80, 1, 0),
-			Text = tab.text,
-			Font = Enum.Font.GothamBlack,
-			TextSize = 28,
-			TextColor3 = C.white,
-		}, { textOutline(2.5) }),
 	})
+	local tabText = btn:FindFirstChild("Text") :: TextLabel
+	tabText.TextXAlignment = Enum.TextXAlignment.Left
 	tabButtons[tab.id] = btn
 	pages[tab.id] = new("Frame", {
 		Name = tab.id .. "Page",
@@ -713,9 +713,9 @@ local function pageTitle(page, x, text)
 		Position = UDim2.fromOffset(x, 12),
 		Size = UDim2.fromOffset(340, 40),
 		Text = text,
-		Font = Enum.Font.GothamBlack,
+		FontFace = Ui.Font.heavy,
 		TextSize = 30,
-		TextColor3 = C.frameDark,
+		TextColor3 = C.title,
 		Parent = page,
 	})
 end
@@ -750,14 +750,10 @@ for i, t in ipairs(tasks) do
 		Size = UDim2.fromOffset(30, 30),
 		BackgroundColor3 = C.white,
 		Parent = row,
-	}, { corner(6), border(C.inkSoft, 2.5) })
-	local check = label({
-		Size = UDim2.fromScale(1, 1),
-		Text = "✓",
-		Font = Enum.Font.GothamBlack,
-		TextSize = 24,
-		TextColor3 = C.green,
-		TextXAlignment = Enum.TextXAlignment.Center,
+	}, { corner(7), border(C.outline, 2.5) })
+	local check = Ui.icon("Check", {
+		Position = UDim2.fromOffset(-3, -5),
+		Size = UDim2.new(1, 8, 1, 8),
 		Visible = false,
 		Parent = box,
 	})
@@ -765,7 +761,7 @@ for i, t in ipairs(tasks) do
 		Position = UDim2.fromOffset(42, 0),
 		Size = UDim2.new(1, -42, 0, 30),
 		Text = t.text,
-		Font = Enum.Font.GothamBlack,
+		FontFace = Ui.Font.heavy,
 		TextSize = 21,
 		TextTruncate = Enum.TextTruncate.AtEnd,
 		Parent = row,
@@ -799,7 +795,7 @@ for i = 1, MAX_PLAYERS do
 	local unknown = label({
 		Size = UDim2.fromScale(1, 1),
 		Text = "?",
-		Font = Enum.Font.GothamBlack,
+		FontFace = Ui.Font.heavy,
 		TextSize = 36,
 		TextColor3 = C.gray,
 		TextXAlignment = Enum.TextXAlignment.Center,
@@ -809,21 +805,44 @@ for i = 1, MAX_PLAYERS do
 		Position = UDim2.fromOffset(92, 12),
 		Size = UDim2.new(1, -92, 0, 28),
 		Text = L("Journal.PlayerSlot", { n = i }),
-		Font = Enum.Font.GothamBlack,
+		FontFace = Ui.Font.heavy,
 		TextSize = 22,
 		TextColor3 = C.gray,
 		TextTruncate = Enum.TextTruncate.AtEnd,
 		Parent = slot,
 	})
-	local stats = label({
+	local stats = new("Frame", {
 		Position = UDim2.fromOffset(92, 46),
 		Size = UDim2.new(1, -92, 0, 26),
-		Text = "💰 0    ❄ 0",
-		TextSize = 20,
-		TextColor3 = C.gray,
+		BackgroundTransparency = 1,
 		Parent = slot,
+	}, {
+		new("UIListLayout", {
+			FillDirection = Enum.FillDirection.Horizontal,
+			VerticalAlignment = Enum.VerticalAlignment.Center,
+			Padding = UDim.new(0, 6),
+			SortOrder = Enum.SortOrder.LayoutOrder,
+		}),
 	})
-	playerSlots[i] = { avatar = avatar, unknown = unknown, name = name, stats = stats }
+	Ui.icon("Cash", { Size = UDim2.fromOffset(24, 24), LayoutOrder = 1, Parent = stats })
+	local cashText = label({
+		Size = UDim2.fromOffset(0, 26),
+		AutomaticSize = Enum.AutomaticSize.X,
+		Text = "0",
+		TextSize = 20,
+		LayoutOrder = 2,
+		Parent = stats,
+	}, { new("UIPadding", { PaddingRight = UDim.new(0, 10) }) })
+	Ui.icon("Snow", { Size = UDim2.fromOffset(24, 24), LayoutOrder = 3, Parent = stats })
+	local snowText = label({
+		Size = UDim2.fromOffset(0, 26),
+		AutomaticSize = Enum.AutomaticSize.X,
+		Text = "0",
+		TextSize = 20,
+		LayoutOrder = 4,
+		Parent = stats,
+	})
+	playerSlots[i] = { avatar = avatar, unknown = unknown, name = name, cash = cashText, snow = snowText }
 end
 
 local thumbCache = {}
@@ -854,7 +873,7 @@ end
 -- Покупка: рюкзак — Remotes.BuyUpgrade, инструменты — Remotes.BuyToolUpgrade; цены и проверки на сервере.
 local upgradesPage = pages.Upgrades
 
-local EFFECT_ICONS = { hold = "✋", speed = "⚡", range = "📏", width = "↔️" }
+local EFFECT_ICONS = { hold = "Hand", speed = "Boost", range = "Range", width = "Width" }
 local EFFECT_TAGS = {
 	hold = function()
 		return L("Upgrade.Tag.Hold")
@@ -913,7 +932,7 @@ for _, tool in ipairs(config.Tools) do
 			upgrade = u,
 			name = L(key .. ".Name"),
 			desc = L(key .. ".Desc"),
-			icon = EFFECT_ICONS[u.Effect] or "⬆️",
+			icon = EFFECT_ICONS[u.Effect] or "Upgrade",
 		})
 	end
 	table.insert(UPGRADE_ROWS, { category = upperRu(toolName), toolId = tool.Id, items = items })
@@ -925,7 +944,7 @@ table.insert(UPGRADE_ROWS, {
 			kind = "backpack",
 			id = "BackpackCapacity",
 			name = L("Upgrade.Backpack.Name"),
-			icon = "🎒",
+			icon = "Backpack",
 			tag = L("Upgrade.Backpack.Tag", { n = config.UpgradeCapacityBoost }),
 			desc = L("Upgrade.Backpack.Desc"),
 		},
@@ -970,7 +989,7 @@ for r, rowData in ipairs(UPGRADE_ROWS) do
 		Position = UDim2.fromOffset(14, 0),
 		Size = UDim2.new(0, 110, 1, 0),
 		Text = rowData.category,
-		Font = Enum.Font.GothamBlack,
+		FontFace = Ui.Font.heavy,
 		TextSize = 16,
 		TextColor3 = C.inkSoft,
 		TextWrapped = true,
@@ -996,7 +1015,7 @@ for r, rowData in ipairs(UPGRADE_ROWS) do
 			Position = UDim2.fromOffset(10, 4),
 			Size = UDim2.new(1, -20, 0, 20),
 			Text = item and item.name or "???",
-			Font = Enum.Font.GothamBlack,
+			FontFace = Ui.Font.heavy,
 			TextSize = 15,
 			Parent = card,
 		})
@@ -1007,11 +1026,10 @@ for r, rowData in ipairs(UPGRADE_ROWS) do
 			BackgroundTransparency = item and 1 or 0,
 			Parent = card,
 		}, { corner(8) })
-		local iconLabel = label({
-			Size = UDim2.fromScale(1, 1),
-			Text = item and item.icon or "🔒",
-			TextSize = 28,
-			TextXAlignment = Enum.TextXAlignment.Center,
+		local iconLabel = Ui.icon(item and item.icon or "Lock", {
+			AnchorPoint = Vector2.new(0.5, 0.5),
+			Position = UDim2.fromScale(0.5, 0.5),
+			Size = UDim2.fromOffset(38, 38),
 			Parent = iconBox,
 		})
 		local price = label({
@@ -1079,7 +1097,7 @@ descTitle = label({
 	Position = UDim2.fromOffset(14, 10),
 	Size = UDim2.fromOffset(200, 28),
 	Text = "",
-	Font = Enum.Font.GothamBlack,
+	FontFace = Ui.Font.heavy,
 	TextSize = 22,
 	Parent = descBox,
 })
@@ -1112,7 +1130,7 @@ buyButton = new("TextButton", {
 	Size = UDim2.fromOffset(256, 62),
 	BackgroundColor3 = C.gray,
 	Text = "",
-	Font = Enum.Font.GothamBlack,
+	FontFace = Ui.Font.heavy,
 	TextSize = 22,
 	TextColor3 = C.white,
 	Parent = upgradesPage,
@@ -1129,8 +1147,8 @@ label({
 walletLabel = label({
 	Position = UDim2.fromOffset(622, 384),
 	Size = UDim2.fromOffset(126, 40),
-	Text = "💰 0",
-	Font = Enum.Font.GothamBlack,
+	Text = "",
+	FontFace = Ui.Font.heavy,
 	TextSize = 22,
 	TextXAlignment = Enum.TextXAlignment.Right,
 	Parent = upgradesPage,
@@ -1179,12 +1197,10 @@ for i, item in ipairs(finds.Items) do
 		BackgroundColor3 = C.white,
 		Parent = collectionList,
 	}, { corner(12), border(C.gray, 2) })
-	local iconLabel = label({
-		Size = UDim2.fromScale(1, 1),
-		Text = "❄",
-		TextSize = 34,
-		TextColor3 = C.gray,
-		TextXAlignment = Enum.TextXAlignment.Center,
+	local iconLabel = Ui.icon("Question", {
+		AnchorPoint = Vector2.new(0.5, 0.5),
+		Position = UDim2.fromScale(0.5, 0.5),
+		Size = UDim2.fromScale(0.8, 0.8),
 	})
 	local iconFrame = new("Frame", {
 		AnchorPoint = Vector2.new(0, 0.5),
@@ -1197,7 +1213,7 @@ for i, item in ipairs(finds.Items) do
 		Position = UDim2.fromOffset(92, 16),
 		Size = UDim2.new(1, -100, 0, 28),
 		Text = L("Collection.Unknown"),
-		Font = Enum.Font.GothamBlack,
+		FontFace = Ui.Font.heavy,
 		TextSize = 19,
 		TextTruncate = Enum.TextTruncate.AtEnd,
 		Parent = entry,
@@ -1217,9 +1233,9 @@ label({
 	Position = UDim2.fromOffset(400, 16),
 	Size = UDim2.fromOffset(350, 40),
 	Text = L("Collection.Title"),
-	Font = Enum.Font.GothamBlack,
+	FontFace = Ui.Font.heavy,
 	TextSize = 30,
-	TextColor3 = C.frameDark,
+	TextColor3 = C.title,
 	Parent = collectionPage,
 })
 label({
@@ -1235,9 +1251,9 @@ label({
 	Position = UDim2.fromOffset(400, 310),
 	Size = UDim2.fromOffset(345, 36),
 	Text = L("Collection.Found"),
-	Font = Enum.Font.GothamBlack,
+	FontFace = Ui.Font.heavy,
 	TextSize = 28,
-	TextColor3 = C.frameDark,
+	TextColor3 = C.title,
 	TextXAlignment = Enum.TextXAlignment.Center,
 	Parent = collectionPage,
 })
@@ -1245,12 +1261,12 @@ local collectionCount = label({
 	Position = UDim2.fromOffset(400, 350),
 	Size = UDim2.fromOffset(345, 50),
 	Text = "0 / " .. #finds.Items,
-	Font = Enum.Font.GothamBlack,
+	FontFace = Ui.Font.heavy,
 	TextSize = 40,
-	TextColor3 = C.white,
+	TextColor3 = C.title,
 	TextXAlignment = Enum.TextXAlignment.Center,
 	Parent = collectionPage,
-}, { textOutline(3) })
+})
 
 local function refreshCollection()
 	local have = string.split(player:GetAttribute("Collection") or "", ",")
@@ -1261,8 +1277,8 @@ local function refreshCollection()
 			count += 1
 		end
 		row.frame.BackgroundColor3 = found and C.greenSoft or C.lock
-		row.icon.Text = found and row.item.Icon or "❄"
-		row.icon.TextColor3 = found and C.ink or C.gray
+		Ui.setIcon(row.icon, found and row.item.Icon or "Question")
+		row.icon.ImageTransparency = found and 0 or 0.45
 		row.name.Text = found and upperRu(L("Find.Item." .. row.item.Id)) or L("Collection.Unknown")
 		row.status.Text = found and L("Collection.Have") or L("Collection.NotFound")
 	end
@@ -1304,13 +1320,10 @@ for i, tip in ipairs(TIPS) do
 		BackgroundColor3 = C.white,
 		Parent = tipsList,
 	}, { corner(12), border(C.gray, 2) })
-	label({
-		Position = UDim2.fromOffset(10, 0),
-		Size = UDim2.new(0, 40, 1, 0),
-		Text = "❄",
-		TextSize = 26,
-		TextColor3 = C.ice,
-		TextXAlignment = Enum.TextXAlignment.Center,
+	Ui.icon("Snow", {
+		AnchorPoint = Vector2.new(0, 0.5),
+		Position = UDim2.new(0, 10, 0.5, 0),
+		Size = UDim2.fromOffset(36, 36),
 		Parent = row,
 	})
 	label({
@@ -1460,19 +1473,19 @@ local function refreshJournal()
 			slot.unknown.Visible = slot.avatar.Image == ""
 			slot.name.Text = p.DisplayName
 			slot.name.TextColor3 = p == player and C.iceDark or C.ink
-			slot.stats.Text = string.format(
-				"💰 %d    ❄ %d",
-				cashValue and cashValue.Value or 0,
-				p:GetAttribute("SnowCollected") or 0
-			)
-			slot.stats.TextColor3 = C.ink
+			slot.cash.Text = Ui.number(cashValue and cashValue.Value or 0)
+			slot.snow.Text = Ui.number(p:GetAttribute("SnowCollected") or 0)
+			slot.cash.TextColor3 = C.ink
+			slot.snow.TextColor3 = C.ink
 		else
 			slot.avatar.Image = ""
 			slot.unknown.Visible = true
 			slot.name.Text = L("Journal.PlayerSlot", { n = i })
 			slot.name.TextColor3 = C.gray
-			slot.stats.Text = "💰 0    ❄ 0"
-			slot.stats.TextColor3 = C.gray
+			slot.cash.Text = "0"
+			slot.snow.Text = "0"
+			slot.cash.TextColor3 = C.gray
+			slot.snow.TextColor3 = C.gray
 		end
 	end
 
@@ -1481,22 +1494,22 @@ local function refreshJournal()
 	local price = getUpgradePrice()
 	local level = player:GetAttribute("BackpackUpgradeLevel") or 0
 	local levels = decodeLevels()
-	walletLabel.Text = "💰 " .. cash
+	walletLabel.Text = L("Shop.CashPrice", { price = Ui.number(cash) })
 
 	for _, rowData in ipairs(UPGRADE_ROWS) do
 		for _, item in ipairs(rowData.items) do
 			if item.kind == "backpack" then
-				item.priceLabel.Text = price .. " 💰"
+				item.priceLabel.Text = L("Shop.CashPrice", { price = price })
 				item.levelLabel.Text = L("Upgrade.Level", { n = level })
 			else
 				local lv, nextPrice, open = toolUpgradeState(item, levels)
 				-- Некупленный инструмент: карточки закрыты (??? и замок), как в референсе
 				item.nameLabel.Text = open and item.name or "???"
-				item.iconLabel.Text = open and item.icon or "🔒"
+				Ui.setIcon(item.iconLabel, open and item.icon or "Lock")
 				item.iconBox.BackgroundTransparency = open and 1 or 0
 				-- разовый купленный — только «КУПЛЕНО», многоуровневый на максимуме — «МАКС»
 				item.priceLabel.Text = not open and ""
-					or nextPrice and (nextPrice .. " 💰")
+					or nextPrice and L("Shop.CashPrice", { price = nextPrice })
 					or (item.upgrade.MaxLevel > 1 and L("Upgrade.Max") or "")
 				item.levelLabel.Text = open and item.upgrade.MaxLevel == 1 and lv >= 1 and L("Upgrade.Bought") or ""
 				for k, pip in ipairs(item.pips) do

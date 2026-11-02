@@ -4,12 +4,11 @@
 -- Модуль одинаковый в House Map и Lobby: поменял в одном месте — скопируй в другое.
 return {
 	-- ===== HUD матча (GameHudClient) =====
-	["Hud.CurrentTask"] = { en = "CURRENT TASK", ru = "ТЕКУЩАЯ ЗАДАЧА" },
-	["Hud.NextPerk"] = { en = "NEXT PERK", ru = "СЛЕД. ПЕРК" },
-	["Hud.CashPerSnow"] = { en = "1 Cash per snow", ru = "1 Cash за единицу снега" },
+	["Hud.CurrentTask"] = { en = "TASK", ru = "ЗАДАЧА" },
+	["Hud.Backpack"] = { en = "BACKPACK", ru = "РЮКЗАК" },
 	["Hud.BackpackFull"] = {
-		en = "Backpack full! Sell your snow",
-		ru = "Рюкзак полный! Продай снег",
+		en = "FULL! SELL AT THE MELTER",
+		ru = "ПОЛНЫЙ! НЕСИ НА ПЛАВИЛКУ",
 	},
 	["Hud.TaskDone"] = { en = "Done! +{cash} Cash", ru = "Готово! +{cash} Cash" },
 	["Hud.Cleared"] = { en = "CLEARED ✓", ru = "ОЧИЩЕНО ✓" },

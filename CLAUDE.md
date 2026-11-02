@@ -43,7 +43,7 @@
 
 | Где | server | replicated | client |
 |---|---|---|---|
-| **shared** | Analytics, SaveStore | Locale (+Strings), Shop (+Gui) | ChatTagClient, LocaleClient, SnowfallClient |
+| **shared** | Analytics, SaveStore | Locale (+Strings), Shop (+Gui), Ui (вид интерфейса, иконки) | ChatTagClient, LocaleClient, SnowfallClient |
 | **lobby** | LobbyServer, LobbyCashServer, LobbyRecordsServer, ShopServer, SlideRagdollServer, SnowballServer | Lobby/Maps, Lobby/Snowball, Lobby/Remotes | LobbyHudClient, LobbyMenuClient, LobbyRecordsClient, LobbyTruckClient, SlideRagdollClient, SnowballClient |
 | **house** | SnowGame/: BlowServer, SnowField, PileServer, ToolServer, ToolShopServer, MelterServer, UpgradeShopServer, LeaderstatsServer, PlayerData, MatchServer, ShopServer, AnalyticsHooks, OnboardingServer, FindServer | SnowGame/: Config, ZoneConfig, Finds, Remotes | FindClient, GameHudClient, HideCoreGui, MatchEndClient, PassShowcaseClient, RewardLightsClient, SnowMeshClient, SnowParticles, ToolClient, ToolShopClient, UpgradeShopClient |
 
@@ -137,7 +137,6 @@
 
 - `Config.luau`: не используются `SnowCellFolder`, `CellSize`, `GridStep`, `ParticleLifetime`.
 - `BlowServer`: атрибуты зоны `DisplayName` и `Order` никто не читает (и поле `ZoneConfig.DisplayName` ради них); при `MATCH_MODE = true` не вызывается `startRegen`, и вместе с ней не нужны `RegenDelay`, `RegenDuration`.
-- `GameHudClient`: комментарий в строке 2 называет множитель заглушкой, он настоящий.
 - `LobbyHudClient`: комментарий в строке 3 не упоминает работающий магазин.
 - Атрибут workspace `BlizzardBy` (`ShopServer` матча) и строку `Shop.BlizzardBy` никто не читает.
 - Старые копии в ServerStorage: House Map `_Backup_BeforeTools`, `_Candidates`, `_OldBaseplateTexture`, `_OldCollector`, `_OldSnowblower`, `_OldSnowmelter`, `_OldSunsetSky`, `_OldToolModels`, `_OldUpgradeShop`, `_OldHouse`, `_OldPineUnions`, `_OldFencePillars`, `_OldFenceCaps`, `_OldNeighbors`, `_OldLamps`; Lobby `_Candidates`, `_OldBaseplateTexture`, `_OldSky`.

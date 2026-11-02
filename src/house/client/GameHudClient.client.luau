@@ -1,6 +1,7 @@
--- GameHudClient: HUD матча и журнал-ноутбук (Tab) по референсу Clean all the Leaves.
--- HUD: текущая задача (цепочка Config.Onboarding, считает OnboardingServer; карточка скрывается, когда цепочка пройдена), «След. перк» (заглушка), прогресс двора, деньги с множителем (заглушка x1.00),
--- кнопка журнала, мешок снега, таймер матча (workspace.MatchStartTime/MatchEndTime ставит MatchServer).
+-- GameHudClient: HUD матча и журнал (Tab). Вид HUD — общий Ui (ReplicatedStorage.Shared.Ui).
+-- HUD: текущая задача (цепочка Config.Onboarding, считает OnboardingServer; карточка скрывается, когда цепочка пройдена),
+-- рюкзак, зона и таймер матча по центру (workspace.MatchStartTime/MatchEndTime ставит MatchServer),
+-- Cash с множителем магазина (Shop.cashMultiplier) и всплывающим «+N», кнопки журнала и магазина. Низ экрана свободен для управления на телефоне.
 -- Журнал: «Журнал» (задачи + игроки), «Апгрейды» (инструменты из Config.Tools — Remotes.BuyToolUpgrade, рюкзак — Remotes.BuyUpgrade),
 -- «Коллекция» (находки ReplicatedStorage.SnowGame.Finds, атрибут игрока Collection), «Подсказки».
 -- Тексты — через Locale (ReplicatedStorage.Shared.Locale): Hud.*, Task.*, Journal.*, Upgrade.*, Tool.*, Zone.*, Collection.*, Tip.*
@@ -21,6 +22,7 @@ local Locale = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Lo
 local L = Locale.t
 local Shop = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Shop"))
 local ShopGui = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Shop"):WaitForChild("Gui"))
+local Ui = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Ui"))
 
 local player = Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui")
@@ -124,65 +126,113 @@ for i, step in config.Onboarding do
 end
 
 -- ============================================================
--- HUD
+-- HUD (стиль Ui: тёмные плашки, низ экрана свободен для стика, прыжка и кнопки «Убирать» на телефоне)
+-- Слева сверху — задача (под меню Roblox), по центру — рюкзак, зона и таймер, справа — Cash и кнопки.
+-- Каждая группа масштабируется своим UIScale (Ui.autoScale), позиции групп — в точках экрана.
 -- ============================================================
 local hud = new("ScreenGui", {
 	Name = "GameHud",
 	ResetOnSpawn = false,
 	IgnoreGuiInset = true,
+	ScreenInsets = Enum.ScreenInsets.DeviceSafeInsets,
 	ZIndexBehavior = Enum.ZIndexBehavior.Sibling,
 	Parent = playerGui,
 })
 
--- Карточка «Текущая задача»
+local function group(name: string, anchor: Vector2, position: UDim2, size: Vector2)
+	local frame = new("Frame", {
+		Name = name,
+		AnchorPoint = anchor,
+		Position = position,
+		Size = UDim2.fromOffset(size.X, size.Y),
+		BackgroundTransparency = 1,
+		Parent = hud,
+	})
+	Ui.autoScale(frame)
+	return frame
+end
+
+-- Слева сверху: карточка задачи. Сверху место под кнопки меню Roblox
+local leftGroup = group("TopLeft", Vector2.new(0, 0), UDim2.new(0, 12, 0, 60), Vector2.new(330, 120))
+
 local taskCard = new("Frame", {
 	Name = "TaskCard",
-	Position = UDim2.new(0, 16, 0, 64),
-	Size = UDim2.new(0, 340, 0, 64),
-	BackgroundColor3 = C.paper,
+	Size = UDim2.fromOffset(330, 104),
+	BackgroundColor3 = Ui.Color.white,
 	Visible = false,
-	Parent = hud,
-}, { corner(14), border(C.outline, 3) })
-local taskCardScale = new("UIScale", { Parent = taskCard })
-
-new("Frame", {
-	Name = "Icon",
-	AnchorPoint = Vector2.new(0, 0.5),
-	Position = UDim2.new(0, 12, 0.5, 0),
-	Size = UDim2.new(0, 40, 0, 40),
-	BackgroundColor3 = C.green,
-	Parent = taskCard,
+	Parent = leftGroup,
 }, {
-	corner(8),
-	label({
-		Size = UDim2.fromScale(1, 1),
-		Text = "!",
-		Font = Enum.Font.GothamBlack,
-		TextSize = 26,
-		TextColor3 = C.white,
-		TextXAlignment = Enum.TextXAlignment.Center,
+	Ui.corner(18),
+	Ui.border(3),
+	new("UIGradient", {
+		Rotation = 90,
+		Color = ColorSequence.new({
+			ColorSequenceKeypoint.new(0, Ui.Color.paper),
+			ColorSequenceKeypoint.new(0.93, Ui.Color.paper),
+			ColorSequenceKeypoint.new(0.931, Ui.Color.paperShade),
+			ColorSequenceKeypoint.new(1, Ui.Color.paperShade),
+		}),
 	}),
 })
+local taskCardScale = new("UIScale", { Parent = taskCard })
 
-label({
-	Name = "Header",
-	Position = UDim2.new(0, 64, 0, 10),
-	Size = UDim2.new(1, -74, 0, 14),
+local taskTag = Ui.label({
+	Name = "Tag",
+	Position = UDim2.fromOffset(14, 12),
+	Size = UDim2.fromOffset(0, 22),
+	AutomaticSize = Enum.AutomaticSize.X,
+	BackgroundTransparency = 0,
+	BackgroundColor3 = Ui.Color.green,
 	Text = L("Hud.CurrentTask"),
-	TextSize = 11,
-	TextColor3 = C.inkSoft,
+	TextSize = 13,
+	TextColor3 = Ui.Color.white,
+	Parent = taskCard,
+}, {
+	Ui.corner(8),
+	Ui.border(2),
+	new("UIPadding", { PaddingLeft = UDim.new(0, 8), PaddingRight = UDim.new(0, 8) }),
+})
+
+local taskReward = Ui.label({
+	Name = "Reward",
+	AnchorPoint = Vector2.new(1, 0),
+	Position = UDim2.new(1, -14, 0, 10),
+	Size = UDim2.fromOffset(110, 26),
+	Text = "",
+	TextSize = 18,
+	TextColor3 = Ui.Color.amberDark,
+	TextXAlignment = Enum.TextXAlignment.Right,
 	Parent = taskCard,
 })
 
-local taskText = label({
+local taskText = Ui.label({
 	Name = "TaskText",
-	Position = UDim2.new(0, 64, 0, 26),
-	Size = UDim2.new(1, -74, 0, 26),
+	Position = UDim2.fromOffset(14, 38),
+	Size = UDim2.new(1, -28, 0, 28),
 	Text = "",
-	Font = Enum.Font.GothamBlack,
-	TextScaled = true, -- длинная задача мельчает, а не обрезается: счётчик в конце должен быть виден
+	TextScaled = true, -- длинная задача мельчает, а не обрезается
+	TextColor3 = Ui.Color.ink,
 	Parent = taskCard,
-}, { new("UITextSizeConstraint", { MaxTextSize = 17, MinTextSize = 10 }) })
+}, { new("UITextSizeConstraint", { MaxTextSize = 22, MinTextSize = 12 }) })
+
+local taskBar, setTaskBar = Ui.bar({
+	Name = "Progress",
+	Position = UDim2.fromOffset(14, 74),
+	Size = UDim2.new(1, -88, 0, 14),
+	BackgroundColor3 = Ui.Color.paperLine,
+	Parent = taskCard,
+})
+local taskCount = Ui.label({
+	Name = "Count",
+	AnchorPoint = Vector2.new(1, 0),
+	Position = UDim2.new(1, -14, 0, 68),
+	Size = UDim2.fromOffset(66, 24),
+	Text = "",
+	TextSize = 18,
+	TextColor3 = Ui.Color.ink,
+	TextXAlignment = Enum.TextXAlignment.Right,
+	Parent = taskCard,
+})
 
 -- Шаг выполнен: карточка на время показывает награду
 local TASK_TOAST_TIME = 2
@@ -197,8 +247,11 @@ local taskDoneSound = new("Sound", {
 local function showTaskDone(reward: number)
 	taskToastUntil = os.clock() + TASK_TOAST_TIME
 	taskCard.Visible = true
-	taskCard.BackgroundColor3 = C.greenSoft
+	taskTag.BackgroundColor3 = Ui.Color.amber
 	taskText.Text = L("Hud.TaskDone", { cash = reward })
+	taskBar.Visible = false
+	taskCount.Text = ""
+	taskReward.Text = ""
 	taskCardScale.Scale = 1.1
 	TweenService:Create(taskCardScale, TweenInfo.new(0.3, Enum.EasingStyle.Back), { Scale = 1 }):Play()
 	taskDoneSound:Play()
@@ -213,261 +266,276 @@ player:GetAttributeChangedSignal("OnboardingStep"):Connect(function()
 	shownStepsDone = stepsDone
 end)
 
--- Прогресс-бары
-local function makeBar(name, y, title)
-	local holder = new("Frame", {
+-- По центру сверху: рюкзак (главное число матча), под ним зона и таймер
+local centerGroup = group("TopCenter", Vector2.new(0.5, 0), UDim2.new(0.5, 0, 0, 10), Vector2.new(420, 180))
+
+local bag = Ui.pill({
+	Name = "Bag",
+	Size = UDim2.fromOffset(420, 64),
+	Parent = centerGroup,
+})
+new("Frame", {
+	Name = "IconBack",
+	AnchorPoint = Vector2.new(0, 0.5),
+	Position = UDim2.new(0, 7, 0.5, 0),
+	Size = UDim2.fromOffset(48, 48),
+	BackgroundColor3 = Ui.Color.nightRaised,
+	Parent = bag,
+}, {
+	Ui.corner("full"),
+	Ui.icon("Backpack", { Size = UDim2.fromScale(0.85, 0.85), Position = UDim2.fromScale(0.075, 0.06) }),
+})
+
+local bagTitle = Ui.label({
+	Name = "Title",
+	Position = UDim2.fromOffset(66, 8),
+	Size = UDim2.new(1, -170, 0, 18),
+	Text = L("Hud.Backpack"),
+	TextSize = 14,
+	TextColor3 = Ui.Color.textSoft,
+	TextTruncate = Enum.TextTruncate.AtEnd,
+	Parent = bag,
+})
+local bagCount = Ui.label({
+	Name = "Count",
+	AnchorPoint = Vector2.new(1, 0),
+	Position = UDim2.new(1, -18, 0, 4),
+	Size = UDim2.fromOffset(110, 26),
+	Text = "0 / 0",
+	TextSize = 22,
+	RichText = true,
+	TextXAlignment = Enum.TextXAlignment.Right,
+	Parent = bag,
+})
+local _, setBagBar = Ui.bar({
+	Name = "Fill",
+	Position = UDim2.fromOffset(66, 34),
+	Size = UDim2.new(1, -84, 0, 16),
+	Parent = bag,
+})
+
+local chipRow = new("Frame", {
+	Name = "Chips",
+	Position = UDim2.fromOffset(0, 72),
+	Size = UDim2.new(1, 0, 0, 34),
+	BackgroundTransparency = 1,
+	Parent = centerGroup,
+}, {
+	new("UIListLayout", {
+		SortOrder = Enum.SortOrder.LayoutOrder,
+		FillDirection = Enum.FillDirection.Horizontal,
+		HorizontalAlignment = Enum.HorizontalAlignment.Center,
+		Padding = UDim.new(0, 8),
+	}),
+})
+
+local function chip(name: string, icon: string, order: number)
+	local frame = Ui.pill({
 		Name = name,
-		Position = UDim2.new(0, 16, 0, y),
-		Size = UDim2.new(0, 340, 0, 48),
-		BackgroundTransparency = 1,
-		Parent = hud,
+		LayoutOrder = order,
+		Size = UDim2.fromOffset(0, 34),
+		AutomaticSize = Enum.AutomaticSize.X,
+		Parent = chipRow,
 	})
-	local titleLabel = label({
-		Size = UDim2.new(1, -80, 0, 24),
-		Text = title,
-		Font = Enum.Font.GothamBlack,
-		TextSize = 20,
-		TextColor3 = C.white,
-		Parent = holder,
-	}, { textOutline(2) })
-	local rightLabel = label({
-		AnchorPoint = Vector2.new(1, 0),
-		Position = UDim2.new(1, 0, 0, 4),
-		Size = UDim2.new(0, 120, 0, 18),
+	frame:FindFirstChildOfClass("UIStroke").Thickness = 2
+	new("UIListLayout", {
+		SortOrder = Enum.SortOrder.LayoutOrder,
+		FillDirection = Enum.FillDirection.Horizontal,
+		VerticalAlignment = Enum.VerticalAlignment.Center,
+		Padding = UDim.new(0, 6),
+		Parent = frame,
+	})
+	new("UIPadding", { PaddingLeft = UDim.new(0, 7), PaddingRight = UDim.new(0, 12), Parent = frame })
+	Ui.icon(icon, { Size = UDim2.fromOffset(22, 22), LayoutOrder = 1, Parent = frame })
+	return Ui.label({
+		Size = UDim2.fromOffset(0, 34),
+		AutomaticSize = Enum.AutomaticSize.X,
 		Text = "",
-		TextSize = 13,
-		TextColor3 = C.white,
-		TextXAlignment = Enum.TextXAlignment.Right,
-		Parent = holder,
-	}, { textOutline(1.5) })
-	local bg = new("Frame", {
-		Position = UDim2.new(0, 0, 0, 30),
-		Size = UDim2.new(1, -64, 0, 12),
-		BackgroundColor3 = C.barBg,
-		Parent = holder,
-	}, { corner(6), border(C.outline, 2) })
-	local fill = new("Frame", {
-		Size = UDim2.fromScale(0, 1),
-		BackgroundColor3 = C.ice,
-		Parent = bg,
-	}, { corner(6) })
-	local pctLabel = label({
-		AnchorPoint = Vector2.new(1, 0),
-		Position = UDim2.new(1, 0, 0, 26),
-		Size = UDim2.new(0, 60, 0, 20),
-		Text = "0%",
-		TextSize = 15,
-		TextColor3 = C.white,
-		TextXAlignment = Enum.TextXAlignment.Right,
-		Parent = holder,
-	}, { textOutline(1.5) })
-	return { title = titleLabel, right = rightLabel, fill = fill, pct = pctLabel }
+		TextSize = 17,
+		LayoutOrder = 2,
+		Parent = frame,
+	})
 end
-
--- Заглушка: перков пока нет
-local perkBar = makeBar("PerkBar", 142, L("Hud.NextPerk"))
-perkBar.right.Text = "0/3"
-
-local zoneBar = makeBar("ZoneBar", 198, L("Zone." .. mainZone.Name))
+local zoneLabel = chip("Zone", "Snow", 1)
+local timerLabel = chip("Timer", "Clock", 2)
 local barZone = mainZone -- зона, в которой стоит игрок; вне зон остаётся прежняя
 
--- Деньги и множитель (справа сверху)
-local multiplierLabel = label({
-	Name = "Multiplier",
-	AnchorPoint = Vector2.new(1, 0),
-	Position = UDim2.new(1, -20, 0, 70),
-	Size = UDim2.new(0, 160, 0, 28),
-	Text = "(x1.00)", -- множитель Cash из магазина (Shop.cashMultiplier), обновляется в refreshHud
-	Font = Enum.Font.GothamBlack,
-	TextSize = 24,
-	TextColor3 = C.gold,
-	TextXAlignment = Enum.TextXAlignment.Right,
-	Parent = hud,
-}, { textOutline(2) })
-
-new("Frame", {
-	Name = "Coin",
-	AnchorPoint = Vector2.new(1, 0),
-	Position = UDim2.new(1, -20, 0, 102),
-	Size = UDim2.new(0, 60, 0, 60),
-	BackgroundColor3 = C.gold,
-	Parent = hud,
-}, {
-	corner("full"),
-	border(C.outline, 3),
-	label({ Size = UDim2.fromScale(1, 1), Text = "💰", TextSize = 34, TextXAlignment = Enum.TextXAlignment.Center }),
+-- Всплывающее «+N» под рюкзаком, когда растёт Cash (продажа, награда)
+local cashToast = Ui.pill({
+	Name = "CashToast",
+	AnchorPoint = Vector2.new(0.5, 0),
+	Position = UDim2.new(0.5, 0, 0, 116),
+	Size = UDim2.fromOffset(0, 50),
+	AutomaticSize = Enum.AutomaticSize.X,
+	BackgroundColor3 = Ui.Color.amber,
+	BackgroundTransparency = 0,
+	Visible = false,
+	Parent = centerGroup,
 })
+new("UIListLayout", {
+	SortOrder = Enum.SortOrder.LayoutOrder,
+	FillDirection = Enum.FillDirection.Horizontal,
+	VerticalAlignment = Enum.VerticalAlignment.Center,
+	Padding = UDim.new(0, 6),
+	Parent = cashToast,
+})
+new("UIPadding", { PaddingLeft = UDim.new(0, 8), PaddingRight = UDim.new(0, 18), Parent = cashToast })
+local cashToastScale = new("UIScale", { Parent = cashToast })
+Ui.icon("Cash", { Size = UDim2.fromOffset(36, 36), LayoutOrder = 1, Parent = cashToast })
+local cashToastText = Ui.label({
+	Size = UDim2.fromOffset(0, 50),
+	AutomaticSize = Enum.AutomaticSize.X,
+	Text = "",
+	TextSize = 28,
+	TextColor3 = Ui.Color.ink,
+	LayoutOrder = 2,
+	Parent = cashToast,
+})
+local cashToastId = 0
+local function showCashToast(amount: number)
+	cashToastId += 1
+	local id = cashToastId
+	cashToastText.Text = "+" .. Ui.number(amount)
+	cashToast.Visible = true
+	cashToastScale.Scale = 0.6
+	TweenService:Create(cashToastScale, TweenInfo.new(0.25, Enum.EasingStyle.Back), { Scale = 1 }):Play()
+	task.delay(1.6, function()
+		if id == cashToastId then
+			cashToast.Visible = false
+		end
+	end)
+end
 
-local cashLabel = label({
+-- Справа сверху: Cash с множителем, кнопки журнала и магазина
+local rightGroup = group("TopRight", Vector2.new(1, 0), UDim2.new(1, -20, 0, 10), Vector2.new(300, 180))
+
+local cashPill = Ui.pill({
 	Name = "Cash",
-	AnchorPoint = Vector2.new(1, 0.5),
-	Position = UDim2.new(1, -92, 0, 132),
-	Size = UDim2.new(0, 260, 0, 44),
+	AnchorPoint = Vector2.new(1, 0),
+	Position = UDim2.new(1, 0, 0, 0),
+	Size = UDim2.fromOffset(0, 60),
+	AutomaticSize = Enum.AutomaticSize.X,
+	Parent = rightGroup,
+})
+new("UIListLayout", {
+	SortOrder = Enum.SortOrder.LayoutOrder,
+	FillDirection = Enum.FillDirection.Horizontal,
+	VerticalAlignment = Enum.VerticalAlignment.Center,
+	Padding = UDim.new(0, 8),
+	Parent = cashPill,
+})
+new("UIPadding", { PaddingLeft = UDim.new(0, 7), PaddingRight = UDim.new(0, 16), Parent = cashPill })
+Ui.icon("Cash", { Size = UDim2.fromOffset(44, 44), LayoutOrder = 1, Parent = cashPill })
+local cashLabel = Ui.label({
+	Name = "Amount",
+	Size = UDim2.fromOffset(0, 60),
+	AutomaticSize = Enum.AutomaticSize.X,
 	Text = "0",
-	Font = Enum.Font.GothamBlack,
-	TextSize = 40,
-	TextColor3 = C.white,
-	TextXAlignment = Enum.TextXAlignment.Right,
-	Parent = hud,
-}, { textOutline(3) })
-
--- Кнопка журнала (ноутбук + ярлык Tab)
-local journalButton = new("TextButton", {
-	Name = "JournalButton",
-	AnchorPoint = Vector2.new(1, 0),
-	Position = UDim2.new(1, -28, 0, 182),
-	Size = UDim2.new(0, 96, 0, 76),
-	BackgroundColor3 = C.frame,
-	AutoButtonColor = true,
-	Text = "",
-	Parent = hud,
-}, {
-	corner(14),
-	border(C.outline, 3),
-	label({ Size = UDim2.new(1, 0, 1, -10), Text = "💻", TextSize = 42, TextXAlignment = Enum.TextXAlignment.Center }),
+	TextSize = 30,
+	LayoutOrder = 2,
+	Parent = cashPill,
 })
+-- множитель Cash из магазина (Shop.cashMultiplier); x1 не показываем
+local multiplierLabel = Ui.label({
+	Name = "Multiplier",
+	Size = UDim2.fromOffset(0, 24),
+	AutomaticSize = Enum.AutomaticSize.X,
+	BackgroundTransparency = 0,
+	BackgroundColor3 = Ui.Color.amber,
+	Text = "",
+	TextSize = 15,
+	TextColor3 = Ui.Color.ink,
+	LayoutOrder = 3,
+	Visible = false,
+	Parent = cashPill,
+}, { Ui.corner(8), new("UIPadding", { PaddingLeft = UDim.new(0, 7), PaddingRight = UDim.new(0, 7) }) })
 
-new("Frame", {
-	Name = "TabTag",
-	AnchorPoint = Vector2.new(0.5, 0.5),
-	Position = UDim2.new(0.75, 0, 1, 0),
-	Size = UDim2.new(0, 58, 0, 30),
-	Rotation = -8,
-	BackgroundColor3 = C.white,
-	Parent = journalButton,
+local buttonRow = new("Frame", {
+	Name = "Buttons",
+	AnchorPoint = Vector2.new(1, 0),
+	Position = UDim2.new(1, 0, 0, 78),
+	Size = UDim2.fromOffset(160, 76),
+	BackgroundTransparency = 1,
+	Parent = rightGroup,
 }, {
-	corner(8),
-	border(C.outline, 2.5),
-	label({
-		Size = UDim2.fromScale(1, 1),
-		Text = "Tab",
-		Font = Enum.Font.GothamBlack,
-		TextSize = 20,
-		TextXAlignment = Enum.TextXAlignment.Center,
+	new("UIListLayout", {
+		SortOrder = Enum.SortOrder.LayoutOrder,
+		FillDirection = Enum.FillDirection.Horizontal,
+		HorizontalAlignment = Enum.HorizontalAlignment.Right,
+		Padding = UDim.new(0, 12),
 	}),
 })
 
--- Кнопка магазина за Robux (ReplicatedStorage.Shared.Shop.Gui) — под кнопкой журнала.
--- На ПК мышь в LockFirstPerson заперта в центре, поэтому магазин открывается клавишей B (как журнал — Tab)
-local shopButton = new("TextButton", {
-	Name = "ShopButton",
-	AnchorPoint = Vector2.new(1, 0),
-	Position = UDim2.new(1, -44, 0, 290),
-	Size = UDim2.new(0, 64, 0, 64),
-	BackgroundColor3 = C.green,
-	AutoButtonColor = true,
-	Text = "",
-	Parent = hud,
-}, {
-	corner(14),
-	border(C.outline, 3),
-	label({ Size = UDim2.fromScale(1, 1), Text = "🛒", TextSize = 34, TextXAlignment = Enum.TextXAlignment.Center }),
-	new("Frame", {
+-- Ярлык клавиши в углу кнопки (Tab, B); на телефоне клавиатуры нет — ярлык прячется
+local function keyTag(button: GuiObject, key: string)
+	local tag = Ui.label({
 		Name = "KeyTag",
-		AnchorPoint = Vector2.new(0.5, 0.5),
-		Position = UDim2.new(0.85, 0, 0.95, 0),
-		Size = UDim2.new(0, 30, 0, 26),
-		Rotation = -8,
-		BackgroundColor3 = C.white,
+		AnchorPoint = Vector2.new(1, 1),
+		Position = UDim2.new(1, 6, 1, 6),
+		Size = UDim2.fromOffset(0, 22),
+		AutomaticSize = Enum.AutomaticSize.X,
+		BackgroundTransparency = 0,
+		BackgroundColor3 = Ui.Color.paper,
+		Text = key,
+		TextSize = 14,
+		TextColor3 = Ui.Color.ink,
+		ZIndex = 5,
+		Parent = button,
 	}, {
-		corner(6),
-		border(C.outline, 2),
-		label({
-			Size = UDim2.fromScale(1, 1),
-			Text = "B",
-			Font = Enum.Font.GothamBlack,
-			TextSize = 18,
-			TextXAlignment = Enum.TextXAlignment.Center,
-		}),
-	}),
+		Ui.corner(7),
+		Ui.border(2),
+		new("UIPadding", { PaddingLeft = UDim.new(0, 6), PaddingRight = UDim.new(0, 6) }),
+	})
+	local function update()
+		tag.Visible = UserInputService.KeyboardEnabled
+	end
+	update()
+	UserInputService:GetPropertyChangedSignal("KeyboardEnabled"):Connect(update)
+end
+
+local journalButton = Ui.button({
+	Name = "JournalButton",
+	Color = "blue",
+	Icon = "Journal",
+	Snow = true,
+	Radius = 18,
+	Size = UDim2.fromOffset(72, 72),
+	LayoutOrder = 1,
+	Parent = buttonRow,
 })
+keyTag(journalButton, "Tab")
+
+-- Кнопка магазина за Robux (ReplicatedStorage.Shared.Shop.Gui).
+-- На ПК мышь в LockFirstPerson заперта в центре, поэтому магазин открывается клавишей B (как журнал — Tab)
+local shopButton = Ui.button({
+	Name = "ShopButton",
+	Color = "green",
+	Icon = "Shop",
+	Snow = true,
+	Radius = 18,
+	Size = UDim2.fromOffset(72, 72),
+	LayoutOrder = 2,
+	Parent = buttonRow,
+})
+keyTag(shopButton, "B")
 shopButton.Activated:Connect(ShopGui.toggle)
 
 -- Красный «!», когда хватает денег на апгрейд
-local upgradeBadge = new("Frame", {
+local upgradeBadge = Ui.label({
 	Name = "Badge",
 	AnchorPoint = Vector2.new(0.5, 0.5),
-	Position = UDim2.new(0, 2, 0, 2),
-	Size = UDim2.new(0, 30, 0, 30),
-	BackgroundColor3 = C.red,
-	Visible = false,
-	Parent = journalButton,
-}, {
-	corner("full"),
-	border(C.outline, 2.5),
-	label({
-		Size = UDim2.fromScale(1, 1),
-		Text = "!",
-		Font = Enum.Font.GothamBlack,
-		TextSize = 20,
-		TextColor3 = C.white,
-		TextXAlignment = Enum.TextXAlignment.Center,
-	}),
-})
-
--- Мешок снега (слева снизу): значок с вместимостью + число снега
-local bag = new("Frame", {
-	Name = "Bag",
-	AnchorPoint = Vector2.new(0, 1),
-	Position = UDim2.new(0, 20, 1, -20),
-	Size = UDim2.new(0, 104, 0, 104),
-	BackgroundColor3 = C.paper,
-	Parent = hud,
-}, {
-	corner("full"),
-	border(C.outline, 3),
-	label({ Size = UDim2.new(1, 0, 1, -16), Text = "🎒", TextSize = 50, TextXAlignment = Enum.TextXAlignment.Center }),
-})
-
-local capacityLabel = label({
-	Name = "Capacity",
-	AnchorPoint = Vector2.new(0.5, 1),
-	Position = UDim2.new(0.5, 0, 1, -6),
-	Size = UDim2.new(1, 0, 0, 26),
-	Text = "30",
-	Font = Enum.Font.GothamBlack,
-	TextSize = 22,
-	TextColor3 = C.white,
+	Position = UDim2.fromOffset(4, 4),
+	Size = UDim2.fromOffset(26, 26),
+	BackgroundTransparency = 0,
+	BackgroundColor3 = Ui.Color.red,
+	Text = "!",
+	TextSize = 18,
+	TextColor3 = Ui.Color.white,
 	TextXAlignment = Enum.TextXAlignment.Center,
-	Parent = bag,
-}, { textOutline(2) })
-
-local snowLabel = label({
-	Name = "Snow",
-	AnchorPoint = Vector2.new(0, 1),
-	Position = UDim2.new(0, 136, 1, -36),
-	Size = UDim2.new(0, 200, 0, 56),
-	Text = "0",
-	Font = Enum.Font.GothamBlack,
-	TextSize = 52,
-	TextColor3 = C.white,
-	Parent = hud,
-}, { textOutline(3) })
-
-local bagHint = label({
-	Name = "BagHint",
-	AnchorPoint = Vector2.new(0, 1),
-	Position = UDim2.new(0, 136, 1, -16),
-	Size = UDim2.new(0, 300, 0, 22),
-	Text = L("Hud.CashPerSnow"),
-	TextSize = 16,
-	TextColor3 = C.white,
-	Parent = hud,
-}, { textOutline(1.5) })
-
--- Таймер матча (справа снизу)
-local timerLabel = label({
-	Name = "Timer",
-	AnchorPoint = Vector2.new(1, 1),
-	Position = UDim2.new(1, -20, 1, -16),
-	Size = UDim2.new(0, 200, 0, 40),
-	Text = "00:00",
-	Font = Enum.Font.GothamBlack,
-	TextSize = 34,
-	TextColor3 = C.white,
-	TextXAlignment = Enum.TextXAlignment.Right,
-	Parent = hud,
-}, { textOutline(3) })
+	Visible = false,
+	ZIndex = 5,
+	Parent = journalButton,
+}, { Ui.corner("full"), Ui.border(2) })
 
 -- ============================================================
 -- Журнал-ноутбук
@@ -1304,24 +1372,34 @@ end)
 -- ============================================================
 -- Обновление
 -- ============================================================
+local lastCash: number? = nil
+
 local function refreshHud()
 	local cash = getStat("Cash")
 	local snow = getStat("Backpack")
 	local capacity = player:GetAttribute("BackpackCapacity") or config.BackpackCapacity
 	local price = getUpgradePrice()
 
-	cashLabel.Text = tostring(cash)
-	multiplierLabel.Text = string.format("(x%.2f)", Shop.cashMultiplier(player))
-	snowLabel.Text = tostring(snow)
-	capacityLabel.Text = tostring(capacity)
-	local full = snow >= capacity
-	snowLabel.TextColor3 = full and C.red or C.white
-	bagHint.Text = full and L("Hud.BackpackFull") or L("Hud.CashPerSnow")
+	if lastCash and cash > lastCash then
+		showCashToast(cash - lastCash)
+	end
+	lastCash = cash
+	cashLabel.Text = Ui.number(cash)
+	local multiplier = Shop.cashMultiplier(player)
+	multiplierLabel.Visible = multiplier > 1.001
+	multiplierLabel.Text = string.format("x%g", math.floor(multiplier * 100 + 0.5) / 100)
 	upgradeBadge.Visible = cash >= price
+
+	-- рюкзак: полный — янтарный и подсказка «продай»
+	local full = snow >= capacity
+	bagCount.Text = string.format('%d<font color="#B9AE9C"> / %d</font>', snow, capacity)
+	bagTitle.Text = full and L("Hud.BackpackFull") or L("Hud.Backpack")
+	bagTitle.TextColor3 = full and Ui.Color.amber or Ui.Color.textSoft
+	setBagBar(capacity > 0 and snow / capacity or 0, full and Ui.Color.amber or nil)
 
 	-- задачи: nil — данные ещё не загружены
 	local stepsDone = player:GetAttribute("OnboardingStep")
-	local current = nil
+	local current, currentGoal, currentValue = nil, 1, 0
 	for i, t in ipairs(tasks) do
 		local done = stepsDone ~= nil and i <= stepsDone
 		local row = taskRows[i]
@@ -1329,17 +1407,23 @@ local function refreshHud()
 		row.text.TextColor3 = done and C.inkSoft or C.ink
 		row.progress.Text = ""
 		if stepsDone ~= nil and i == stepsDone + 1 then
-			local goal = player:GetAttribute("OnboardingGoal") or 1
-			local value = math.min(player:GetAttribute("OnboardingProgress") or 0, goal)
-			row.progress.Text = string.format("(%d/%d)", value, goal)
-			current = string.format("%s %s", t.text, row.progress.Text)
+			currentGoal = player:GetAttribute("OnboardingGoal") or 1
+			currentValue = math.min(player:GetAttribute("OnboardingProgress") or 0, currentGoal)
+			row.progress.Text = string.format("(%d/%d)", currentValue, currentGoal)
+			current = t
 		end
 	end
 	if os.clock() >= taskToastUntil then
 		-- Цепочка пройдена: карточка скрыта. Ежедневные задания встанут сюда, в current
 		taskCard.Visible = current ~= nil
-		taskCard.BackgroundColor3 = C.paper
-		taskText.Text = current or ""
+		taskTag.BackgroundColor3 = Ui.Color.green
+		if current then
+			taskText.Text = current.text
+			taskReward.Text = current.reward and current.reward > 0 and ("+" .. Ui.number(current.reward)) or ""
+			taskBar.Visible = currentGoal > 1
+			setTaskBar(currentValue / currentGoal, Ui.Color.green)
+			taskCount.Text = currentGoal > 1 and string.format("%d/%d", currentValue, currentGoal) or ""
+		end
 	end
 
 	-- зона, в которой стоит игрок
@@ -1347,17 +1431,16 @@ local function refreshHud()
 	local standing = hrp and zoneConfig.zoneAt(hrp.Position.X, hrp.Position.Z)
 	if standing and standing ~= barZone then
 		barZone = standing
-		zoneBar.title.Text = L("Zone." .. barZone.Name)
 	end
 	local cleared, total = getZoneValue(barZone, "Score"), getZoneValue(barZone, "Total")
 	local pct = total > 0 and math.clamp(cleared / total, 0, 1) or 0
-	zoneBar.fill.Size = UDim2.fromScale(pct, 1)
-	zoneBar.pct.Text = string.format("%.1f%%", pct * 100)
-	zoneBar.right.Text = getZoneValue(barZone, "State") == "finished" and L("Hud.Cleared")
-		or string.format("%d/%d", cleared, total)
+	zoneLabel.Text = getZoneValue(barZone, "State") == "finished"
+			and string.format("%s · %s", L("Zone." .. barZone.Name), L("Hud.Cleared"))
+		or string.format("%s · %d%%", L("Zone." .. barZone.Name), math.floor(pct * 100))
 
 	-- таймер
 	local startTime = workspace:GetAttribute("MatchStartTime")
+	timerLabel.Parent.Visible = startTime ~= nil
 	if startTime then
 		local endTime = workspace:GetAttribute("MatchEndTime") or workspace:GetServerTimeNow()
 		timerLabel.Text = formatTime(endTime - startTime)

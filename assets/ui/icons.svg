@@ -1,0 +1,227 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+<!-- Атлас иконок интерфейса. Клетка 128x128, иконка 112x112 (32 единицы x 3.5) с полем 8 px.
+     Номер клетки i: x = (i % 8) * 128, y = floor(i / 8) * 128. Порядок совпадает с src/shared/replicated/Ui/Icons.luau.
+     Снежные шапки: строка 6 (y = 768). PNG: рендер этого SVG без фона (resvg), загружен как rbxassetid://75584506371122. -->
+<defs>
+<style>.o{stroke:#0B0F1C;stroke-linejoin:round;stroke-linecap:round}</style>
+</defs>
+
+<!-- 0 Cash: монета со снежинкой -->
+<g transform="translate(8 8) scale(3.5)">
+<circle cx="16" cy="16" r="13.5" fill="#FFB443" class="o" stroke-width="2.6"/>
+<circle cx="16" cy="16" r="9" fill="none" stroke="#D9831C" stroke-width="2.4"/>
+<g stroke="#FFF3DE" stroke-width="2" stroke-linecap="round"><path d="M16 10.5v11M11.2 13.2l9.6 5.6M11.2 18.8l9.6-5.6"/></g>
+</g>
+
+<!-- 1 Backpack -->
+<g transform="translate(136 8) scale(3.5)">
+<path d="M12 8.5a4 4 0 0 1 8 0" fill="none" class="o" stroke-width="2.6"/>
+<rect x="5.5" y="8" width="21" height="21" rx="6.5" fill="#E2534A" class="o" stroke-width="2.6"/>
+<path d="M5.5 14.5h21" class="o" stroke-width="2.2"/>
+<rect x="10" y="18" width="12" height="7.5" rx="2.5" fill="#9E2F28" class="o" stroke-width="2.2"/>
+<path d="M8 10.5 Q12 8 16 10 Q20 8 24 10.5" fill="none" stroke="#FFFFFF" stroke-width="1.6" stroke-linecap="round"/>
+</g>
+
+<!-- 2 Snow -->
+<g transform="translate(264 8) scale(3.5)">
+<g stroke="#0B0F1C" stroke-width="5.6" stroke-linecap="round" fill="none"><path d="M16 3v26M4.7 9.5l22.6 13M4.7 22.5l22.6-13"/></g>
+<g stroke="#8FD3FF" stroke-width="3" stroke-linecap="round" fill="none"><path d="M16 3v26M4.7 9.5l22.6 13M4.7 22.5l22.6-13"/><path d="M12.5 5.5l3.5 3 3.5-3M12.5 26.5l3.5-3 3.5 3"/></g>
+<circle cx="16" cy="16" r="2.6" fill="#FFFFFF" class="o" stroke-width="1.4"/>
+</g>
+
+<!-- 3 Shop cart -->
+<g transform="translate(392 8) scale(3.5)">
+<path d="M8.5 9.5h20l-3.2 11H11.2z" fill="#3DAA6B" class="o" stroke-width="2.4"/>
+<path d="M3 5.5h4.5l3.7 15h14.3" fill="none" class="o" stroke-width="2.8"/>
+<circle cx="13" cy="25.5" r="2.8" fill="#FFF3DE" class="o" stroke-width="2.2"/>
+<circle cx="23" cy="25.5" r="2.8" fill="#FFF3DE" class="o" stroke-width="2.2"/>
+<path d="M13 13h11" stroke="#FFFFFF" stroke-width="1.8" stroke-linecap="round"/>
+</g>
+
+<!-- 4 Journal: планшет с зажимом -->
+<g transform="translate(520 8) scale(3.5)">
+<rect x="5.5" y="5" width="21" height="25" rx="3.5" fill="#C9894A" class="o" stroke-width="2.6"/>
+<rect x="8.5" y="9" width="15" height="17.5" rx="1.5" fill="#FFF8EA" class="o" stroke-width="1.8"/>
+<rect x="11" y="2.5" width="10" height="5.5" rx="2" fill="#AEB8C4" class="o" stroke-width="2.2"/>
+<path d="M11 14l2 2 3.5-3.5M11 21l2 2 3.5-3.5" stroke="#3DAA6B" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M18.5 15h3M18.5 22h3" stroke="#7A6450" stroke-width="1.8" stroke-linecap="round"/>
+</g>
+
+<!-- 5 Shovel -->
+<g transform="translate(648 8) scale(3.5)">
+<path d="M25 7L13.5 18.5" class="o" stroke-width="6"/>
+<path d="M25 7L13.5 18.5" stroke="#C17A3A" stroke-width="3" stroke-linecap="round"/>
+<path d="M21.5 3.5l7 7" class="o" stroke-width="3.4"/>
+<path d="M5 20.5l6.5-3.5 3.5 3.5-3.5 6.5-7 2z" fill="#B9CBDB" class="o" stroke-width="2.4"/>
+</g>
+
+<!-- 6 Boost -->
+<g transform="translate(776 8) scale(3.5)">
+<path d="M18.5 2.5L6.5 18h8.5l-2.5 11.5 13-16.5h-8.5z" fill="#FFB443" class="o" stroke-width="2.6"/>
+<path d="M17 7l-5 7" stroke="#FFF3DE" stroke-width="1.8" stroke-linecap="round"/>
+</g>
+
+<!-- 7 VIP crown -->
+<g transform="translate(904 8) scale(3.5)">
+<path d="M4.5 11l6 5L16 6.5l5.5 9.5 6-5-2.2 15H6.7z" fill="#FFB443" class="o" stroke-width="2.6"/>
+<circle cx="16" cy="19.5" r="2.4" fill="#E2534A" class="o" stroke-width="1.6"/>
+<path d="M7 22.5h18" stroke="#D9831C" stroke-width="1.8"/>
+</g>
+
+<!-- 8 Clock -->
+<g transform="translate(8 136) scale(3.5)">
+<circle cx="16" cy="16" r="12.5" fill="#FFF3DE" class="o" stroke-width="2.6"/>
+<path d="M16 9v7.5l5 3" fill="none" class="o" stroke-width="2.8"/>
+</g>
+
+<!-- 9 Invite -->
+<g transform="translate(136 136) scale(3.5)">
+<circle cx="12" cy="11" r="5.5" fill="#FFF3DE" class="o" stroke-width="2.4"/>
+<path d="M2.5 28a9.5 9.5 0 0 1 19 0z" fill="#8FD3FF" class="o" stroke-width="2.4"/>
+<path d="M25 8v11M19.5 13.5h11" class="o" stroke-width="6"/>
+<path d="M25 8v11M19.5 13.5h11" stroke="#FFB443" stroke-width="3" stroke-linecap="round"/>
+</g>
+
+<!-- 10 Music -->
+<g transform="translate(264 136) scale(3.5)">
+<path d="M11 22V6.5l15-3v15" fill="none" class="o" stroke-width="3"/>
+<circle cx="7.5" cy="22.5" r="4" fill="#FFB443" class="o" stroke-width="2.4"/>
+<circle cx="22.5" cy="19" r="4" fill="#FFB443" class="o" stroke-width="2.4"/>
+</g>
+
+<!-- 11 Close -->
+<g transform="translate(392 136) scale(3.5)">
+<path d="M7 7l18 18M25 7L7 25" class="o" stroke-width="8"/>
+<path d="M7 7l18 18M25 7L7 25" stroke="#FFFFFF" stroke-width="4" stroke-linecap="round"/>
+</g>
+
+<!-- 12 Check -->
+<g transform="translate(520 136) scale(3.5)">
+<path d="M5 16.5l7 7L27 8" fill="none" class="o" stroke-width="8"/>
+<path d="M5 16.5l7 7L27 8" fill="none" stroke="#3DAA6B" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+</g>
+
+<!-- 13 Lock -->
+<g transform="translate(648 136) scale(3.5)">
+<path d="M10 14v-3.5a6 6 0 0 1 12 0V14" fill="none" class="o" stroke-width="3"/>
+<rect x="6.5" y="13.5" width="19" height="15" rx="3.5" fill="#7A8699" class="o" stroke-width="2.6"/>
+<circle cx="16" cy="20" r="2" fill="#0B0F1C"/>
+<path d="M16 21v3.5" stroke="#0B0F1C" stroke-width="2.2" stroke-linecap="round"/>
+</g>
+
+<!-- 14 Hand: варежка -->
+<g transform="translate(776 136) scale(3.5)">
+<path d="M9 28V12a4 4 0 0 1 8 0v-1.5a4 4 0 0 1 8 0V22a6 6 0 0 1-6 6z" fill="#3C8DD6" class="o" stroke-width="2.6"/>
+<path d="M9 18l-3-3.5a2.8 2.8 0 0 0-4 3.8L7.5 25" fill="#3C8DD6" class="o" stroke-width="2.4"/>
+<rect x="8" y="25" width="18" height="5" rx="2" fill="#FFF3DE" class="o" stroke-width="2.2"/>
+</g>
+
+<!-- 15 Auto sell -->
+<g transform="translate(904 136) scale(3.5)">
+<path d="M25 12a10 10 0 1 0 1.2 7.5" fill="none" class="o" stroke-width="6.4"/>
+<path d="M27 4.5v8h-8" fill="none" class="o" stroke-width="6.4"/>
+<path d="M25 12a10 10 0 1 0 1.2 7.5" fill="none" stroke="#3DAA6B" stroke-width="3.2" stroke-linecap="round"/>
+<path d="M27 4.5v8h-8" fill="none" stroke="#3DAA6B" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="15.5" cy="17" r="4" fill="#FFB443" class="o" stroke-width="2"/>
+</g>
+
+<!-- 16 Cash S: стопка монет -->
+<g transform="translate(8 264) scale(3.5)">
+<ellipse cx="16" cy="24" rx="11" ry="4.5" fill="#D9831C" class="o" stroke-width="2.4"/>
+<ellipse cx="16" cy="19" rx="11" ry="4.5" fill="#FFB443" class="o" stroke-width="2.4"/>
+<ellipse cx="16" cy="14" rx="11" ry="4.5" fill="#FFB443" class="o" stroke-width="2.4"/>
+<ellipse cx="16" cy="9" rx="11" ry="4.5" fill="#FFC970" class="o" stroke-width="2.4"/>
+</g>
+
+<!-- 17 Cash M: мешок -->
+<g transform="translate(136 264) scale(3.5)">
+<path d="M11 8.5h10l-2.5 4c6 2 9 7 9 11 0 4-3 6-11.5 6S4.5 27.5 4.5 23.5c0-4 3-9 9-11z" fill="#C9894A" class="o" stroke-width="2.6"/>
+<path d="M10 5l3 3.5h6l3-3.5z" fill="#C9894A" class="o" stroke-width="2.2"/>
+<circle cx="16" cy="21" r="5" fill="#FFB443" class="o" stroke-width="2"/>
+</g>
+
+<!-- 18 Cash L: сейф -->
+<g transform="translate(264 264) scale(3.5)">
+<rect x="4" y="5" width="24" height="22" rx="3.5" fill="#7A8699" class="o" stroke-width="2.6"/>
+<rect x="7.5" y="8.5" width="17" height="15" rx="2" fill="#5D6879" class="o" stroke-width="1.8"/>
+<circle cx="16" cy="16" r="4.5" fill="#FFB443" class="o" stroke-width="2"/>
+<path d="M16 13v6M13 16h6" stroke="#0B0F1C" stroke-width="1.6"/>
+<path d="M7 27v2.5M25 27v2.5" class="o" stroke-width="2.6"/>
+</g>
+
+<!-- 19 Blizzard -->
+<g transform="translate(392 264) scale(3.5)">
+<path d="M8 19a5 5 0 0 1 .5-10 7 7 0 0 1 13.5-1 5.5 5.5 0 0 1 2 11z" fill="#DCEBFA" class="o" stroke-width="2.6"/>
+<g class="o" stroke-width="5"><path d="M10 23.5v5M20 23.5v5M15 26v4"/></g>
+<g stroke="#8FD3FF" stroke-width="2.4" stroke-linecap="round"><path d="M10 23.5v5M20 23.5v5M15 26v4"/></g>
+</g>
+
+<!-- 20 Star -->
+<g transform="translate(520 264) scale(3.5)">
+<path d="M16 3l3.9 8 8.6 1.2-6.3 6 1.6 8.6L16 22.6l-7.8 4.2 1.6-8.6-6.3-6 8.6-1.2z" fill="#FFB443" class="o" stroke-width="2.6"/>
+</g>
+
+<!-- 21 Robux -->
+<g transform="translate(648 264) scale(3.5)">
+<path d="M16 2.5l11.7 6.75v13.5L16 29.5 4.3 22.75V9.25z" fill="#FFF3DE" class="o" stroke-width="2.6"/>
+<rect x="11.5" y="11.5" width="9" height="9" rx="1.5" fill="#0B0F1C"/>
+</g>
+
+<!-- 22 Play -->
+<g transform="translate(776 264) scale(3.5)">
+<path d="M9 5.5v21l17-10.5z" fill="#FFFFFF" class="o" stroke-width="2.8"/>
+</g>
+
+<!-- 23 Plus -->
+<g transform="translate(904 264) scale(3.5)">
+<path d="M16 6v20M6 16h20" class="o" stroke-width="9"/>
+<path d="M16 6v20M6 16h20" stroke="#FFFFFF" stroke-width="4.5" stroke-linecap="round"/>
+</g>
+
+<!-- 24 Snow pile -->
+<g transform="translate(8 392) scale(3.5)">
+<path d="M3 26c0-5 3-8 6.5-8.5C10.5 12 14 9 18 10.5c3.5-1 7.5 2 8 6 3 1 4 4.5 3.5 9.5z" fill="#FFFFFF" class="o" stroke-width="2.6"/>
+<path d="M7 24c3-1.5 6-1 8 .5M18 23c2.5-1.5 5.5-1 7.5 0" stroke="#BFDDF5" stroke-width="2" fill="none" stroke-linecap="round"/>
+</g>
+
+<!-- 25 Tasks: лист с галочками -->
+<g transform="translate(136 392) scale(3.5)">
+<rect x="6" y="4" width="20" height="25" rx="3" fill="#FFF8EA" class="o" stroke-width="2.6"/>
+<path d="M10 11l2 2 3.5-3.5M10 19l2 2 3.5-3.5" stroke="#3DAA6B" stroke-width="2.4" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M18 12h4.5M18 20h4.5" stroke="#7A6450" stroke-width="2" stroke-linecap="round"/>
+</g>
+
+<!-- 26 Tips: окно -->
+<g transform="translate(264 392) scale(3.5)">
+<rect x="4" y="5" width="24" height="22" rx="3" fill="#CFE9FF" class="o" stroke-width="2.6"/>
+<path d="M16 5v22M4 16h24" class="o" stroke-width="2.2"/>
+<path d="M7.5 22q3-4 6 0M19 11q2.5-3 5 0" stroke="#FFFFFF" stroke-width="2" fill="none" stroke-linecap="round"/>
+</g>
+
+<!-- 27 Upgrade: стрелка вверх -->
+<g transform="translate(392 392) scale(3.5)">
+<path d="M16 3.5L5 15h6.5v12.5h9V15H27z" fill="#3DAA6B" class="o" stroke-width="2.6"/>
+<path d="M16 8l-5.5 5.5" stroke="#FFFFFF" stroke-width="1.8" stroke-linecap="round"/>
+</g>
+
+<!-- 28 Melter: печь -->
+<g transform="translate(520 392) scale(3.5)">
+<rect x="5" y="8" width="22" height="20" rx="3.5" fill="#E2534A" class="o" stroke-width="2.6"/>
+<rect x="9.5" y="14" width="13" height="9" rx="2" fill="#FFB443" class="o" stroke-width="2"/>
+<path d="M13 21c0-2 1.5-2.5 1.5-4 1.5 1 3.5 2 3.5 4" fill="#FFF3DE"/>
+<path d="M10 4.5c0 1.5 1.5 1.5 1.5 3M16 3c0 1.5 1.5 1.5 1.5 3M22 4.5c0 1.5 1.5 1.5 1.5 3" stroke="#B9CBDB" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+</g>
+
+<!-- 29 Question -->
+<g transform="translate(648 392) scale(3.5)">
+<path d="M10.5 11.5a5.5 5.5 0 1 1 8 4.9c-1.6.8-2.5 1.9-2.5 3.6v1" fill="none" class="o" stroke-width="7"/>
+<path d="M10.5 11.5a5.5 5.5 0 1 1 8 4.9c-1.6.8-2.5 1.9-2.5 3.6v1" fill="none" stroke="#E2534A" stroke-width="3.6" stroke-linecap="round"/>
+<circle cx="16" cy="27" r="3" fill="#E2534A" class="o" stroke-width="1.8"/>
+</g>
+
+<!-- Строка 6: снежные шапки. Широкая: x 0..512, y 768..896. Короткая: x 512..768. -->
+<path d="M6 862 Q14 802 60 812 Q86 782 132 798 Q160 772 208 794 Q238 778 262 800 Q300 776 340 796 Q376 774 410 798 Q452 780 476 806 Q508 806 506 856 Q500 880 482 870 Q472 892 450 876 Q436 892 412 878 L130 878 Q114 894 94 878 Q74 892 58 876 Q40 890 26 876 Q4 884 6 862 Z" fill="#FFFFFF" stroke="#0B0F1C" stroke-width="6" stroke-linejoin="round"/>
+<path d="M40 862 Q80 872 120 862 M300 860 Q350 870 400 860" stroke="#BFDDF5" stroke-width="5" fill="none" stroke-linecap="round"/>
+<path d="M518 862 Q522 806 564 812 Q592 780 632 800 Q664 778 700 802 Q756 800 760 856 Q756 880 738 870 Q724 890 704 876 L590 878 Q570 892 552 876 Q520 884 518 862 Z" fill="#FFFFFF" stroke="#0B0F1C" stroke-width="6" stroke-linejoin="round"/>
+<path d="M548 862 Q590 872 630 862" stroke="#BFDDF5" stroke-width="5" fill="none" stroke-linecap="round"/>
+</svg>

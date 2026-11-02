@@ -24,6 +24,8 @@ Rojo этим не управляет: всё хранится в местах �
   - `Neighborhood`: 22 соседних дома трёх видов, Persistent. `Town` (Persistent, начало в (0, 0, 0)): `blender/town.py`, 8 секторов вокруг участка по 7 мешей: земля на холмах, улицы, дома, окна, деревья.
   - `Zones`, `PorchHub`, `LawnBase` (верх 0.98, чуть ниже зональных плит). Земля: `YardPlatform`, `LawnBase`, `Zone3`, `Zone4` — Grass, `Zone2` — Concrete, `PorchGround` — Cobblestone.
   - `Props`: предметы в зонах, камни, терраса. `Decor`: `SnowBlocks`, `FrontPath`, `Snowman`, `Mailbox`.
+  - Листва кустов (`Bush.Leaf`, цвет (64, 110, 58)) и венок `House_Pine` — материал Grass. Fabric на них выглядел как вязаный свитер (2026-11-02). Так же в `WorldKit.Bush.Leaf`.
+  - Снеговик стоит на лужайке у тротуара (−24, 14), лицом к точке появления, левее линии взгляда на табличку ворот SideYard: раньше он стоял внутри куста у сарая. Пересечения предметов проверяются `GetPartsInPart` (геометрия Default), рамки `GetBoundingBox` у круглых мешей дают ложные срабатывания.
 - **Снег и препятствия:** форма снега задаётся в `ZoneConfig` (см. `docs/systems.md`), предмет на карте её не меняет и просто стоит в снегу: снег под ним достаётся инструментом, коллизия ему не мешает. Если до середины предмета не дотянуться, под ним нужна деталь с атрибутом `SnowBlock`: `Decor.SnowBlocks` (машина, поленницы) или сама коллизия (`Snowmelter.CollisionBase`, `BackpackShop.CollisionSlab`). Новая площадка выше земли требует своего поля в `ZoneConfig`, иначе снег останется под ней. Дорожки и камни с верхом ниже Y = 1.2 снег не прячут.
 - `ServerStorage.WorldKit`: образцы моделей из `blender/world_kit.py`, новые предметы клонируются отсюда. Старые объекты там же: `_OldHouse`, `_OldPineUnions`, `_OldFencePillars`, `_OldFenceCaps`, `_OldNeighbors`, `_OldLamps`.
 - `[не проверено]` Декор ставился как Anchored без коллизии. Служебные подписи блокаута выключены, подписи зон и ворот оставлены.
@@ -61,6 +63,7 @@ Rojo этим не управляет: всё хранится в местах �
 - `Blockout.Records.Board` (тег `RecordsBoard`) — доска таблицы лучших в беседке, текст рисует `LobbyRecordsClient`.
 - `LeftStalls.ShopStall`, `LeftStalls.UpgradeStall`, `RightArea.Stage` теперь невидимые якоря подписей, в них остались `Localized` и `LocaleKey`.
 - `Blockout.Bounds` — невидимые стены двора. `Blockout.Town` — город из `town.fbx`, на том же месте, что на карте. `Decor`: `Trees` (76 ёлок одним мешем, как на карте), `Snowman`.
+- Листва кустов и ёлка `BigTree.Fir` (и их образцы в `LobbyKit`, `WorldKit`) — материал Grass, не Fabric (2026-11-02). Поленница, куст, баки и сугроб у крайних грузовиков отодвинуты так, чтобы не входить в грузовики; сугробы за грузовиками упираются в отвалы намеренно.
 - `ServerStorage`: `LobbyKit` (образцы из `blender/lobby.py`), `WorldKit`, `_OldLobby` (старые забор, дома, фонари, 30 ёлок `PineA` на union и прочее).
 - `SoundService.LobbyMusic`: сейчас `SoundId` пустой, трек выбирает Олег. Новый трек — вписать `rbxassetid://<id>` в `SoundId`, код менять не нужно. Раньше стоял 1837484932, `[не проверено]` APM «You're In Style».
 - Устройство табличек и правила об именах — в `docs/systems.md`, раздел «Лобби».

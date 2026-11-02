@@ -1,4 +1,5 @@
 -- Shop: геймпассы и разовые покупки (developer products) — общий список для сервера и клиента, плюс бонусы пассов.
+-- Icon — имя иконки из атласа Ui (ReplicatedStorage.Shared.Ui, Ui.Icons).
 -- Id = 0 — товар ещё не создан в Creator Dashboard: в магазине не показывается, сервер его не выдаёт.
 -- Названия и описания — в Locale.Strings: Shop.Pass.<Key>.Name/.Desc, Shop.Product.<Key>.Name/.Desc.
 -- Владелец пасса получает атрибут Pass_<Key> = true (ставит ShopServer), личный буст — атрибут BoostUntil (os.time),
@@ -7,20 +8,20 @@
 local Shop = {}
 
 Shop.Passes = {
-	{ Key = "X2Cash", Id = 2060962565, Icon = "💰" },
-	{ Key = "BigBackpack", Id = 2058689419, Icon = "🎒" },
-	{ Key = "AutoSell", Id = 2057279447, Icon = "♻️" },
-	{ Key = "VIP", Id = 2060530636, Icon = "👑" },
+	{ Key = "X2Cash", Id = 2060962565, Icon = "Cash" },
+	{ Key = "BigBackpack", Id = 2058689419, Icon = "Backpack" },
+	{ Key = "AutoSell", Id = 2057279447, Icon = "AutoSell" },
+	{ Key = "VIP", Id = 2060530636, Icon = "Vip" },
 }
 
 -- Cash — сколько Cash даёт пачка; BoostMinutes — личный ×2 Cash; BlizzardMinutes — ×2 Cash всем в матче.
 -- MatchOnly — продаётся и выдаётся только в матче
 Shop.Products = {
-	{ Key = "CashS", Id = 3723261055, Icon = "💵", Cash = 500 },
-	{ Key = "CashM", Id = 3723261117, Icon = "💰", Cash = 2500 },
-	{ Key = "CashL", Id = 3723261166, Icon = "🏦", Cash = 10000 },
-	{ Key = "Boost", Id = 3723261211, Icon = "⚡", BoostMinutes = 15 },
-	{ Key = "Blizzard", Id = 3723261365, Icon = "🌨️", BlizzardMinutes = 10, MatchOnly = true },
+	{ Key = "CashS", Id = 3723261055, Icon = "CashS", Cash = 500 },
+	{ Key = "CashM", Id = 3723261117, Icon = "CashM", Cash = 2500 },
+	{ Key = "CashL", Id = 3723261166, Icon = "CashL", Cash = 10000 },
+	{ Key = "Boost", Id = 3723261211, Icon = "Boost", BoostMinutes = 15 },
+	{ Key = "Blizzard", Id = 3723261365, Icon = "Blizzard", BlizzardMinutes = 10, MatchOnly = true },
 }
 
 Shop.CASH_X2 = 2 -- пасс «×2 Cash»

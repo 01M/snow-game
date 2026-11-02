@@ -232,7 +232,7 @@ return {
 	["MatchEnd.Returning"] = { en = "Returning to the lobby…", ru = "Возвращаемся в лобби…" },
 
 	-- Магазины (ToolShopClient, UpgradeShopClient, подсказки ProximityPrompt)
-	["Shop.Owned"] = { en = "Owned ✓", ru = "Куплено ✓" },
+	["Shop.Owned"] = { en = "Owned", ru = "Куплено" },
 	["Shop.Buy"] = { en = "Buy", ru = "Купить" },
 	["Shop.BackpackPrice"] = { en = "Backpack +{n}: {price} Cash", ru = "Рюкзак +{n}: {price} Cash" },
 	["Shop.UpgradeBackpack"] = { en = "Upgrade backpack", ru = "Улучшить рюкзак" },
@@ -242,8 +242,8 @@ return {
 	-- Магазин за Robux (ReplicatedStorage.Shared.Shop, окно ShopGui)
 	["Shop.Title"] = { en = "SHOP", ru = "МАГАЗИН" },
 	["Chat.VipTag"] = { en = "[VIP]", ru = "[VIP]" },
-	["Shop.Section.Passes"] = { en = "GAME PASSES", ru = "ГЕЙМПАССЫ" },
-	["Shop.Section.Products"] = { en = "ITEMS", ru = "ТОВАРЫ" },
+	["Shop.Section.Passes"] = { en = "Passes", ru = "Пропуски" },
+	["Shop.Section.Products"] = { en = "Items", ru = "Товары" },
 	["Shop.ComingSoon"] = {
 		en = "The shop opens very soon!",
 		ru = "Магазин откроется совсем скоро!",
@@ -254,8 +254,8 @@ return {
 	["Shop.GetPass"] = { en = "Get pass", ru = "Получить пропуск" },
 	["Shop.X2Sign.On"] = { en = "x2 Cash: ON", ru = "×2 Cash: ВКЛ" },
 	["Shop.X2Sign.Off"] = { en = "x2 Cash: OFF", ru = "×2 Cash: ВЫКЛ" },
-	["Shop.BoostActive"] = { en = "⚡ Boost x2: {time}", ru = "⚡ Буст ×2: {time}" },
-	["Shop.BlizzardActive"] = { en = "🌨️ Blizzard x2: {time}", ru = "🌨️ Метель ×2: {time}" },
+	["Shop.BoostActive"] = { en = "Boost x2: {time}", ru = "Буст ×2: {time}" },
+	["Shop.BlizzardActive"] = { en = "Blizzard x2: {time}", ru = "Метель ×2: {time}" },
 	["Shop.BlizzardBy"] = {
 		en = "{name} started a Blizzard! x2 Cash for everyone",
 		ru = "{name} включил Метель! ×2 Cash для всех",

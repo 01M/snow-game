@@ -76,6 +76,10 @@ MarketplaceService.ProcessReceipt = function(info)
 	if not player or not product or not PlayerData.isLoaded(player) or not player:FindFirstChild("leaderstats") then
 		return Enum.ProductPurchaseDecision.NotProcessedYet
 	end
+	-- Буран после конца матча пропал бы зря: пусть его выдаст следующий матч
+	if product.MatchOnly and workspace:GetAttribute("MatchState") == "finished" then
+		return Enum.ProductPurchaseDecision.NotProcessedYet
+	end
 	local ok, granted = pcall(PlayerData.grantReceipt, player, info.PurchaseId, function()
 		applyProduct(player, product)
 	end)

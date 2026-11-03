@@ -78,8 +78,6 @@ local function onMatchFinished()
 	for _, player in ipairs(Players:GetPlayers()) do
 		sellBackpack(player)
 	end
-	-- сохраняем и снимаем блокировку заранее, чтобы следующий сервер сразу загрузил свежие данные
-	PlayerData.saveAll(Players:GetPlayers(), true)
 
 	for t = RETURN_DELAY, 1, -1 do
 		workspace:SetAttribute("ReturnCountdown", t)
@@ -87,6 +85,9 @@ local function onMatchFinished()
 	end
 	workspace:SetAttribute("ReturnCountdown", 0)
 
+	-- Сохраняем и снимаем блокировку после отсчёта, перед самым телепортом: покупки и находки
+	-- за время отсчёта тоже попадают в сохранение, а лобби уже загрузит свежие данные
+	PlayerData.saveAll(Players:GetPlayers(), true)
 	teleportToLobby(Players:GetPlayers())
 end
 

@@ -43,6 +43,18 @@ local COLOR_TRAMPLED = Color3.fromRGB(150, 166, 198) -- примятый сне�
 
 local BLOCK_SIZE = 4 -- размер блока запасного снега, studs
 
+-- Визуальная толщина: снег рисуется во столько раз выше, чем считает сервер (только вид: порции и экономика те же).
+-- В Studio варианты сравниваются на ходу атрибутом workspace DebugSnowDepth (число > 0)
+local VISUAL_DEPTH = 1
+local function readDepthScale(): number
+	local v = workspace:GetAttribute("DebugSnowDepth")
+	if RunService:IsStudio() and typeof(v) == "number" and v > 0 then
+		return v
+	end
+	return VISUAL_DEPTH
+end
+local depthScale = readDepthScale()
+
 local snowFolder = Instance.new("Folder")
 snowFolder.Name = "LocalSnow"
 snowFolder.Parent = workspace
@@ -261,7 +273,7 @@ local function applyVertex(z, i: number)
 	end
 	local srv = z.srv[i]
 	local h = srv - z.foot[i]
-	local y = srv < HIDE_BELOW and HIDDEN_Y or math.max(0, h)
+	local y = srv < HIDE_BELOW and HIDDEN_Y or math.max(0, h) * depthScale
 	local x, zz = z.localXZ(i)
 	mesh.em:SetPosition(mesh.verts[i], z.offset + Vector3.new(x, y, zz))
 	local color = COLOR_THIN:Lerp(COLOR_FRESH, math.clamp(h / COLOR_FULL_DEPTH, 0, 1))
@@ -370,8 +382,8 @@ local function updateBlocks(z)
 			p.Transparency = 1
 		else
 			p.Transparency = 0
-			p.Size = Vector3.new(cell.w, h, cell.d)
-			p.Position = Vector3.new(c.X + cell.lx, groundY + h / 2, c.Z + cell.lz)
+			p.Size = Vector3.new(cell.w, h * depthScale, cell.d)
+			p.Position = Vector3.new(c.X + cell.lx, groundY + h * depthScale / 2, c.Z + cell.lz)
 			p.Color = COLOR_THIN:Lerp(COLOR_FRESH, math.clamp(h / COLOR_FULL_DEPTH, 0, 1))
 		end
 	end
@@ -537,6 +549,26 @@ for _, stage in stages do
 			refreshStage(stage)
 		end)
 	end
+end
+
+if RunService:IsStudio() then
+	workspace:GetAttributeChangedSignal("DebugSnowDepth"):Connect(function()
+		depthScale = readDepthScale()
+		-- Меш собирается заново: MeshPart вписывает вершины в габариты, посчитанные при его создании,
+		-- поэтому одинаковое растяжение всех высот без пересборки не видно (проверено в play mode 2026-11-03)
+		for _, stage in stages do
+			if stage.blocks then
+				for _, z in stage.fields do
+					for i = 1, z.count do
+						z.dirty[i] = true
+					end
+				end
+			elseif stage.stride then
+				stage.stride = nil
+				refreshStage(stage)
+			end
+		end
+	end)
 end
 
 snowSync.OnClientEvent:Connect(function(kind: string, fieldIndex: number, data: buffer)

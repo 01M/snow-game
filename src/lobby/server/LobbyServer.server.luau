@@ -299,8 +299,22 @@ local function quickPlay(player)
 	-- свободных площадок нет: клиент сам покажет «занято», если не попал на площадку
 end
 
+-- Ограничение частоты QueueAction: каждое действие хозяина рассылается всем игрокам лобби
+local ACTION_MAX_RATE = 5 -- действий в секунду на игрока
+local rateWindow = {}
+
 QueueAction.OnServerEvent:Connect(function(player, action, value)
 	if typeof(action) ~= "string" then
+		return
+	end
+	local now = os.clock()
+	local w = rateWindow[player]
+	if not w or now - w.start >= 1 then
+		w = { start = now, count = 0 }
+		rateWindow[player] = w
+	end
+	w.count += 1
+	if w.count > ACTION_MAX_RATE then
 		return
 	end
 	if action == "quickPlay" then
@@ -320,7 +334,7 @@ QueueAction.OnServerEvent:Connect(function(player, action, value)
 		return
 	end
 
-	-- остальное может только хозяин во время настройки
+	-- остальное может только хозяин во время настройки; рассылка только если значение изменилось
 	if q.owner ~= player or q.phase ~= "setup" then
 		return
 	end
@@ -330,17 +344,18 @@ QueueAction.OnServerEvent:Connect(function(player, action, value)
 			and value == math.floor(value)
 			and value >= math.max(1, #q.players)
 			and value <= Maps.MaxPlayers
+			and value ~= q.maxPlayers
 		then
 			q.maxPlayers = value
 			broadcast(q)
 		end
 	elseif action == "setMap" then
-		if typeof(value) == "string" and Maps.ById[value] then
+		if typeof(value) == "string" and Maps.ById[value] and value ~= q.mapId then
 			q.mapId = value
 			broadcast(q)
 		end
 	elseif action == "setFriendsOnly" then
-		if typeof(value) == "boolean" then
+		if typeof(value) == "boolean" and value ~= q.friendsOnly then
 			q.friendsOnly = value
 			broadcast(q)
 		end
@@ -355,6 +370,7 @@ Players.PlayerRemoving:Connect(function(player)
 		removePlayer(q, player)
 	end
 	lastQuick[player] = nil
+	rateWindow[player] = nil
 end)
 
 -- Новому игроку отправляем текущее состояние всех площадок

@@ -6,6 +6,8 @@
 -- Первое поле зоны — самое большое (по нему стоит ZoneBounds). Соседние поля делят общую линию под забором или воротами.
 -- Stage — этап: зоны этапа открываются вместе и рисуются одним мешем (SnowMeshClient), поэтому веранда и сарай
 -- не тратят бюджет мешей. Первый этап открыт сразу, следующий — когда очищены все зоны предыдущего.
+-- KeepDrift — прямоугольники, где сугробы рисуются в исходном размере, а не растут вместе со снегом (SnowMeshClient):
+-- у витрины пассов и веранды, чтобы их не засыпало. Только вид, сервер их не читает.
 -- Gate — имя ворот в Workspace.Blockout.Fences (и их снега <Gate>_Snow в Blockout.SnowCaps), которые исчезают, когда зона открывается.
 -- Число порций зоны = весь снег зоны / Config.SnowPortionVolume, BlowServer кладёт его в IntValue Total зоны.
 
@@ -44,6 +46,7 @@ local function makeField(name: string, groundY: number, areas, options)
 		GroundTopY = groundY,
 		Areas = areas,
 		Cuts = options and options.Cuts or {},
+		KeepDrift = options and options.KeepDrift or {},
 		Drift = options and options.Drift or 1,
 		-- Прямоугольник, в который вписана форма: по нему строится сетка точек
 		Center = Vector3.new((x0 + x1) / 2, 0, (z0 + z1) / 2),
@@ -75,6 +78,7 @@ local ZoneConfig = {
 						rect(-4, 4, -45, -43), -- ступени
 						rect(-27, -12, -51, -42), -- сарай
 					},
+					KeepDrift = { rect(-15, 15, -52, -25) }, -- витрина пассов (Workspace.PassShowcase) и веранда
 				}),
 			},
 		},

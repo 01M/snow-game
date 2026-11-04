@@ -55,6 +55,34 @@ local function readDepthScale(): number
 end
 local depthScale = readDepthScale()
 
+-- Сугробы растут вместе со снегом и засыпают забор и машину, кроме прямоугольников ZoneConfig KeepDrift
+-- (витрина пассов, веранда). Там выше DRIFT_CAP (× толщину снега в этом месте) — уже сугроб: добавка
+-- от depthScale плавно сходит на нет на такой же высоте над ним, поэтому на стыке нет ни ступеньки, ни провала.
+-- keep — 0..1, насколько точка внутри KeepDrift (на KEEP_BLEND studs вокруг прямоугольника плавный переход)
+local DRIFT_CAP = config.SnowBaseDepth + config.SnowNoiseAmp
+local KEEP_BLEND = 4
+local function visualHeight(h: number, cap: number, keep: number): number
+	local full = h * depthScale
+	if keep <= 0 then
+		return full
+	end
+	local extra = (depthScale - 1) * math.min(h, cap)
+	if h > cap and cap > 0 then
+		extra *= math.max(0, 1 - (h - cap) / cap)
+	end
+	return full + (h + extra - full) * keep
+end
+
+local function keepAt(zc, x: number, z: number): number
+	local keep = 0
+	for _, r in zc.KeepDrift do
+		local dx = math.max(r.X0 - x, 0, x - r.X1)
+		local dz = math.max(r.Z0 - z, 0, z - r.Z1)
+		keep = math.max(keep, 1 - math.clamp(math.sqrt(dx * dx + dz * dz) / KEEP_BLEND, 0, 1))
+	end
+	return keep
+end
+
 local snowFolder = Instance.new("Folder")
 snowFolder.Name = "LocalSnow"
 snowFolder.Parent = workspace
@@ -94,10 +122,15 @@ local function buildField(fieldIndex: number)
 
 	-- Точки формы поля: вокруг них строится меш
 	local inShape = table.create(count, false)
+	local cap = table.create(count, 0) -- высота, выше которой снег считается сугробом (visualHeight)
+	local keep = table.create(count, 0)
 	for ix = 0, nx - 1 do
 		for iz = 0, nz - 1 do
 			local wx, wz = zc.Center.X - halfX + ix * res, zc.Center.Z - halfZ + iz * res
-			inShape[ix * nz + iz + 1] = zc:depthAt(wx, wz) > 0
+			local depth = zc:depthAt(wx, wz)
+			inShape[ix * nz + iz + 1] = depth > 0
+			cap[ix * nz + iz + 1] = depth * DRIFT_CAP
+			keep[ix * nz + iz + 1] = keepAt(zc, wx, wz)
 		end
 	end
 
@@ -119,6 +152,8 @@ local function buildField(fieldIndex: number)
 		halfX = halfX,
 		halfZ = halfZ,
 		inShape = inShape,
+		cap = cap,
+		keep = keep,
 		srv = table.create(count, 0), -- высоты с сервера
 		foot = table.create(count, 0), -- глубина локальных следов
 		dirty = {},
@@ -273,7 +308,7 @@ local function applyVertex(z, i: number)
 	end
 	local srv = z.srv[i]
 	local h = srv - z.foot[i]
-	local y = srv < HIDE_BELOW and HIDDEN_Y or math.max(0, h) * depthScale
+	local y = srv < HIDE_BELOW and HIDDEN_Y or visualHeight(math.max(0, h), z.cap[i], z.keep[i])
 	local x, zz = z.localXZ(i)
 	mesh.em:SetPosition(mesh.verts[i], z.offset + Vector3.new(x, y, zz))
 	local color = COLOR_THIN:Lerp(COLOR_FRESH, math.clamp(h / COLOR_FULL_DEPTH, 0, 1))
@@ -382,8 +417,10 @@ local function updateBlocks(z)
 			p.Transparency = 1
 		else
 			p.Transparency = 0
-			p.Size = Vector3.new(cell.w, h * depthScale, cell.d)
-			p.Position = Vector3.new(c.X + cell.lx, groundY + h * depthScale / 2, c.Z + cell.lz)
+			local wx, wz = c.X + cell.lx, c.Z + cell.lz
+			local vh = visualHeight(h, z.zc:depthAt(wx, wz) * DRIFT_CAP, keepAt(z.zc, wx, wz))
+			p.Size = Vector3.new(cell.w, vh, cell.d)
+			p.Position = Vector3.new(c.X + cell.lx, groundY + vh / 2, c.Z + cell.lz)
 			p.Color = COLOR_THIN:Lerp(COLOR_FRESH, math.clamp(h / COLOR_FULL_DEPTH, 0, 1))
 		end
 	end

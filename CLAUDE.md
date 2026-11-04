@@ -45,7 +45,7 @@
 |---|---|---|---|
 | **shared** | Analytics, SaveStore | Locale (+Strings), Shop (+Gui), Ui (вид интерфейса, иконки) | ChatTagClient, LocaleClient, SnowfallClient |
 | **lobby** | LobbyServer, LobbyCashServer, LobbyRecordsServer, ShopServer, SlideRagdollServer, SnowballServer | Lobby/Maps, Lobby/Snowball, Lobby/Remotes | LobbyHudClient, LobbyMenuClient, LobbyRecordsClient, LobbyTruckClient, SlideRagdollClient, SnowballClient |
-| **house** | SnowGame/: BlowServer, SnowField, PileServer, ToolServer, ToolShopServer, MelterServer, UpgradeShopServer, LeaderstatsServer, PlayerData, MatchServer, ShopServer, AnalyticsHooks, OnboardingServer, FindServer | SnowGame/: Config, ZoneConfig, Finds, Remotes | FindClient, GameHudClient, HideCoreGui, MatchEndClient, PassShowcaseClient, RewardLightsClient, SnowMeshClient, SnowParticles, ToolClient, ToolShopClient, UpgradeShopClient |
+| **house** | SnowGame/: BlowServer, SnowField, PileServer, ToolServer, ToolShopServer, MelterServer, UpgradeShopServer, LeaderstatsServer, PlayerData, MatchServer, ShopServer, AnalyticsHooks, OnboardingServer, FindServer | SnowGame/: Config, ZoneConfig, Finds, Remotes | FindClient, GameHudClient, HideCoreGui, MatchEndClient, PassShowcaseClient, RewardLightsClient, ShovelChunksClient, SnowMeshClient, SnowParticles, ToolClient, ToolShopClient, UpgradeShopClient |
 
 **Магазин за Robux** — два разных серверных скрипта и общие модули, это не дубль:
 
@@ -107,7 +107,7 @@
 2. `stylua src`, затем `stylua --check src`; если check не прошёл, повторить.
 3. `selene src` показывает 0 предупреждений.
 4. `scripts/analyze.ps1` показывает 0 ошибок.
-5. Убраны отладочные атрибуты: `TestSave`, `ForceLanguage`, `DebugSnowBlocks`, `DebugSnowDepth`, `DebugTouchButton`, `DebugFinds`.
+5. Убраны отладочные атрибуты: `TestSave`, `ForceLanguage`, `DebugSnowBlocks`, `DebugSnowDepth`, `DebugTouchButton`, `DebugFinds`, `DebugShovelFxOld`, `DebugShovelShake`, `DebugShovelLite`.
 
 ## Правила работы
 

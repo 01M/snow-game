@@ -2,6 +2,7 @@
 -- Без Parts: один Attachment в Terrain с ParticleEmitter, Emit() на каждую точку.
 -- Сервер шлёт BlowParticles(игрок, позиция сопла на сервере, точки среза) только игрокам рядом.
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
 
 local snowGame = ReplicatedStorage:WaitForChild("SnowGame")
 local blowParticles = snowGame:WaitForChild("Remotes"):WaitForChild("BlowParticles")
@@ -67,11 +68,26 @@ local function nozzleOf(blower: Player?, fallback: Vector3): Vector3
 	return fallback
 end
 
+-- Лопату рисует ShovelChunksClient (тяжёлые комья); старые клубы для неё — только с атрибутом
+-- workspace DebugShovelFxOld = true в Studio, для сравнения
+local function shovelHasOwnFx(blower: Player?): boolean
+	if RunService:IsStudio() and workspace:GetAttribute("DebugShovelFxOld") == true then
+		return false
+	end
+	local character = blower and blower.Character
+	local tool = character and character:FindFirstChildOfClass("Tool")
+	return tool ~= nil and tool:GetAttribute("SnowToolId") == "Shovel"
+end
+
 blowParticles.OnClientEvent:Connect(function(blower: any, nozzlePos: any, points: any)
 	if typeof(nozzlePos) ~= "Vector3" or type(points) ~= "table" then
 		return
 	end
-	local target = nozzleOf(typeof(blower) == "Instance" and blower:IsA("Player") and blower or nil, nozzlePos)
+	local blowerPlayer = typeof(blower) == "Instance" and blower:IsA("Player") and blower or nil
+	if shovelHasOwnFx(blowerPlayer) then
+		return
+	end
+	local target = nozzleOf(blowerPlayer, nozzlePos)
 
 	for _, p in points do
 		if typeof(p) ~= "Vector3" then

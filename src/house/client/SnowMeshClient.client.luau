@@ -43,9 +43,8 @@ local COLOR_TRAMPLED = Color3.fromRGB(150, 166, 198) -- примятый сне�
 
 local BLOCK_SIZE = 4 -- размер блока запасного снега, studs
 
--- Визуальная толщина: снег рисуется во столько раз выше, чем считает сервер (только вид: порции и экономика те же).
--- В Studio варианты сравниваются на ходу атрибутом workspace DebugSnowDepth (число > 0)
-local VISUAL_DEPTH = 1.5 -- выбрано Олегом 2026-11-04 по сравнению 1 / 1,5 / 2
+-- Визуальная толщина (Config.SnowVisualDepth). В Studio варианты сравниваются на ходу атрибутом workspace DebugSnowDepth (число > 0)
+local VISUAL_DEPTH = config.SnowVisualDepth
 local function readDepthScale(): number
 	local v = workspace:GetAttribute("DebugSnowDepth")
 	if RunService:IsStudio() and typeof(v) == "number" and v > 0 then

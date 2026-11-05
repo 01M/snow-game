@@ -38,7 +38,7 @@ Rojo этим не управляет: всё хранится в местах �
 | Инструмент | Id | Иконка `TextureId` | Модель |
 |---|---|---|---|
 | Рука | Hand | 81467688374407 (`Icon` в `Config.Tools`) | Больше не выдаётся, модель не используется. `[не проверено]` «Cartoon glove» 15603104393 (Squidward77chair), манжета Cuff |
-| Лопата | Shovel | 94854665192337 | `[не проверено]` «CSG Snow Shovel» 2878167216 (GiggIebyte) |
+| Лопата | Shovel | 94854665192337 | С 2026-11-05 вариант A из `blender/shovel.py` (FBX `blender/exports/shovel/shovel_a.fbx`): 4 MeshPart `ShovelPlastic`, `ShovelMetal`, `ShovelSteel`, `ShovelGrip`, сварены с Handle в перекладине D-ручки. Grip подобран от корпуса (ковш над ямой среза), не от камеры. Витрина `Shelf_Shovel.Display.ShovelA` — те же меши, Anchored, масштаб под полку. Старая модель («CSG Snow Shovel» 2878167216) и старая витрина (`Display_ShovelMesh`) в `ServerStorage._OldShovel`. Вариант B и импорты FBX в `ServerStorage._ShovelCandidates`, пока Олег не решит. Откат: вернуть `_OldShovel.Лопата` в `SnowTools` вместо новой, `Display_ShovelMesh` (имя `ShovelMesh`) в `Display` вместо `ShovelA`. |
 | Движок | Blower | 75822675257669 | Parts: скребок на черенке |
 | Снегоуборщик | Vacuum | 87257815873674 | Parts; `[не проверено]` звук 9120360676 |
 

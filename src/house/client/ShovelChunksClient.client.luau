@@ -2,7 +2,8 @@
 -- ShovelChunksClient: отдача лопаты «Тяжёлые комья» (только визуал на клиенте, направление выбрал Олег 2026-11-04).
 -- Слушает тот же BlowParticles, что SnowParticles. Для лопаты (SnowToolId = "Shovel") раз за взмах с точек среза
 -- вылетают объёмные неровные комья снега: дуга, вращение, лёгкое сплющивание при падении, потом оседают в снег.
--- Пыль и крошка только в момент удара. У своего игрока ещё слабый толчок камеры.
+-- Пыль и крошка только в момент удара. У своего игрока ещё слабый толчок камеры. Звук — слои вход лезвия, шорох,
+-- хруст (тяжёлый взмах) и падение комьев, на тех же событиях (раздел «Звук»).
 -- Пул комьев создаётся один раз при старте (POOL_SIZE, на слабых устройствах POOL_SIZE_LITE), во время игры
 -- новых деталей нет: если свободного кома нет, лишний просто не вылетает.
 -- Комья — клоны готовых MeshPart из модели workspace.ShovelChunkTemplates (5 форм из Blender, Persistent при
@@ -12,6 +13,8 @@
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
+local SoundService = game:GetService("SoundService")
+local ContentProvider = game:GetService("ContentProvider")
 local UserInputService = game:GetService("UserInputService")
 
 local snowGame = ReplicatedStorage:WaitForChild("SnowGame")
@@ -105,6 +108,7 @@ folder.Parent = workspace
 
 type Chunk = {
 	part: BasePart,
+	owner: Player?, -- чья лопата бросила ком (для звука падения)
 	shape: Vector3, -- пропорции формы (самая длинная сторона = 1): так у каждой формы свой силуэт
 	busy: boolean,
 	phase: string, -- "fly" | "squash" | "sink"
@@ -129,6 +133,7 @@ local function addToPool(p: BasePart)
 	p.Parent = folder
 	table.insert(pool, {
 		part = p,
+		owner = nil,
 		shape = shape,
 		busy = false,
 		phase = "fly",
@@ -275,6 +280,172 @@ RunService:BindToRenderStep("ShovelChunksShake", Enum.RenderPriority.Camera.Valu
 end)
 
 -- ============================================================
+-- Звук (выбран Олегом 2026-11-05, Pro Sound Effects из Creator Store): на взмах — вход лезвия + шорох,
+-- на тяжёлом взмахе ещё хруст, на падение кома — мягкий шлепок. VOICES голосов создаются один раз при старте:
+-- каждый — Sound в своём Attachment (3D из точки лезвия или падения). Свободного голоса нет — занимаем
+-- самый неважный из играющих, если новый важнее; иначе звук пропускаем.
+-- ============================================================
+type Layer = {
+	ids: { string },
+	volume: NumberRange,
+	maxLen: number, -- секунд: длинные записи играют только началом
+	priority: number,
+	last: number, -- индекс прошлой записи, чтобы не повторять её подряд
+}
+
+local LAYERS: { [string]: Layer } = {
+	-- 1Б: Wood Paddle, Canoe, Impacts Into Icy Snow, Digging 17/18/20/21
+	blade = {
+		ids = { "9126274119", "9126274134", "9126274372", "9126274367" },
+		volume = NumberRange.new(0.35, 0.45),
+		maxLen = 0.45,
+		priority = 3,
+		last = 0,
+	},
+	-- 2А: Snow Scrape, Multiple Short Slides, Crispy 1/2/3/4/5/11
+	scrape = {
+		ids = { "9119316826", "9119316983", "9119316977", "9119316982", "9119317219", "9119317644" },
+		volume = NumberRange.new(0.2, 0.3),
+		maxLen = 0.4,
+		priority = 2,
+		last = 0,
+	},
+	-- 3А: Snow Impact, Big Hits, Semi-Deep, Stomping 1/2 — только тяжёлый взмах
+	crunch = {
+		ids = { "9125965053", "9125965109" },
+		volume = NumberRange.new(0.3, 0.4),
+		maxLen = 0.6,
+		priority = 2,
+		last = 0,
+	},
+	-- 4А: Snowball, Hits and Lands, Semi-Deep Snow 1/2/3/4/5/8
+	land = {
+		ids = { "9119310338", "9119310356", "9119310368", "9119310655", "9119310633", "9119310905" },
+		volume = NumberRange.new(0.12, 0.2),
+		maxLen = 0.5,
+		priority = 1,
+		last = 0,
+	},
+}
+local VOICES = 8
+local PITCH = NumberRange.new(0.92, 1.08)
+local VOLUME_JITTER = 0.15
+local OTHER_VOLUME = 0.6 -- чужие лопаты тише
+local CRUNCH_DELAY = NumberRange.new(0.03, 0.08)
+local LAND_GAP = 0.15 -- не чаще одного шлепка на игрока
+local FADE_TIME = 0.06 -- короткое затухание в конце куска, чтобы не щёлкало
+local ROLLOFF_MIN, ROLLOFF_MAX = 5, OTHER_DISTANCE
+
+local soundGroup = Instance.new("SoundGroup")
+soundGroup.Name = "ShovelSfx"
+soundGroup.Volume = 1
+soundGroup.Parent = SoundService
+
+type Voice = { att: Attachment, sound: Sound, busyUntil: number, priority: number, baseVolume: number }
+local voices: { Voice } = {}
+for i = 1, VOICES do
+	local att = Instance.new("Attachment")
+	att.Name = "ShovelSfx" .. i
+	att.Parent = workspace.Terrain
+	local s = Instance.new("Sound")
+	s.SoundGroup = soundGroup
+	s.RollOffMode = Enum.RollOffMode.InverseTapered
+	s.RollOffMinDistance = ROLLOFF_MIN
+	s.RollOffMaxDistance = ROLLOFF_MAX
+	s.Parent = att
+	table.insert(voices, { att = att, sound = s, busyUntil = 0, priority = 0, baseVolume = 0 })
+end
+
+-- Заранее загружаем все записи: первый взмах не должен ждать сеть
+task.spawn(function()
+	local preload = {}
+	for _, layer in LAYERS do
+		for _, id in layer.ids do
+			local s = Instance.new("Sound")
+			s.SoundId = "rbxassetid://" .. id
+			table.insert(preload, s)
+		end
+	end
+	pcall(function()
+		ContentProvider:PreloadAsync(preload)
+	end)
+	for _, s in preload do
+		s:Destroy()
+	end
+end)
+
+local function playLayer(name: string, at: Vector3, own: boolean)
+	local layer = LAYERS[name]
+	local now = os.clock()
+	local priority = layer.priority + (if own then 10 else 0)
+	local voice: Voice? = nil
+	for _, v in voices do
+		if v.busyUntil <= now then
+			voice = v
+			break
+		end
+		if v.priority < priority and (not voice or v.priority < voice.priority) then
+			voice = v
+		end
+	end
+	if not voice then
+		return
+	end
+	-- Случайная запись, но не та же, что в прошлый раз
+	local n = #layer.ids
+	local index = rng:NextInteger(1, n)
+	if n > 1 and index == layer.last then
+		index = index % n + 1
+	end
+	layer.last = index
+	local volume = rng:NextNumber(layer.volume.Min, layer.volume.Max)
+		* rng:NextNumber(1 - VOLUME_JITTER, 1 + VOLUME_JITTER)
+		* (if own then 1 else OTHER_VOLUME)
+	local s = voice.sound
+	s:Stop()
+	s.SoundId = "rbxassetid://" .. layer.ids[index]
+	s.PlaybackSpeed = rng:NextNumber(PITCH.Min, PITCH.Max)
+	s.Volume = volume
+	s.TimePosition = 0
+	voice.att.WorldPosition = at
+	voice.busyUntil = now + layer.maxLen / s.PlaybackSpeed
+	voice.priority = priority
+	voice.baseVolume = volume
+	s:Play()
+end
+
+-- Обрезка и затухание кусков: голос освобождается к busyUntil
+RunService.Heartbeat:Connect(function()
+	local now = os.clock()
+	for _, v in voices do
+		if not v.sound.IsPlaying then
+			continue
+		end
+		local left = v.busyUntil - now
+		if left <= 0 then
+			v.sound:Stop()
+		elseif left < FADE_TIME then
+			v.sound.Volume = v.baseVolume * left / FADE_TIME
+		end
+	end
+end)
+
+local lastLand: { [Player]: number } = {}
+
+local function landSound(owner: Player?, at: Vector3)
+	if useOldFx() then
+		return
+	end
+	local now = os.clock()
+	local key = owner or localPlayer
+	if now - (lastLand[key] or 0) < LAND_GAP then
+		return
+	end
+	lastLand[key] = now
+	playLayer("land", at, owner == localPlayer)
+end
+
+-- ============================================================
 -- Бросок: раз за взмах из накопленных точек среза
 -- ============================================================
 local function groundAt(x: number, z: number): number
@@ -304,6 +475,7 @@ local swings: { [Player]: Swing } = {}
 
 Players.PlayerRemoving:Connect(function(p)
 	swings[p] = nil
+	lastLand[p] = nil
 end)
 
 local function throw(blower: Player, points: { Vector3 })
@@ -360,6 +532,7 @@ local function throw(blower: Player, points: { Vector3 })
 		local h = rng:NextNumber(ARC_HEIGHT.Min, ARC_HEIGHT.Max)
 		local dir = (away + side * rng:NextNumber(-0.6, 0.6)).Unit
 		c.busy = true
+		c.owner = blower
 		c.phase = "fly"
 		c.t = 0
 		c.pos = Vector3.new(p.X, cutY + s * 0.5, p.Z)
@@ -375,6 +548,14 @@ local function throw(blower: Player, points: { Vector3 })
 
 	-- Пыль у лезвия в момент взмаха, немного
 	burst(points[1] + Vector3.new(0, 0.2, 0), if heavy then 2 else 1, if heavy then 3 else 1)
+
+	-- Звук взмаха: вход лезвия и шорох сразу, хруст чуть позже и только в глубоком снегу
+	local bladeAt = points[1]
+	playLayer("blade", bladeAt, own)
+	playLayer("scrape", bladeAt, own)
+	if heavy then
+		task.delay(rng:NextNumber(CRUNCH_DELAY.Min, CRUNCH_DELAY.Max), playLayer, "crunch", bladeAt, own)
+	end
 
 	if own then
 		shakeAmp = shakeDegrees() * (if heavy then 1 else 0.6)
@@ -434,6 +615,7 @@ RunService.RenderStepped:Connect(function(dt: number)
 				c.landRot = c.rot
 				-- Удар: ком отламывает крошки, немного пыли
 				burst(c.pos, 1, if lite then LAND_CRUMBS_LITE else LAND_CRUMBS)
+				landSound(c.owner, c.pos)
 			end
 			cf = CFrame.new(c.pos) * c.rot
 		elseif c.phase == "squash" then

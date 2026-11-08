@@ -6,8 +6,9 @@
 -- сервер видит персонажа на пинг позже, без предсказания куча отстаёт от скребка и догоняет рывками.
 -- Исчезновение: слияние — куча съезжает в соседнюю, люк — тонет в крышке, иначе быстро тает; новая куча вырастает.
 -- Вид — сугроб, а не шар: приплюснутый эллипсоид (SpecialMesh Sphere), вытянутый по направлению толкания,
--- плюс один мягкий бугорок со своими размерами у каждой кучи. След на ширину кучи примерно равен радиусу сервера,
--- чтобы Рука/Лопата (PileServer.take) и слияние куч совпадали с тем, что видно.
+-- без бугорков. След на ширину кучи примерно равен радиусу сервера, чтобы Рука/Лопата (PileServer.take)
+-- и слияние куч совпадали с тем, что видно. Материал SmoothPlastic, а не Snow: текстура материала проецируется
+-- по осям Part, на сплюснутой повёрнутой сфере она даёт швы и крутится вместе с кучей.
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
@@ -39,18 +40,12 @@ local MOUND_HALF_HEIGHT = 0.8
 local MOUND_CENTER_Y = 0.45
 local YAW_K = 6 -- скорость поворота сугроба к направлению толкания
 local YAW_MIN_SPEED = 0.6 -- studs/с: медленнее — направление не меняем
--- Бугорок: размер и место в долях r (случайный разброс у каждой кучи)
-local LUMP_SIZE = Vector3.new(0.6, 0.38, 0.55)
-local LUMP_SPREAD = 0.2
 
 local groundY: number = config.GroundTopY
 
 type Vis = {
 	server: BasePart,
 	part: Part,
-	lump: Part,
-	lumpOffset: Vector3, -- в долях r, в системе сугроба
-	lumpScale: number,
 	pos: Vector3, -- плоская (Y = 0)
 	lastPos: Vector3,
 	yaw: number, -- поворот сугроба вокруг Y (длинная ось — вдоль толкания)
@@ -88,15 +83,13 @@ local function render(vis: Vis, sink: number)
 	local cf = CFrame.new(vis.pos.X, groundY + r * MOUND_CENTER_Y - sink, vis.pos.Z) * CFrame.Angles(0, vis.yaw, 0)
 	vis.part.Size = Vector3.new(MOUND_HALF_WIDTH, MOUND_HALF_HEIGHT, MOUND_HALF_LENGTH) * (2 * r)
 	vis.part.CFrame = cf
-	vis.lump.Size = LUMP_SIZE * (vis.lumpScale * r)
-	vis.lump.CFrame = cf * CFrame.new(vis.lumpOffset * r)
 end
 
--- Часть сугроба: Part с эллипсоидом (SpecialMesh Sphere растягивается по Size)
-local function moundPart(server: BasePart, name: string): Part
+-- Сугроб: Part с эллипсоидом (SpecialMesh Sphere растягивается по Size)
+local function moundPart(server: BasePart): Part
 	local part = Instance.new("Part")
-	part.Name = name
-	part.Material = server.Material
+	part.Name = "SnowPileVisual"
+	part.Material = Enum.Material.SmoothPlastic
 	part.Color = server.Color
 	part.Anchored = true
 	part.CanCollide = false
@@ -114,24 +107,11 @@ local function addPile(server: Instance)
 		return
 	end
 	server.LocalTransparencyModifier = 1
-	local part = moundPart(server, "SnowPileVisual")
-	local lump = moundPart(server, "Lump")
-	lump.CastShadow = false
-	-- Бугорок сбоку от гребня, на склоне; утоплен наполовину, чтобы не было резкого края
-	local side = if rng:NextNumber() < 0.5 then -1 else 1
-	local lx = side * rng:NextNumber(0.2, 0.2 + LUMP_SPREAD * 2)
-	local lz = rng:NextNumber(-LUMP_SPREAD * 2, LUMP_SPREAD)
-	-- Высота поверхности эллипсоида в этой точке, центр бугорка чуть выше неё
-	local surface = MOUND_HALF_HEIGHT
-		* math.sqrt(math.max(1 - (lx / MOUND_HALF_WIDTH) ^ 2 - (lz / MOUND_HALF_LENGTH) ^ 2, 0))
-	local lumpOffset = Vector3.new(lx, surface + 0.04, lz)
+	local part = moundPart(server)
 	local pos = flat(server.Position)
 	local vis: Vis = {
 		server = server,
 		part = part,
-		lump = lump,
-		lumpOffset = lumpOffset,
-		lumpScale = rng:NextNumber(1 - LUMP_SPREAD, 1 + LUMP_SPREAD),
 		pos = pos,
 		lastPos = pos,
 		yaw = rng:NextNumber(0, math.pi),
@@ -144,7 +124,6 @@ local function addPile(server: Instance)
 	}
 	render(vis, 0)
 	part.Parent = visualFolder
-	lump.Parent = part
 	visuals[server] = vis
 end
 

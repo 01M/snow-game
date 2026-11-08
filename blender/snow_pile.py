@@ -1,6 +1,7 @@
 # Куча снега Движка (PileClient): один низкополигональный сугроб + бесшовные карты для SurfaceAppearance.
 # Меш: приплюснутый купол на эллипсе 2×2 (Blender X×Y) высотой 1, плоское дно, мягко неровный силуэт,
-# ~400 треугольников, одна UV-развёртка сверху (0..1, без швов). В игре PileClient растягивает его по Size.
+# ~1300 треугольников (гладкие нормали), одна UV-развёртка сверху без швов. UV повторяют бесшовные карты
+# UV_REPEAT раз поперёк кучи (у SurfaceAppearance нет свойства тайлинга). В игре PileClient растягивает меш по Size.
 # Карты 512×512 (SurfaceAppearance до 1024), бесшовные (периодический шум через FFT):
 #   ColorMap — почти белый, серый (без синевы, оттенок задаёт SurfaceAppearance.Color), мелкое зерно;
 #   NormalMap — OpenGL, tangent space (Roblox поддерживает только его): зелёный канал = +V вверх;
@@ -19,8 +20,9 @@ import bpy
 import numpy as np
 
 NAME = "SnowPile"
-SEGMENTS = 24  # по окружности
-RINGS = 8  # от центра к краю (центр — веер)
+SEGMENTS = 48  # по окружности
+RINGS = 14  # от центра к краю (центр — веер)
+UV_REPEAT = 3.5  # сколько раз карты повторяются поперёк кучи
 TEX = 512
 SEED = 7
 
@@ -67,9 +69,9 @@ def build_mesh():
         for k in range(SEGMENTS):
             k2 = (k + 1) % SEGMENTS
             faces.append(bm.faces.new((a_ring[k], b_ring[k], b_ring[k2], a_ring[k2])))
-    # плоское дно: веер к центру на z = 0
+    # плоское дно: веер к центру на z = 0, свои вершины по краю, чтобы дно не портило гладкие нормали купола
     bottom = bm.verts.new((0, 0, 0))
-    edge = rings[-1]
+    edge = [bm.verts.new(v.co) for v in rings[-1]]
     for k in range(SEGMENTS):
         faces.append(bm.faces.new((bottom, edge[(k + 1) % SEGMENTS], edge[k])))
     bm.normal_update()
@@ -78,7 +80,7 @@ def build_mesh():
     for f in bm.faces:
         for loop in f.loops:
             co = loop.vert.co
-            loop[uv].uv = (0.5 + 0.5 * co.x / ext, 0.5 + 0.5 * co.y / ext)
+            loop[uv].uv = ((0.5 + 0.5 * co.x / ext) * UV_REPEAT, (0.5 + 0.5 * co.y / ext) * UV_REPEAT)
     bmesh.ops.triangulate(bm, faces=bm.faces[:])
     tris = len(bm.faces)
     mesh = bpy.data.meshes.new(NAME)
@@ -172,17 +174,12 @@ def main():
     obj = bpy.data.objects.new(NAME, mesh)
     bpy.context.scene.collection.objects.link(obj)
 
-    # материал для просмотра в Blender (в Roblox карты задаёт SurfaceAppearance)
+    # материал без текстуры: Import 3D иначе загружает картинку ещё раз (карты задаёт SurfaceAppearance)
     mat = bpy.data.materials.get(NAME) or bpy.data.materials.new(NAME)
     mat.use_nodes = True
-    nodes = mat.node_tree.nodes
-    bsdf = nodes.get("Principled BSDF")
-    if bsdf:
-        img = bpy.data.images.load(paths["color"], check_existing=False)
-        tex = nodes.new("ShaderNodeTexImage")
-        tex.image = img
-        mat.node_tree.links.new(tex.outputs["Color"], bsdf.inputs["Base Color"])
-        bsdf.inputs["Roughness"].default_value = 0.9
+    for node in list(mat.node_tree.nodes):
+        if node.type == "TEX_IMAGE":
+            mat.node_tree.nodes.remove(node)
     mesh.materials.append(mat)
 
     for o in bpy.context.selected_objects:

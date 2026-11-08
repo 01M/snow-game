@@ -2,17 +2,17 @@
 	<Item class="MeshPart" referent="RBX0">
 		<Properties>
 			<string name="Name">PileMound</string>
-			<Content name="MeshId"><url>rbxassetid://74739350964519</url></Content>
+			<Content name="MeshId"><url>rbxassetid://134881248189180</url></Content>
 			<Content name="TextureID"><null></null></Content>
 			<Vector3 name="InitialSize">
-				<X>2.0530176</X>
-				<Y>1.0135334</Y>
-				<Z>1.9677532</Z>
+				<X>2.0646195</X>
+				<Y>1.0140064</Y>
+				<Z>1.97542</Z>
 			</Vector3>
 			<Vector3 name="size">
-				<X>2.0530176</X>
-				<Y>1.0135334</Y>
-				<Z>1.9677532</Z>
+				<X>2.0646195</X>
+				<Y>1.0140064</Y>
+				<Z>1.97542</Z>
 			</Vector3>
 			<bool name="Anchored">true</bool>
 			<bool name="CanCollide">false</bool>
@@ -32,9 +32,9 @@
 				<Content name="RoughnessMap"><url>rbxassetid://129146635142822</url></Content>
 				<Content name="MetalnessMap"><null></null></Content>
 				<Color3 name="Color">
-					<R>0.9019608</R>
-					<G>0.9254902</G>
-					<B>0.98039216</B>
+					<R>0.93333334</R>
+					<G>0.9411765</G>
+					<B>0.972549</B>
 				</Color3>
 				<token name="AlphaMode">0</token>
 			</Properties>

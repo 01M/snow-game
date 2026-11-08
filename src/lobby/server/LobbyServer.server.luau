@@ -229,6 +229,42 @@ local function teleport(q)
 	end
 end
 
+-- Телепорт сорвался уже после TeleportAsync: игрок остался в лобби. Убираем его с площадки (иначе она застрянет
+-- в фазе teleporting, пока он не выйдет из игры), а Flooded/Failure повторяем с теми же TeleportOptions — к своей группе.
+local INIT_FAILED_RETRIES = 2
+local initFailures = {}
+
+TeleportService.TeleportInitFailed:Connect(function(player, result, errorMessage, placeId, options)
+	warn(
+		string.format(
+			"[LobbyServer] TeleportInitFailed для %s: %s %s",
+			player.Name,
+			tostring(result),
+			tostring(errorMessage)
+		)
+	)
+	local q = findPadOf(player)
+	if q and q.phase == "teleporting" then
+		removePlayer(q, player)
+		pushOff(player, q)
+	end
+	local failures = (initFailures[player] or 0) + 1
+	initFailures[player] = failures
+	local retryable = result == Enum.TeleportResult.Flooded or result == Enum.TeleportResult.Failure
+	if not retryable or failures > INIT_FAILED_RETRIES then
+		return
+	end
+	task.wait(if result == Enum.TeleportResult.Flooded then 15 else 2)
+	if player.Parent then
+		local ok, err = pcall(function()
+			TeleportService:TeleportAsync(placeId, { player }, options)
+		end)
+		if not ok then
+			warn("[LobbyServer] повторный телепорт не удался: " .. tostring(err))
+		end
+	end
+end)
+
 -- Быстрый вход (кнопка «ИГРАТЬ» в LobbyHudClient): игрок встаёт на площадку набирающейся группы
 -- (сначала там, где уже идёт отсчёт, потом там, где хозяин настраивает), а если такой нет —
 -- занимает свободную площадку, и отсчёт StartTime идёт сразу, без настройки
@@ -371,6 +407,7 @@ Players.PlayerRemoving:Connect(function(player)
 	end
 	lastQuick[player] = nil
 	rateWindow[player] = nil
+	initFailures[player] = nil
 end)
 
 -- Новому игроку отправляем текущее состояние всех площадок

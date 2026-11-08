@@ -4,6 +4,7 @@
 -- UpdateAsync добавляет Cash / продлевает BoostUntil и записывает id чека в Purchases (повтор чека ничего не даёт).
 -- Если данные сейчас держит сервер матча (свежая Session) или товар только для матча — NotProcessedYet:
 -- Roblox повторит чек позже, и его выдаст сервер, где игрок будет тогда.
+-- Перед записью сохранение доводится до текущей схемы (Shared.SaveSchema); сохранение новее — тоже NotProcessedYet.
 local MarketplaceService = game:GetService("MarketplaceService")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -11,6 +12,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Shop = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Shop"))
 local Analytics = require(script.Parent:WaitForChild("Shared"):WaitForChild("Analytics"))
 local SaveStore = require(script.Parent:WaitForChild("Shared"):WaitForChild("SaveStore"))
+local SaveSchema = require(script.Parent:WaitForChild("Shared"):WaitForChild("SaveSchema"))
 
 local store = SaveStore.store
 local LOCK_TIMEOUT = SaveStore.LOCK_TIMEOUT
@@ -43,11 +45,19 @@ end)
 -- Выдать покупку прямо в сохранении. Возвращает сохранённые данные или nil, если сейчас выдать нельзя
 local function grantInStore(player: Player, purchaseId: string, product)
 	local result = nil
+	-- итог миграции; warn только после UpdateAsync (функция может выполниться несколько раз)
+	local schemaStatus: SaveSchema.Status = "ok"
+	local schemaFrom, schemaErr = 0, nil
 	SaveStore.prepare(player)
 	local ok, err = pcall(function()
 		store:UpdateAsync(SaveStore.key(player), function(old)
 			result = nil
 			old = typeof(old) == "table" and old or {}
+			-- сохранение новее этой игры (или сломанная миграция) — не трогаем, Roblox повторит чек
+			schemaStatus, schemaFrom, schemaErr = SaveSchema.upgrade(old)
+			if schemaStatus ~= "ok" then
+				return nil
+			end
 			local purchases = typeof(old.Purchases) == "table" and old.Purchases or {}
 			if table.find(purchases, purchaseId) then
 				result = old -- уже выдано
@@ -74,6 +84,19 @@ local function grantInStore(player: Player, purchaseId: string, product)
 	end)
 	if not ok then
 		warn("[ShopServer] запись покупки не удалась:", err)
+		return nil
+	end
+	if schemaStatus ~= "ok" then
+		warn(
+			string.format(
+				"[ShopServer] %s: схема сохранения %s (версия %d, эта игра %d), покупка ждёт: %s",
+				player.Name,
+				schemaStatus,
+				schemaFrom,
+				SaveSchema.CURRENT,
+				tostring(schemaErr)
+			)
+		)
 		return nil
 	end
 	return result

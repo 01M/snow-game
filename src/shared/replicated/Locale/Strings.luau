@@ -309,6 +309,10 @@ return {
 	["World.Zone.Driveway"] = { en = "Driveway (zone 2)", ru = "Подъездная дорожка (зона 2)" },
 	["World.Zone.SideYard"] = { en = "Side Yard (zone 3)", ru = "Боковой двор (зона 3)" },
 	["World.Zone.Backyard"] = { en = "Backyard (zone 4)", ru = "Задний двор (зона 4)" },
+	["Gate.Hint"] = {
+		en = "Opens when you clear: {zones}",
+		ru = "Откроется, когда очистите: {zones}",
+	},
 	["World.Closed"] = { en = "Closed", ru = "Закрыто" },
 
 	-- Сообщения сервера

@@ -8,6 +8,8 @@
 -- Вид — сугроб, а не шар, вытянутый по направлению толкания: шаблон SnowGame.PileMound (MeshPart из
 -- blender/snow_pile.py + SurfaceAppearance с картами по UV: растяжение и поворот без швов; встроенный материал
 -- Snow на меше проецируется по осям Part и даёт швы). Без шаблона — один warn, и кучи остаются серверными шарами.
+-- Пока куча едет, по краю основания вылетают облачка снега: один ParticleEmitter на кучу, Enabled = false,
+-- облачка выпускаются через Emit из случайных точек края (вложение переставляется перед каждым Emit).
 -- След на ширину кучи примерно равен радиусу сервера, чтобы Рука/Лопата (PileServer.take)
 -- и слияние куч совпадали с тем, что видно.
 local Players = game:GetService("Players")
@@ -40,6 +42,11 @@ local MESH_HALF_LENGTH = 1.25
 local MESH_HEIGHT = 1.2
 local MESH_MIN_HEIGHT = 1.7
 local MESH_BURY = 0.15
+-- Облачка снега у краёв, пока куча едет
+local PUFF_MIN_SPEED = 1.2 -- studs/с: медленнее — не пылит
+local PUFF_PER_STUD = 2.2 -- облачков на stud пути
+local PUFF_MAX_RATE = 24 -- облачков в секунду на кучу
+local PUFF_COLOR = Color3.fromRGB(214, 226, 246) -- голубовато-белый, виден на ярком снегу
 local YAW_K = 6 -- скорость поворота сугроба к направлению толкания
 local YAW_MIN_SPEED = 0.6 -- studs/с: медленнее — направление не меняем
 
@@ -48,6 +55,9 @@ local groundY: number = config.GroundTopY
 type Vis = {
 	server: BasePart,
 	part: MeshPart,
+	puffAt: Attachment,
+	puff: ParticleEmitter,
+	puffCarry: number, -- дробный остаток облачков
 	pos: Vector3, -- плоская (Y = 0)
 	lastPos: Vector3,
 	yaw: number, -- поворот сугроба вокруг Y (длинная ось — вдоль толкания)
@@ -87,6 +97,57 @@ local function serverRadius(server: BasePart): number
 end
 
 local rng = Random.new()
+local lite: boolean = toolUse.isLite()
+local puffRate = if lite then 0.5 else 1
+
+local function newPuff(parent: BasePart): (Attachment, ParticleEmitter)
+	local at = Instance.new("Attachment")
+	at.Name = "PuffAt"
+	local e = Instance.new("ParticleEmitter")
+	e.Name = "Puff"
+	e.Enabled = false
+	e.Texture = "rbxasset://textures/particles/smoke_main.dds"
+	e.Color = ColorSequence.new(PUFF_COLOR)
+	e.Size = NumberSequence.new({
+		NumberSequenceKeypoint.new(0, 0.5),
+		NumberSequenceKeypoint.new(1, 1.5),
+	})
+	e.Transparency = NumberSequence.new({
+		NumberSequenceKeypoint.new(0, 0.45),
+		NumberSequenceKeypoint.new(0.3, 0.35),
+		NumberSequenceKeypoint.new(1, 1),
+	})
+	e.Lifetime = NumberRange.new(0.5, 0.9)
+	e.Speed = NumberRange.new(1.5, 3)
+	e.SpreadAngle = Vector2.new(35, 35)
+	e.Acceleration = Vector3.new(0, -3, 0)
+	e.Drag = 3
+	e.Rotation = NumberRange.new(0, 360)
+	e.RotSpeed = NumberRange.new(-40, 40)
+	e.LightInfluence = 1
+	e.Parent = at
+	at.Parent = parent
+	return at, e
+end
+
+-- speed — studs/с по сглаженной позиции; облачка из случайных точек края основания, вверх и наружу
+local function emitPuffs(vis: Vis, speed: number, dt: number)
+	if speed < PUFF_MIN_SPEED then
+		vis.puffCarry = 0
+		return
+	end
+	vis.puffCarry += math.min(speed * PUFF_PER_STUD, PUFF_MAX_RATE) * puffRate * dt
+	local size = vis.part.Size
+	while vis.puffCarry >= 1 do
+		vis.puffCarry -= 1
+		local a = rng:NextNumber(0, 2 * math.pi)
+		local out = Vector3.new(math.cos(a), 0, math.sin(a))
+		local edge = Vector3.new(out.X * size.X * 0.47, -size.Y / 2 + MESH_BURY + 0.3, out.Z * size.Z * 0.47)
+		-- «Верх» вложения смотрит вверх и наружу: облачко отлетает от кучи
+		vis.puffAt.CFrame = CFrame.lookAt(edge, edge + out) * CFrame.Angles(math.rad(-50), 0, 0)
+		vis.puff:Emit(1)
+	end
+end
 
 local function render(vis: Vis, sink: number)
 	local r = math.max(vis.radius, 0.01)
@@ -104,10 +165,14 @@ local function addPile(server: Instance)
 	server.LocalTransparencyModifier = 1
 	local part = (template :: MeshPart):Clone()
 	part.Name = "SnowPileVisual"
+	local puffAt, puff = newPuff(part)
 	local pos = flat(server.Position)
 	local vis: Vis = {
 		server = server,
 		part = part,
+		puffAt = puffAt,
+		puff = puff,
+		puffCarry = 0,
 		pos = pos,
 		lastPos = pos,
 		yaw = rng:NextNumber(0, math.pi),
@@ -229,7 +294,9 @@ RunService.Heartbeat:Connect(function(dt: number)
 		-- Длинная ось — по движению; сугроб симметричен, поэтому угол по модулю π (без разворота при отъезде)
 		local move = vis.pos - vis.lastPos
 		vis.lastPos = vis.pos
-		if dt > 0 and move.Magnitude / dt > YAW_MIN_SPEED then
+		local speed = if dt > 0 then move.Magnitude / dt else 0
+		emitPuffs(vis, speed, dt)
+		if speed > YAW_MIN_SPEED then
 			local want = math.atan2(-move.X, -move.Z)
 			local diff = (want - vis.yaw + math.pi / 2) % math.pi - math.pi / 2
 			vis.yaw += diff * ease(YAW_K, dt)

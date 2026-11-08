@@ -1,6 +1,7 @@
 -- HUD лобби: баланс Cash справа сверху, кнопки «Магазин» и «Пригласить» слева, музыка справа внизу,
 -- внизу по центру «ИГРАТЬ» (быстрый вход, QueueAction "quickPlay"). Вид — общий Ui (ReplicatedStorage.Shared.Ui).
 -- Кнопок без работающей функции здесь нет: новую кнопку добавлять вместе с её окном.
+local CollectionService = game:GetService("CollectionService")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local SocialService = game:GetService("SocialService")
@@ -110,6 +111,22 @@ new("UIListLayout", { Padding = UDim.new(0, 26), SortOrder = Enum.SortOrder.Layo
 local shopBtn = squareButton(left, 1, "green", "Shop", "Shop", L("Lobby.Hud.Shop"))
 local inviteBtn = squareButton(left, 2, "blue", "Invite", "Invite", L("Lobby.Hud.Invite"))
 shopBtn.Activated:Connect(ShopGui.toggle)
+
+-- Прилавок «Магазин» в мире: ProximityPrompt с тегом ShopPrompt (лежит в месте, не в Rojo) открывает то же окно
+local SHOP_PROMPT_TAG = "ShopPrompt"
+local function hookShopPrompt(prompt: Instance)
+	if prompt:IsA("ProximityPrompt") then
+		prompt.Triggered:Connect(function(who)
+			if who == player then
+				ShopGui.open()
+			end
+		end)
+	end
+end
+CollectionService:GetInstanceAddedSignal(SHOP_PROMPT_TAG):Connect(hookShopPrompt)
+for _, prompt in CollectionService:GetTagged(SHOP_PROMPT_TAG) do
+	hookShopPrompt(prompt)
+end
 
 inviteBtn.Activated:Connect(function()
 	local ok, can = pcall(SocialService.CanSendGameInviteAsync, SocialService, player)

@@ -1,10 +1,12 @@
 -- MatchEndClient: экран итогов, когда двор очищен (workspace.MatchState = "finished"),
--- и отсчёт до возврата в лобби (workspace.ReturnCountdown ставит MatchServer).
+-- кнопки «Играть ещё» / «В лобби» и окно выбора (workspace.ReturnCountdown, PlayAgainVotes/Total ставит MatchServer).
+-- Свой выбор — атрибут игрока EndChoice ("again" / "lobby"); нажатия уходят в remote MatchAction.
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local L = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Locale")).t
 local Ui = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Ui"))
+local MatchAction = ReplicatedStorage:WaitForChild("SnowGame"):WaitForChild("Remotes"):WaitForChild("MatchAction")
 
 local player = Players.LocalPlayer
 
@@ -24,12 +26,22 @@ local dim = Ui.new("Frame", {
 	Parent = screenGui,
 })
 
+-- Modal-кнопка освобождает мышь в LockFirstPerson, пока открыт экран итогов
+Ui.new("TextButton", {
+	Name = "MouseUnlock",
+	Size = UDim2.fromOffset(0, 0),
+	BackgroundTransparency = 1,
+	Text = "",
+	Modal = true,
+	Parent = screenGui,
+})
+
 -- Карточка итогов: бумага с тёмной шапкой и снегом сверху, как остальные окна (Ui)
 local card = Ui.new("Frame", {
 	Name = "SummaryCard",
 	AnchorPoint = Vector2.new(0.5, 0.5),
 	Position = UDim2.fromScale(0.5, 0.5),
-	Size = UDim2.fromOffset(460, 300),
+	Size = UDim2.fromOffset(460, 390),
 	BackgroundColor3 = Ui.Color.paper,
 	Parent = dim,
 }, { Ui.corner(26), Ui.border(4) })
@@ -95,6 +107,35 @@ local countdownLabel = Ui.label({
 	Parent = card,
 })
 
+-- Кнопки выбора (MatchAction "again" / "cancel" / "lobby"): 200×72 (на маленьком телефоне UIScale карточки до 0.7 → около 50 px)
+local againButton = Ui.button({
+	Name = "PlayAgain",
+	Color = "green",
+	Text = L("MatchEnd.PlayAgain"),
+	TextSize = 24,
+	Radius = 18,
+	Position = UDim2.fromOffset(20, 222),
+	Size = UDim2.fromOffset(200, 72),
+	Parent = card,
+})
+local lobbyButton = Ui.button({
+	Name = "ToLobby",
+	Color = "blue",
+	Text = L("MatchEnd.ToLobby"),
+	TextSize = 24,
+	Radius = 18,
+	Position = UDim2.fromOffset(240, 222),
+	Size = UDim2.fromOffset(200, 72),
+	Parent = card,
+})
+
+local function setButtonText(button: TextButton, text: string)
+	local label = button:FindFirstChild("Text") :: TextLabel?
+	if label then
+		label.Text = text
+	end
+end
+
 local function refresh()
 	local snow = player:GetAttribute("SnowCollected") or 0
 	snowLabel.Text = L("MatchEnd.Snow", { n = snow })
@@ -102,14 +143,39 @@ local function refresh()
 	cashLabel.Text = L("MatchEnd.Cash", { n = player:GetAttribute("MatchCashEarned") or 0 })
 
 	local t = workspace:GetAttribute("ReturnCountdown")
+	local myChoice = player:GetAttribute("EndChoice")
+	local open = typeof(t) == "number" and t > 0 and myChoice ~= "lobby"
+	againButton.Visible = open
+	lobbyButton.Visible = open
+	if myChoice == "again" then
+		setButtonText(againButton, L("MatchEnd.Cancel"))
+		Ui.paint(againButton, "amber")
+	else
+		setButtonText(againButton, L("MatchEnd.PlayAgain"))
+		Ui.paint(againButton, "green")
+	end
+
 	if t == nil then
 		countdownLabel.Text = ""
-	elseif t > 0 then
-		countdownLabel.Text = L("MatchEnd.Countdown", { n = t })
+	elseif open then
+		countdownLabel.Text = L("MatchEnd.Votes", {
+			n = workspace:GetAttribute("PlayAgainVotes") or 0,
+			m = workspace:GetAttribute("PlayAgainTotal") or 0,
+			t = t,
+		})
+	elseif myChoice == "again" then
+		countdownLabel.Text = L("MatchEnd.Teleporting")
 	else
 		countdownLabel.Text = L("MatchEnd.Returning")
 	end
 end
+
+againButton.Activated:Connect(function()
+	MatchAction:FireServer(if player:GetAttribute("EndChoice") == "again" then "cancel" else "again")
+end)
+lobbyButton.Activated:Connect(function()
+	MatchAction:FireServer("lobby")
+end)
 
 local function onMatchState()
 	if workspace:GetAttribute("MatchState") == "finished" then
@@ -122,4 +188,7 @@ workspace:GetAttributeChangedSignal("MatchState"):Connect(onMatchState)
 workspace:GetAttributeChangedSignal("ReturnCountdown"):Connect(refresh)
 player:GetAttributeChangedSignal("SnowCollected"):Connect(refresh)
 player:GetAttributeChangedSignal("MatchCashEarned"):Connect(refresh)
+player:GetAttributeChangedSignal("EndChoice"):Connect(refresh)
+workspace:GetAttributeChangedSignal("PlayAgainVotes"):Connect(refresh)
+workspace:GetAttributeChangedSignal("PlayAgainTotal"):Connect(refresh)
 onMatchState()

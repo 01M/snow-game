@@ -708,6 +708,38 @@ for i, tab in ipairs(TABS) do
 	end)
 end
 
+-- «Выйти в лобби» под вкладками: первое нажатие просит подтвердить (3 с), второе — уходит (MatchServer, remote MatchAction).
+-- 246×68: журнал на телефоне ужимается примерно до 0.65, кнопка остаётся около 44 px
+local MatchAction = ReplicatedStorage:WaitForChild("SnowGame"):WaitForChild("Remotes"):WaitForChild("MatchAction")
+local LEAVE_CONFIRM_TIME = 3
+local leaveButton = Ui.button({
+	Name = "LeaveMatch",
+	Color = "red",
+	Text = L("Hud.LeaveMatch"),
+	TextSize = 22,
+	Radius = 18,
+	Position = UDim2.fromOffset(64, 560),
+	Size = UDim2.fromOffset(246, 68),
+	Parent = root,
+})
+local leaveText = leaveButton:FindFirstChild("Text") :: TextLabel
+local leaveArmedUntil = 0
+leaveButton.Activated:Connect(function()
+	if os.clock() < leaveArmedUntil then
+		leaveArmedUntil = 0
+		leaveText.Text = L("Hud.LeaveMatch")
+		MatchAction:FireServer("lobby")
+		return
+	end
+	leaveArmedUntil = os.clock() + LEAVE_CONFIRM_TIME
+	leaveText.Text = L("Hud.LeaveConfirm")
+	task.delay(LEAVE_CONFIRM_TIME, function()
+		if os.clock() >= leaveArmedUntil then
+			leaveText.Text = L("Hud.LeaveMatch")
+		end
+	end)
+end)
+
 local function pageTitle(page, x, text)
 	return label({
 		Position = UDim2.fromOffset(x, 12),

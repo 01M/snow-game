@@ -218,8 +218,8 @@ return {
 		ru = "Работайте вместе: снег, который собирают друзья, тоже очищает двор.",
 	},
 	["Tip.MatchEnd"] = {
-		en = "When the whole yard is clean, the match ends, leftover snow is sold automatically, and everyone returns to the lobby.",
-		ru = "Когда весь двор чист, матч заканчивается, остаток снега продаётся сам, и все возвращаются в лобби.",
+		en = "When the whole yard is clean, the match ends and leftover snow is sold automatically. Press Play again to start a new match with the same group, or go back to the lobby.",
+		ru = "Когда весь двор чист, матч заканчивается, остаток снега продаётся сам. Нажми «Играть ещё», чтобы начать новый матч той же группой, или вернись в лобби.",
 	},
 
 	-- Экран конца матча (MatchEndClient)
@@ -231,6 +231,14 @@ return {
 		ru = "Возврат в лобби через {n} сек…",
 	},
 	["MatchEnd.Returning"] = { en = "Returning to the lobby…", ru = "Возвращаемся в лобби…" },
+	["MatchEnd.PlayAgain"] = { en = "Play again", ru = "Играть ещё" },
+	["MatchEnd.Cancel"] = { en = "Cancel", ru = "Отмена" },
+	["MatchEnd.ToLobby"] = { en = "Lobby", ru = "В лобби" },
+	["MatchEnd.Votes"] = { en = "Play again: {n}/{m} · {t} s", ru = "Ещё раз: {n}/{m} · {t} с" },
+	["MatchEnd.Teleporting"] = { en = "Teleporting…", ru = "Телепорт…" },
+	-- Кнопка выхода в журнале (GameHudClient)
+	["Hud.LeaveMatch"] = { en = "Leave to lobby", ru = "Выйти в лобби" },
+	["Hud.LeaveConfirm"] = { en = "Tap again to leave", ru = "Нажми ещё раз" },
 
 	-- Магазины (ToolShopClient, UpgradeShopClient, подсказки ProximityPrompt)
 	["Shop.Owned"] = { en = "Owned", ru = "Куплено" },
@@ -319,6 +327,10 @@ return {
 	["Kick.LoadFailed"] = {
 		en = "Couldn't load your save. Please rejoin.",
 		ru = "Не удалось загрузить сохранение. Перезайди, пожалуйста.",
+	},
+	["Kick.TeleportFailed"] = {
+		en = "Couldn't move you. Please rejoin, your progress is saved.",
+		ru = "Не удалось перенести. Зайди снова, прогресс сохранён.",
 	},
 	["Kick.SaveTooNew"] = {
 		en = "The game is updating. Please rejoin in a minute.",

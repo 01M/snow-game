@@ -43,6 +43,11 @@ local COLOR_TRAMPLED = Color3.fromRGB(150, 166, 198) -- примятый сне�
 
 local BLOCK_SIZE = 4 -- размер блока запасного снега, studs
 
+-- Срез снега показывается плавно: вершина догоняет высоту с сервера по экспоненте с постоянной времени EASE_TAU, с
+-- (сервер шлёт срез 15 раз в секунду, клик Руки — разом). Ближе EASE_EPS к цели — встаёт точно и больше не обновляется
+local EASE_TAU = 0.1
+local EASE_EPS = 0.002
+
 -- Визуальная толщина (Config.SnowVisualDepth). В Studio варианты сравниваются на ходу атрибутом workspace DebugSnowDepth (число > 0)
 local VISUAL_DEPTH = config.SnowVisualDepth
 local function readDepthScale(): number
@@ -154,6 +159,8 @@ local function buildField(fieldIndex: number)
 		cap = cap,
 		keep = keep,
 		srv = table.create(count, 0), -- высоты с сервера
+		shown = table.create(count, 0), -- показанные высоты: плавно догоняют easeTarget (EASE_TAU)
+		moving = {}, -- [i] = true: вершины, которые ещё догоняют высоту с сервера
 		foot = table.create(count, 0), -- глубина локальных следов
 		dirty = {},
 		mesh = nil, -- { em, stride, verts, colors }: вершины этого поля в меше этапа
@@ -299,22 +306,50 @@ local function fillMesh(z, mesh)
 	end
 end
 
--- Обновить одну вершину: высота (сервер минус следы) и цвет по толщине
-local function applyVertex(z, i: number)
+-- Высота, к которой плавно идёт вершина (z.shown): высота с сервера, а спрятанный снег — ниже нуля,
+-- чтобы вершина уходила под землю без скачка (HIDDEN_Y в масштабе карты высот)
+local function easeTarget(z, i: number): number
+	local srv = z.srv[i]
+	return if srv < HIDE_BELOW then HIDDEN_Y / depthScale else srv
+end
+
+-- Положение и цвет одной вершины: показанная высота минус следы, цвет по толщине
+local function vertexValues(z, i: number): (Vector3, Color3)
+	local shown = z.shown[i]
+	local foot = z.foot[i]
+	local h = math.max(0, shown - foot)
+	-- Ниже нуля — снег уходит под землю (см. easeTarget)
+	local y = if shown < 0 then shown * depthScale else visualHeight(h, z.cap[i], z.keep[i])
+	local x, zz = z.localXZ(i)
+	local color = COLOR_THIN:Lerp(COLOR_FRESH, math.clamp(h / COLOR_FULL_DEPTH, 0, 1))
+	if shown > 0 and foot > 0 then
+		color = color:Lerp(COLOR_TRAMPLED, math.clamp(foot / shown * 2.5, 0, 1))
+	end
+	return z.offset + Vector3.new(x, y, zz), color
+end
+
+-- Записать в меш вершины из списка ids одним пакетом (BatchSetValues: позиции и цвета — отдельными вызовами)
+local function applyVertices(z, ids: { number })
 	local mesh = z.mesh
-	if not mesh or not mesh.verts[i] then
+	if not mesh or #ids == 0 then
 		return
 	end
-	local srv = z.srv[i]
-	local h = srv - z.foot[i]
-	local y = srv < HIDE_BELOW and HIDDEN_Y or visualHeight(math.max(0, h), z.cap[i], z.keep[i])
-	local x, zz = z.localXZ(i)
-	mesh.em:SetPosition(mesh.verts[i], z.offset + Vector3.new(x, y, zz))
-	local color = COLOR_THIN:Lerp(COLOR_FRESH, math.clamp(h / COLOR_FULL_DEPTH, 0, 1))
-	if srv > 0 and z.foot[i] > 0 then
-		color = color:Lerp(COLOR_TRAMPLED, math.clamp(z.foot[i] / srv * 2.5, 0, 1))
+	local vIds, cIds, positions, colors = {}, {}, {}, {}
+	for _, i in ids do
+		local v = mesh.verts[i]
+		if v then
+			local p, c = vertexValues(z, i)
+			table.insert(vIds, v)
+			table.insert(positions, p)
+			table.insert(cIds, mesh.colors[i])
+			table.insert(colors, c)
+		end
 	end
-	mesh.em:SetColor(mesh.colors[i], color)
+	if #vIds == 0 then
+		return
+	end
+	mesh.em:BatchSetValues(vIds, positions)
+	mesh.em:BatchSetValues(cIds, colors)
 end
 
 -- ============================================================
@@ -436,6 +471,7 @@ local function destroyDrawing(stage)
 		z.part = nil
 		z.mesh = nil
 		table.clear(z.dirty)
+		table.clear(z.moving)
 	end
 	if stage.part then
 		stage.part:Destroy()
@@ -483,12 +519,17 @@ local function showMesh(stage, stride: number)
 		meshes[z] = mesh
 	end
 
+	-- Новый меш сразу в нынешней высоте, без догона
 	for z, mesh in meshes do
 		z.mesh = mesh
+		local ids = {}
 		for i in mesh.verts do
-			applyVertex(z, i)
+			z.shown[i] = easeTarget(z, i)
+			table.insert(ids, i)
 		end
+		applyVertices(z, ids)
 		table.clear(z.dirty)
+		table.clear(z.moving)
 	end
 
 	local part
@@ -729,17 +770,43 @@ RunService.Heartbeat:Connect(function(dt)
 	end
 
 	-- Применить изменения высот к вершинам полей
+	-- Меш: изменённая высота с сервера — вершина начинает догонять её (z.moving); след — сразу.
+	-- Блоки рисуют высоту с сервера как есть
+	local k = 1 - math.exp(-dt / EASE_TAU)
 	for _, z in fields do
-		if not z.part or next(z.dirty) == nil then
+		if not z.part then
 			continue
 		end
 		if z.useBlocks then
-			updateBlocks(z)
-		else
-			for i in z.dirty do
-				applyVertex(z, i)
+			if next(z.dirty) ~= nil then
+				updateBlocks(z)
+				table.clear(z.dirty)
+			end
+			continue
+		end
+		if next(z.dirty) == nil and next(z.moving) == nil then
+			continue
+		end
+		local ids = {}
+		local moving, shown = z.moving, z.shown
+		for i in z.dirty do
+			if shown[i] ~= easeTarget(z, i) then
+				moving[i] = true
+			else
+				table.insert(ids, i)
 			end
 		end
 		table.clear(z.dirty)
+		for i in moving do
+			local target = easeTarget(z, i)
+			local s = shown[i] + (target - shown[i]) * k
+			if math.abs(target - s) < EASE_EPS then
+				s = target
+				moving[i] = nil
+			end
+			shown[i] = s
+			table.insert(ids, i)
+		end
+		applyVertices(z, ids)
 	end
 end)

@@ -43,7 +43,7 @@
 
 | Где | server | replicated | client |
 |---|---|---|---|
-| **shared** | Analytics, SaveStore | Locale (+Strings), Shop (+Gui), Ui (вид интерфейса, иконки) | ChatTagClient, LocaleClient, SnowfallClient |
+| **shared** | Analytics, SaveSchema, SaveStore | Locale (+Strings), Shop (+Gui), Ui (вид интерфейса, иконки) | ChatTagClient, LocaleClient, SnowfallClient |
 | **lobby** | LobbyServer, LobbyCashServer, LobbyRecordsServer, ShopServer, SlideRagdollServer, SnowballServer | Lobby/Maps, Lobby/Snowball, Lobby/Remotes | LobbyHudClient, LobbyMenuClient, LobbyRecordsClient, LobbyTruckClient, SlideRagdollClient, SnowballClient |
 | **house** | SnowGame/: BlowServer, SnowField, PileServer, ToolServer, ToolShopServer, MelterServer, UpgradeShopServer, LeaderstatsServer, PlayerData, MatchServer, ShopServer, AnalyticsHooks, OnboardingServer, FindServer | SnowGame/: Config, ZoneConfig, Finds, Remotes, ShovelSwing, ToolUse | FindClient, GameHudClient, GateSignClient, HideCoreGui, MatchEndClient, PassShowcaseClient, RewardLightsClient, SellPointerClient, ShovelChunksClient, SnowMeshClient, SnowParticles, ToolClient, ToolSfxClient, ToolShopClient, UpgradeShopClient |
 
@@ -67,6 +67,7 @@
 - Предупреждение в Output про `rbxassetid://203785492` идёт от звука уведомления самого плагина Rojo (`RojoManagedPlugin.rbxm`), а не от игры: его можно игнорировать.
 - git push is done by Oleg; threads only commit locally.
 - Код доходит только до открытого места; в игру он попадает после публикации Олегом. `*.rbxl` и `backups/` (копии мест) не в git.
+- **Публикация при смене `SaveSchema.CURRENT`:** сначала House Map, затем Lobby, и при публикации выбрать перезапуск устаревших серверов (restart outdated servers), чтобы старые серверы не работали рядом с новыми. Иначе новое лобби поднимет версию сохранения, и старый матч будет кикать игрока (`Kick.SaveTooNew`).
 - `[не проверено]` `rojo serve` 7.7.1 иногда падает при удалении файлов и папок в `src/` (`change_processor.rs:179`). Лечится перезапуском и повторным подключением, папки лучше удалять при остановленном сервере.
 - `[не проверено]` Если снова запускать `syncback`, он дописывает в проекты свойства StarterPlayer и пустые `SerializedOverrides`; их надо убирать.
 
@@ -84,7 +85,11 @@
 - В начале каждого запуска ключ заполняется заново: Cash 100000, UpgradeLevel 0, только бесплатные инструменты. В Output будет `[SaveStore] TestSave включён`.
 - Сохранение и чеки работают как обычно, обычный ключ не меняется.
 - **Только одно место за раз.** Ключ общий: старт второго места заново заполняет его и снимает блокировку первого, поэтому сохранение первого пропускается.
-- Следующий Play снова заполнит ключ, поэтому сохранение смотрят после Stop: чтением `test_<UserId>` из `PlayerData_Studio`.
+- Следующий Play снова заполнит ключ, поэтому сохранение смотрят после Stop: чтением `test_<UserId>` из `PlayerData_Studio`. `[не проверено]` Из edit mode (Command Bar, MCP) DataStore отвечает `Access forbidden` (2026-11-08); читать можно во время Play из контекста Server.
+- Заполненный ключ без `SchemaVersion`, поэтому каждый запуск с TestSave проверяет миграцию со старого формата: в Output `[SaveSchema] <имя>: 0 → 1`.
+- `TestSaveFutureSchema = true` (вместе с TestSave) заполняет ключ с `SchemaVersion = 999`: проверка, что сохранение из более новой версии не перезаписывается (в матче — кик `Kick.SaveTooNew`).
+
+**Версия схемы:** поле `SchemaVersion` в сохранении, шаги миграции — `ServerScriptService.Shared.SaveSchema`. Изменение полей сохранения = новый шаг и `CURRENT + 1`; выпущенный шаг не правится.
 
 ## Как проверять покупки
 
@@ -107,7 +112,7 @@
 2. `stylua src`, затем `stylua --check src`; если check не прошёл, повторить.
 3. `selene src` показывает 0 предупреждений.
 4. `scripts/analyze.ps1` показывает 0 ошибок.
-5. Убраны отладочные атрибуты: `TestSave`, `ForceLanguage`, `DebugSnowBlocks`, `DebugSnowDepth`, `DebugTouchButton`, `DebugFinds`, `DebugShovelFxOld`, `DebugShovelShake`, `DebugShovelLite`.
+5. Убраны отладочные атрибуты: `TestSave`, `TestSaveFutureSchema`, `ForceLanguage`, `DebugSnowBlocks`, `DebugSnowDepth`, `DebugTouchButton`, `DebugFinds`, `DebugShovelFxOld`, `DebugShovelShake`, `DebugShovelLite`.
 
 ## Правила работы
 

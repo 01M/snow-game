@@ -3,6 +3,7 @@
 --   Purchases = { id чека }, BoostUntil = os.time, OnboardingStep = пройдено шагов Config.Onboarding, Collection = { id находки }, Session = { Job, Time } }. OwnedTools/ToolUpgrades держит и проверяет ToolServer.
 -- Purchases — последние MAX_PURCHASES чеков покупок за Robux (чтобы повтор ProcessReceipt не выдал товар дважды),
 -- BoostUntil — конец личного буста ×2 Cash (атрибут игрока BoostUntil). Лобби пишет покупки в тот же ключ само (ShopServer).
+-- SchemaVersion — версия схемы (Shared.SaveSchema): загрузка доводит её до текущей, сохранение новее не трогаем.
 -- Session — блокировка: писать может только сервер, который загрузил игрока.
 -- Перед телепортом/выходом сервер сохраняет и снимает блокировку (release = true).
 local HttpService = game:GetService("HttpService")
@@ -10,6 +11,7 @@ local RunService = game:GetService("RunService")
 local ServerScriptService = game:GetService("ServerScriptService")
 
 local SaveStore = require(ServerScriptService:WaitForChild("Shared"):WaitForChild("SaveStore"))
+local SaveSchema = require(ServerScriptService:WaitForChild("Shared"):WaitForChild("SaveSchema"))
 local ToolServer = require(script.Parent:WaitForChild("ToolServer"))
 local Finds = require(game:GetService("ReplicatedStorage"):WaitForChild("SnowGame"):WaitForChild("Finds"))
 
@@ -80,17 +82,25 @@ local function snapshot(player)
 end
 
 -- Загружает данные и ставит блокировку.
--- Возвращает { Cash, UpgradeLevel, OwnedTools, ToolUpgrades } или nil при ошибке.
+-- Возвращает { Cash, UpgradeLevel, OwnedTools, ToolUpgrades, ... } или nil и причину:
+-- "SaveTooNew" — сохранение из более новой версии игры (не тронуто), иначе ошибка загрузки.
 function PlayerData.load(player)
 	SaveStore.prepare(player)
 	local key = SaveStore.key(player)
 	for attempt = 1, LOAD_ATTEMPTS do
 		local locked = false
+		-- итог миграции; warn/kick только после UpdateAsync (функция может выполниться несколько раз)
+		local schemaStatus: SaveSchema.Status = "ok"
+		local schemaFrom, schemaErr = 0, nil
 		local force = attempt == LOAD_ATTEMPTS
 		local ok, result = pcall(function()
 			return store:UpdateAsync(key, function(old)
 				locked = false
 				old = typeof(old) == "table" and old or {}
+				schemaStatus, schemaFrom, schemaErr = SaveSchema.upgrade(old)
+				if schemaStatus ~= "ok" then
+					return nil
+				end
 				local s = old.Session
 				if
 					not force
@@ -105,7 +115,31 @@ function PlayerData.load(player)
 				return old
 			end)
 		end)
+		if ok and schemaStatus == "newer" then
+			warn(
+				string.format(
+					"[PlayerData] %s: сохранение версии %d новее этой игры (%d), не трогаем",
+					player.Name,
+					schemaFrom,
+					SaveSchema.CURRENT
+				)
+			)
+			return nil, "SaveTooNew"
+		elseif ok and schemaStatus == "failed" then
+			warn(
+				string.format(
+					"[PlayerData] %s: миграция с версии %d не удалась: %s",
+					player.Name,
+					schemaFrom,
+					tostring(schemaErr)
+				)
+			)
+			return nil, "LoadFailed"
+		end
 		if ok and not locked and typeof(result) == "table" then
+			if schemaFrom < SaveSchema.CURRENT then
+				print(string.format("[SaveSchema] %s: %d → %d", player.Name, schemaFrom, SaveSchema.CURRENT))
+			end
 			local data = {
 				Cash = toCount(result.Cash),
 				UpgradeLevel = toCount(result.UpgradeLevel),
@@ -155,11 +189,11 @@ function PlayerData.load(player)
 			)
 		end
 		if not player.Parent then
-			return nil
+			return nil, "LoadFailed"
 		end
 		task.wait(RETRY_WAIT)
 	end
-	return nil
+	return nil, "LoadFailed"
 end
 
 function PlayerData.isLoaded(player)
@@ -196,12 +230,19 @@ saveImpl = function(player, release)
 	local key = SaveStore.key(player)
 	for attempt = 1, SAVE_ATTEMPTS do
 		local owned = true
+		local schemaStatus: SaveSchema.Status = "ok"
 		local ok, err = pcall(function()
 			store:UpdateAsync(key, function(old)
 				owned = true
+				schemaStatus = "ok"
 				-- пишем только если блокировка наша, иначе можно затереть более свежие данные
 				if typeof(old) ~= "table" or typeof(old.Session) ~= "table" or old.Session.Job ~= jobId then
 					owned = false
+					return nil
+				end
+				-- сохранение новее этой игры (или сломанная миграция) — не перезаписываем
+				schemaStatus = SaveSchema.upgrade(old)
+				if schemaStatus ~= "ok" then
 					return nil
 				end
 				old.Cash = data.Cash
@@ -224,11 +265,19 @@ saveImpl = function(player, release)
 						player.Name
 					)
 				)
+			elseif schemaStatus ~= "ok" then
+				warn(
+					string.format(
+						"[PlayerData] %s: схема сохранения %s, сохранение пропущено",
+						player.Name,
+						schemaStatus
+					)
+				)
 			end
 			if release then
 				loaded[player] = nil
 			end
-			return owned
+			return owned and schemaStatus == "ok"
 		end
 		warn(
 			string.format(

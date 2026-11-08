@@ -14,14 +14,17 @@ local Shop = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Shop
 local AUTOSAVE_INTERVAL = 60
 
 local function onPlayerAdded(player: Player)
-	local data = PlayerData.load(player)
+	local data, failReason = PlayerData.load(player)
 	if not player.Parent then
 		-- ушёл во время загрузки: снимаем блокировку, ничего не меняя
 		PlayerData.save(player, true)
 		return
 	end
 	if not data then
-		player:Kick(Locale.forPlayer(player, "Kick.LoadFailed"))
+		-- сохранение из более новой версии игры: просим перезайти, когда сервер обновится
+		player:Kick(
+			Locale.forPlayer(player, if failReason == "SaveTooNew" then "Kick.SaveTooNew" else "Kick.LoadFailed")
+		)
 		return
 	end
 

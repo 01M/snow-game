@@ -9,7 +9,11 @@ local RunService = game:GetService("RunService")
 local IS_STUDIO = RunService:IsStudio()
 local STORE_NAME = IS_STUDIO and "PlayerData_Studio" or "PlayerData_v1"
 local TEST_SAVE = IS_STUDIO and workspace:GetAttribute("TestSave") == true
+-- Без SchemaVersion: каждый запуск с TestSave проверяет миграцию со старого формата (версия 0)
 local TEST_SEED = { Cash = 100000, UpgradeLevel = 0 }
+-- TestSaveFutureSchema (вместе с TestSave): заполнить ключ сохранением «из будущей версии» — проверка,
+-- что его никто не перезаписывает. После теста атрибут убрать.
+local TEST_FUTURE_SCHEMA = TEST_SAVE and workspace:GetAttribute("TestSaveFutureSchema") == true
 
 local SaveStore = {}
 
@@ -32,15 +36,20 @@ function SaveStore.prepare(player: Player)
 	local id = player.UserId
 	if seeded[id] == nil then
 		seeded[id] = false
+		local seed: { [string]: any } = table.clone(TEST_SEED)
+		if TEST_FUTURE_SCHEMA then
+			seed.SchemaVersion = 999
+		end
 		local ok, err = pcall(function()
-			SaveStore.store:SetAsync(SaveStore.key(player), table.clone(TEST_SEED))
+			SaveStore.store:SetAsync(SaveStore.key(player), seed)
 		end)
 		if ok then
 			warn(
 				"[SaveStore] TestSave включён: ключ",
 				SaveStore.key(player),
 				"старт Cash",
-				TEST_SEED.Cash
+				TEST_SEED.Cash,
+				if TEST_FUTURE_SCHEMA then "SchemaVersion 999" else ""
 			)
 		else
 			warn("[SaveStore] TestSave: не удалось заполнить ключ:", err)

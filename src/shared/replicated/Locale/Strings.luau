@@ -320,6 +320,10 @@ return {
 		en = "Couldn't load your save. Please rejoin.",
 		ru = "Не удалось загрузить сохранение. Перезайди, пожалуйста.",
 	},
+	["Kick.SaveTooNew"] = {
+		en = "The game is updating. Please rejoin in a minute.",
+		ru = "Игра обновляется. Перезайди через минуту.",
+	},
 
 	-- ===== Лобби =====
 	["Common.On"] = { en = "ON", ru = "ВКЛ" },

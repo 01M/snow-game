@@ -27,8 +27,8 @@
 		<Item class="SurfaceAppearance" referent="RBX1">
 			<Properties>
 				<string name="Name">SnowPileAppearance</string>
-				<Content name="ColorMap"><url>rbxassetid://90524202279541</url></Content>
-				<Content name="NormalMap"><url>rbxassetid://74549652816301</url></Content>
+				<Content name="ColorMap"><url>rbxassetid://72091145694406</url></Content>
+				<Content name="NormalMap"><url>rbxassetid://120730468173755</url></Content>
 				<Content name="RoughnessMap"><url>rbxassetid://129146635142822</url></Content>
 				<Content name="MetalnessMap"><null></null></Content>
 				<Color3 name="Color">

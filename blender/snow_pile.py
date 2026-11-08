@@ -3,8 +3,10 @@
 # ~1300 треугольников (гладкие нормали), одна UV-развёртка сверху без швов. UV повторяют бесшовные карты
 # UV_REPEAT раз поперёк кучи (у SurfaceAppearance нет свойства тайлинга). В игре PileClient растягивает меш по Size.
 # Карты 512×512 (SurfaceAppearance до 1024), бесшовные (периодический шум через FFT):
-#   ColorMap — почти белый, серый (без синевы, оттенок задаёт SurfaceAppearance.Color), мелкое зерно;
+#   ColorMap — почти белый, серый (без синевы, оттенок задаёт SurfaceAppearance.Color), зерно ±6 %;
 #   NormalMap — OpenGL, tangent space (Roblox поддерживает только его): зелёный канал = +V вверх;
+#   зерно ColorMap/NormalMap — полоса GRAIN_CYCLES периодов на плитку: при UV_REPEAT 3.5 на большой куче
+#   (плитка ≈ 2.2–2.6 studs) это крупинки 0.1–0.25 studs, как у снега на земле;
 #   RoughnessMap — 8-bit grayscale, около 0.9, редкие искорки глаже.
 #
 # Запуск: blender --background --python blender/snow_pile.py -- <папка>
@@ -25,6 +27,8 @@ RINGS = 14  # от центра к краю (центр — веер)
 UV_REPEAT = 3.5  # сколько раз карты повторяются поперёк кучи
 TEX = 512
 SEED = 7
+GRAIN_CYCLES = (9, 26)  # полоса частот зерна, периодов на плитку
+NORMAL_K = 1.8  # сила рельефа (выбрана по рендеру рядом 1 / 2 / 3: 1 почти не видно, 3 шумит)
 
 
 def out_dir():
@@ -108,22 +112,38 @@ def periodic_noise(rng, n, beta, lo_cut=0):
     return field / (np.abs(field).max() + 1e-9)
 
 
-def make_textures():
+def band_noise(rng, n, lo, hi):
+    """Бесшовный шум в полосе частот lo..hi периодов на плитку (мягкие края полосы), нормирован к std = 1."""
+    fx = np.fft.fftfreq(n)[:, None] * n
+    fy = np.fft.fftfreq(n)[None, :] * n
+    f = np.sqrt(fx * fx + fy * fy)
+    amp = np.clip((f - lo * 0.7) / (lo * 0.3), 0, 1) * np.clip((hi * 1.3 - f) / (hi * 0.3), 0, 1)
+    phase = rng.uniform(0, 2 * np.pi, (n, n))
+    field = np.real(np.fft.ifft2(amp * np.exp(1j * phase)))
+    field -= field.mean()
+    return field / (field.std() + 1e-9)
+
+
+def make_textures(normal_k):
     rng = np.random.default_rng(SEED)
     n = TEX
     soft = periodic_noise(rng, n, 1.6)  # мягкие пятна
     grain = periodic_noise(rng, n, 0.6, lo_cut=40)  # мелкое зерно, как у снега на земле
     sparkle = rng.random((n, n)) > 0.9965  # редкие искорки
-    height = 0.55 * soft + 0.45 * grain
+    # Карта шероховатости — из первых трёх (не менять порядок: она уже загружена). Дальше — новое зерно.
+    flecks = band_noise(rng, n, *GRAIN_CYCLES)
+    fine = band_noise(rng, n, GRAIN_CYCLES[1], GRAIN_CYCLES[1] * 2.5)
+    # крупинки чуть «рыхлые»: мягкий модуль даёт бугорки, а не синусоиду
+    lumps = np.sqrt(flecks * flecks + 0.3) - 0.8
+    height = 0.6 * lumps + 0.25 * fine + 0.35 * soft
 
-    color = 0.94 + 0.035 * soft + 0.025 * grain
+    color = 0.93 + 0.03 * np.clip(lumps, -2, 2) + 0.012 * fine + 0.02 * soft  # ≈ ±6 %
     color = np.where(sparkle, 1.0, color)
     color = np.clip(color, 0, 1)
 
     # нормали из высоты (центральные разности по кругу — бесшовно); OpenGL: +Y (зелёный) = вверх по V
-    strength = 5.0
-    dx = (np.roll(height, -1, axis=1) - np.roll(height, 1, axis=1)) * 0.5 * strength
-    dy = (np.roll(height, -1, axis=0) - np.roll(height, 1, axis=0)) * 0.5 * strength
+    dx = (np.roll(height, -1, axis=1) - np.roll(height, 1, axis=1)) * 0.5 * normal_k
+    dy = (np.roll(height, -1, axis=0) - np.roll(height, 1, axis=0)) * 0.5 * normal_k
     # строки PNG идут сверху вниз, а V растёт вверх: производная по V = −dy
     nx, ny, nz = -dx, dy, np.ones_like(dx)
     length = np.sqrt(nx * nx + ny * ny + nz * nz)
@@ -156,7 +176,7 @@ def main():
     out = out_dir()
     os.makedirs(out, exist_ok=True)
 
-    color, normal, rough = make_textures()
+    color, normal, rough = make_textures(globals().get("NORMAL_K_OVERRIDE", NORMAL_K))
     paths = {
         "color": os.path.join(out, "snow_pile_color.png"),
         "normal": os.path.join(out, "snow_pile_normal.png"),
@@ -165,6 +185,9 @@ def main():
     write_png(paths["color"], np.repeat(color[:, :, None], 3, axis=2))
     write_png(paths["normal"], normal)
     write_png(paths["roughness"], rough)
+    if globals().get("MAPS_ONLY"):
+        # только карты (меш уже загружен — не переписываем FBX)
+        return {"maps": paths}
 
     # в открытом Blender меняем только свой объект
     old = bpy.data.objects.get(NAME)

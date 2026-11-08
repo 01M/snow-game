@@ -45,7 +45,7 @@
 |---|---|---|---|
 | **shared** | Analytics, SaveStore | Locale (+Strings), Shop (+Gui), Ui (вид интерфейса, иконки) | ChatTagClient, LocaleClient, SnowfallClient |
 | **lobby** | LobbyServer, LobbyCashServer, LobbyRecordsServer, ShopServer, SlideRagdollServer, SnowballServer | Lobby/Maps, Lobby/Snowball, Lobby/Remotes | LobbyHudClient, LobbyMenuClient, LobbyRecordsClient, LobbyTruckClient, SlideRagdollClient, SnowballClient |
-| **house** | SnowGame/: BlowServer, SnowField, PileServer, ToolServer, ToolShopServer, MelterServer, UpgradeShopServer, LeaderstatsServer, PlayerData, MatchServer, ShopServer, AnalyticsHooks, OnboardingServer, FindServer | SnowGame/: Config, ZoneConfig, Finds, Remotes | FindClient, GameHudClient, HideCoreGui, MatchEndClient, PassShowcaseClient, RewardLightsClient, ShovelChunksClient, SnowMeshClient, SnowParticles, ToolClient, ToolShopClient, UpgradeShopClient |
+| **house** | SnowGame/: BlowServer, SnowField, PileServer, ToolServer, ToolShopServer, MelterServer, UpgradeShopServer, LeaderstatsServer, PlayerData, MatchServer, ShopServer, AnalyticsHooks, OnboardingServer, FindServer | SnowGame/: Config, ZoneConfig, Finds, Remotes | FindClient, GameHudClient, HideCoreGui, MatchEndClient, PassShowcaseClient, RewardLightsClient, SellPointerClient, ShovelChunksClient, SnowMeshClient, SnowParticles, ToolClient, ToolShopClient, UpgradeShopClient |
 
 **Магазин за Robux** — два разных серверных скрипта и общие модули, это не дубль:
 

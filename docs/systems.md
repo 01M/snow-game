@@ -26,7 +26,7 @@
 - **Запасной снег.** Если EditableMesh или MeshPart не создаётся, этап рисуется блоками 4×4 studs (`Snow_<Поле>_Blocks`, без следов). В Studio включается атрибутом workspace `DebugSnowBlocks = true` до запуска.
 - `[не проверено]` Нужна настройка Mesh / Image APIs в Creator Dashboard (Configure → Settings); Олег включил её 2026-10-14.
 - **`SnowParticles`** работает без Parts: один Attachment в `workspace.Terrain`, `Emit()` на точку. Сервер шлёт `BlowParticles` только игрокам ближе `ParticleRenderDistance`. Лопату он пропускает: её рисует `ShovelChunksClient`.
-- **Комья лопаты (`ShovelChunksClient`, 2026-11-04, ещё не утверждено Олегом).** Только визуал на клиенте, по тому же `BlowParticles`: сервер, срез и экономика не менялись.
+- **Комья лопаты (`ShovelChunksClient`, 2026-11-04).** Только визуал на клиенте, по тому же `BlowParticles`: сервер, срез и экономика не менялись.
   - **Пул.** При старте клиент клонирует MeshPart из `workspace.ShovelChunkTemplates` (5 форм, см. `docs/studio-world.md`) в `workspace.LocalShovelChunks`: 24 кома, в облегчённом режиме 12 (разрешённый Олегом максимум). Во время игры новых деталей нет: нет свободного кома — новый не вылетает. Свободные стоят в `PARK` (Y = −200). Шаблонов нет — запасные шары и `warn`.
   - **EditableMesh для комьев не использовать.** Его бюджет памяти общий со снегом: с 5 мешами комьев снег Backyard ушёл в запасные блоки (Play 2026-11-04, `reaching memory budget limits`).
   - **Бросок** раз за взмах (`SWING_INTERVAL`, ритм покачивания из `ToolClient`) из накопленных точек среза: 2 кома, в глубоком снегу и сугробах (`SnowBaseDepth × 1,25`) 4 и крупнее. У чужих лопат вдвое меньше и только ближе `OTHER_DISTANCE` (40) к камере. Размер сохраняет пропорции формы.

@@ -2,7 +2,8 @@
 -- Удержание: зажал — BlowState(true, направление взгляда) и повтор каждые BlowAimInterval (это же keepalive),
 -- отпустил — BlowState(false). Клик (Mode "click"): каждое нажатие — ToolClick(направление), не чаще Cooldown.
 -- Рука (Config.BareTool) — не предмет: работает, когда в руках ничего нет, нажатия ловит UserInputService.
--- Лопата (Sway) покачивается при работе — только локально, через RightGrip.C1.
+-- Лопата при работе проигрывает цикл копания (ShovelSwing), другие Sway-инструменты покачиваются —
+-- только локально, через RightGrip.C1.
 -- Всё остальное (куплен ли инструмент, конус, рюкзак) проверяет сервер.
 -- На сенсорных экранах есть своя кнопка «Убирать» (PlayerGui.ToolTouchGui) с иконкой инструмента в руках или Руки:
 -- тап по экрану там ещё и крутит камеру. В Studio её можно показать атрибутом workspace DebugTouchButton = true.
@@ -56,9 +57,88 @@ local function gripWeld(): Weld?
 	return w and w:IsA("Weld") and w or nil
 end
 
+-- Цикл копания лопатой (выбран Олегом 2026-11-08, короткий резкий взмах): вонзить → поддеть → бросок → покой.
+-- Только визуал своего игрока: сервер срезает снег непрерывно, независимо от фаз.
+-- Позы — в системе Handle (начало в перекладине D-ручки): tz вдоль черенка к ковшу, ty вверх от вогнутости,
+-- pitch > 0 опускает ковш, yaw < 0 уводит ковш вправо, roll > 0 высыпает вправо. ease — как входить в позу.
+local shovelSwing = require(snowGame:WaitForChild("ShovelSwing"))
+local SWING_INTERVAL = math.pi / 9 -- ритм комьев ShovelChunksClient
+type Pose = { t: number, tz: number, ty: number, pitch: number, yaw: number, roll: number, ease: string }
+local SWING_PERIOD = SWING_INTERVAL * 1.5
+local SWING_IMPACT = 0.32 -- доля цикла: лезвие в снегу
+local SWING_THROW = 0.64 -- доля цикла: вылетают комья
+local SWING_KEYS: { Pose } = {
+	{ t = 0, tz = 0, ty = 0, pitch = 0, yaw = 0, roll = 0, ease = "inout" },
+	{ t = 0.32, tz = 0.4, ty = -0.08, pitch = 0.1, yaw = 0, roll = 0, ease = "in" },
+	{ t = 0.58, tz = -0.15, ty = 0.18, pitch = -0.14, yaw = 0.02, roll = 0, ease = "inout" },
+	{ t = 0.74, tz = -0.05, ty = 0.28, pitch = -0.24, yaw = -0.22, roll = 0.35, ease = "out" },
+	{ t = 1, tz = 0, ty = 0, pitch = 0, yaw = 0, roll = 0, ease = "inout" },
+}
+
+local function ease(kind: string, a: number): number
+	if kind == "in" then
+		return a * a -- набирает скорость к удару
+	elseif kind == "out" then
+		return 1 - (1 - a) ^ 3 -- резкий старт броска и торможение
+	end
+	return a * a * (3 - 2 * a)
+end
+
+local function poseAt(t: number): CFrame
+	local keys = SWING_KEYS
+	for i = 2, #keys do
+		local b = keys[i]
+		if t <= b.t then
+			local a = keys[i - 1]
+			local k = ease(b.ease, math.clamp((t - a.t) / (b.t - a.t), 0, 1))
+			local function lerp(x: number, y: number): number
+				return x + (y - x) * k
+			end
+			return CFrame.new(0, lerp(a.ty, b.ty), lerp(a.tz, b.tz))
+				* CFrame.Angles(lerp(a.pitch, b.pitch), lerp(a.yaw, b.yaw), lerp(a.roll, b.roll))
+		end
+	end
+	return CFrame.identity
+end
+
+local swingStart: number? = nil -- начало текущего цикла; nil — цикл не идёт
+local swingImpactDone = false
+local swingThrowDone = false
+
+-- Поза ручки в цикле копания или nil, если цикл не идёт; на переходах шлёт Impact и Throw
+local function shovelSwingPose(now: number): CFrame?
+	if not swingStart then
+		if not swayHolding then
+			return nil
+		end
+		swingStart, swingImpactDone, swingThrowDone = now, false, false
+	end
+	local t = (now - (swingStart :: number)) / SWING_PERIOD
+	if not swingImpactDone and t >= SWING_IMPACT then
+		swingImpactDone = true
+		shovelSwing.fireImpact()
+	end
+	if not swingThrowDone and t >= SWING_THROW then
+		swingThrowDone = true
+		shovelSwing.fireThrow()
+	end
+	if t >= 1 then
+		-- Взмах доигрывается до конца даже после отпускания; пока зажато — следующий сразу
+		if swayHolding then
+			swingStart, swingImpactDone, swingThrowDone = now, false, false
+			t = 0
+		else
+			swingStart = nil
+			return nil
+		end
+	end
+	return poseAt(t)
+end
+
 RunService.RenderStepped:Connect(function()
 	local tool = swayTool
 	if not tool or tool.Parent ~= player.Character then
+		swingStart = nil
 		return
 	end
 	local w = gripWeld()
@@ -67,6 +147,13 @@ RunService.RenderStepped:Connect(function()
 	end
 	local offset = CFrame.identity
 	local now = os.clock()
+	if tool:GetAttribute("SnowToolId") == "Shovel" then
+		-- Поза задана в системе Handle: Handle = рука·C0·C1⁻¹, поэтому C1 = поза⁻¹·Grip
+		local pose = shovelSwingPose(now)
+		w.C1 = if pose then pose:Inverse() * tool.Grip else tool.Grip
+		return
+	end
+	swingStart = nil
 	if swayHolding then
 		-- Мягкое покачивание, пока зажато
 		offset = CFrame.new(math.sin(now * 9) * 0.08, math.abs(math.sin(now * 9)) * 0.08, 0)

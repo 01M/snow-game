@@ -10,6 +10,8 @@
 -- стриминге). EditableMesh не используется: его бюджет памяти общий со снегом SnowMeshClient. Нет шаблонов — шары.
 -- В Studio, на ходу: атрибут workspace DebugShovelFxOld = true — старый эффект (клубы SnowParticles),
 -- DebugShovelShake — сила толчка камеры в градусах (0 — выключен), DebugShovelLite = true до Play — облегчённый режим.
+-- Своя лопата идёт по циклу копания (ShovelSwing): на ударе лезвия — звук входа и толчок камеры, на броске — комья
+-- и шорох. Чужие лопаты бросают по таймеру SWING_INTERVAL.
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
@@ -21,6 +23,8 @@ local snowGame = ReplicatedStorage:WaitForChild("SnowGame")
 local config = require(snowGame:WaitForChild("Config")) :: any
 local zoneConfig = require(snowGame:WaitForChild("ZoneConfig")) :: any
 local blowParticles = snowGame:WaitForChild("Remotes"):WaitForChild("BlowParticles") :: RemoteEvent
+-- Цикл копания своей лопатой (ToolClient): комья ждут броска, толчок камеры — удара лезвия
+local shovelSwing = require(snowGame:WaitForChild("ShovelSwing")) :: any
 
 local localPlayer = Players.LocalPlayer
 
@@ -470,13 +474,15 @@ local function rootOf(player: Player): BasePart?
 	return if root and root:IsA("BasePart") then root else nil
 end
 
-type Swing = { last: number, points: { Vector3 } }
+type Swing = { last: number, points: { Vector3 }, fresh: number, at: Vector3? }
 local swings: { [Player]: Swing } = {}
 
 Players.PlayerRemoving:Connect(function(p)
 	swings[p] = nil
 	lastLand[p] = nil
 end)
+
+local lastHeavy = false -- был ли последний свой взмах тяжёлым: сила толчка на следующем ударе
 
 local function throw(blower: Player, points: { Vector3 })
 	local own = blower == localPlayer
@@ -549,19 +555,46 @@ local function throw(blower: Player, points: { Vector3 })
 	-- Пыль у лезвия в момент взмаха, немного
 	burst(points[1] + Vector3.new(0, 0.2, 0), if heavy then 2 else 1, if heavy then 3 else 1)
 
-	-- Звук взмаха: вход лезвия и шорох сразу, хруст чуть позже и только в глубоком снегу
+	-- Звук броска: мягкий шорох, хруст чуть позже и только в глубоком снегу. Вход лезвия у своей лопаты
+	-- звучит на ударе (ShovelSwing.Impact), у чужих — здесь же, их цикла копания не видно
 	local bladeAt = points[1]
-	playLayer("blade", bladeAt, own)
+	if not own then
+		playLayer("blade", bladeAt, own)
+	end
 	playLayer("scrape", bladeAt, own)
 	if heavy then
 		task.delay(rng:NextNumber(CRUNCH_DELAY.Min, CRUNCH_DELAY.Max), playLayer, "crunch", bladeAt, own)
 	end
 
 	if own then
-		shakeAmp = shakeDegrees() * (if heavy then 1 else 0.6)
-		shakeStart = os.clock()
+		lastHeavy = heavy
 	end
 end
+
+local FRESH_TIME = 0.6 -- точки среза старше этого уже не свои: лопата не в снегу
+
+-- Удар лезвия своей лопаты: звук входа в снег и толчок камеры, только если она сейчас режет снег
+shovelSwing.Impact:Connect(function()
+	local swing = swings[localPlayer]
+	if not swing or not swing.at or os.clock() - swing.fresh >= FRESH_TIME or useOldFx() then
+		return
+	end
+	playLayer("blade", swing.at, true)
+	shakeAmp = shakeDegrees() * (if lastHeavy then 1 else 0.6)
+	shakeStart = os.clock()
+end)
+
+shovelSwing.Throw:Connect(function()
+	local swing = swings[localPlayer]
+	if not swing or #swing.points == 0 then
+		return
+	end
+	if os.clock() - swing.fresh < FRESH_TIME and isShovel(localPlayer) and not useOldFx() then
+		swing.last = os.clock()
+		throw(localPlayer, swing.points)
+	end
+	swing.points = {}
+end)
 
 blowParticles.OnClientEvent:Connect(function(blower: any, _nozzlePos: any, points: any)
 	if useOldFx() or typeof(blower) ~= "Instance" or not blower:IsA("Player") or type(points) ~= "table" then
@@ -572,15 +605,23 @@ blowParticles.OnClientEvent:Connect(function(blower: any, _nozzlePos: any, point
 	end
 	local swing = swings[blower]
 	if not swing then
-		swing = { last = -math.huge, points = {} }
+		swing = { last = -math.huge, points = {}, fresh = -math.huge }
 		swings[blower] = swing
 	end
 	for _, p in points do
-		if typeof(p) == "Vector3" and #swing.points < 16 then
-			table.insert(swing.points, p)
+		if typeof(p) == "Vector3" then
+			swing.at = p
+			if #swing.points < 16 then
+				table.insert(swing.points, p)
+			end
 		end
 	end
 	local now = os.clock()
+	swing.fresh = now
+	-- Свою лопату бросает ShovelSwing.Throw в фазе броска, чужие — таймер
+	if blower == localPlayer then
+		return
+	end
 	if now - swing.last >= SWING_INTERVAL and #swing.points > 0 then
 		swing.last = now
 		throw(blower, swing.points)

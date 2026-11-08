@@ -5,10 +5,9 @@
 -- Свою кучу (держу Движок, куча перед игроком) ставим по своему персонажу той же формулой, что PileServer.push:
 -- сервер видит персонажа на пинг позже, без предсказания куча отстаёт от скребка и догоняет рывками.
 -- Исчезновение: слияние — куча съезжает в соседнюю, люк — тонет в крышке, иначе быстро тает; новая куча вырастает.
--- Вид — сугроб, а не шар, вытянутый по направлению толкания. Основной вариант — шаблон SnowGame.PileMound
--- (MeshPart из blender/snow_pile.py + SurfaceAppearance с картами по UV: растяжение и поворот без швов).
--- Встроенный материал Snow на меше проецируется по осям Part и даёт швы, поэтому без шаблона (или пока
--- в нём нет SurfaceAppearance) — запасной гладкий эллипсоид SmoothPlastic (SpecialMesh Sphere).
+-- Вид — сугроб, а не шар, вытянутый по направлению толкания: шаблон SnowGame.PileMound (MeshPart из
+-- blender/snow_pile.py + SurfaceAppearance с картами по UV: растяжение и поворот без швов; встроенный материал
+-- Snow на меше проецируется по осям Part и даёт швы). Без шаблона — один warn, и кучи остаются серверными шарами.
 -- След на ширину кучи примерно равен радиусу сервера, чтобы Рука/Лопата (PileServer.take)
 -- и слияние куч совпадали с тем, что видно.
 local Players = game:GetService("Players")
@@ -34,12 +33,6 @@ local DIE_MAX_TIME = 0.6
 local MERGE_SLACK = 1.5 -- к порогу слияния сервера (×0.7 суммы радиусов), чтобы найти, куда съехала куча
 local MANHOLE_SINK = 0.6 -- насколько тонет в люке (доля радиуса)
 
--- Форма сугроба в долях радиуса сервера r. Центр эллипсоида на MOUND_CENTER_Y·r над землёй, нижняя часть
--- в земле: на земле след шириной ≈ 2·0.83·HALF_WIDTH·r ≈ 2r, верх на (CENTER_Y + HALF_HEIGHT)·r — как у шара.
-local MOUND_HALF_WIDTH = 1.2 -- поперёк толкания
-local MOUND_HALF_LENGTH = 1.35 -- вдоль толкания
-local MOUND_HALF_HEIGHT = 0.8
-local MOUND_CENTER_Y = 0.45
 -- Меш из шаблона (дно плоское): в долях радиуса сервера r; низ чуть в земле, высота не меньше MESH_MIN_HEIGHT,
 -- чтобы маленькая куча не тонула в снегу (видимый снег ≈ SnowBaseDepth × SnowVisualDepth над землёй)
 local MESH_HALF_WIDTH = 1.05
@@ -54,8 +47,7 @@ local groundY: number = config.GroundTopY
 
 type Vis = {
 	server: BasePart,
-	part: BasePart,
-	isMesh: boolean,
+	part: MeshPart,
 	pos: Vector3, -- плоская (Y = 0)
 	lastPos: Vector3,
 	yaw: number, -- поворот сугроба вокруг Y (длинная ось — вдоль толкания)
@@ -69,6 +61,14 @@ type Vis = {
 
 local visuals: { [BasePart]: Vis } = {}
 local dyingList: { Vis } = {}
+
+local template = snowGame:FindFirstChild("PileMound")
+if not (template and template:IsA("MeshPart") and template:FindFirstChildOfClass("SurfaceAppearance")) then
+	warn(
+		"[PileClient] нет шаблона SnowGame.PileMound с SurfaceAppearance — кучи показываются серверными шарами"
+	)
+	return
+end
 
 local visualFolder = Instance.new("Folder")
 visualFolder.Name = "PileVisuals"
@@ -90,44 +90,11 @@ local rng = Random.new()
 
 local function render(vis: Vis, sink: number)
 	local r = math.max(vis.radius, 0.01)
-	if vis.isMesh then
-		-- Минимальную высоту растим вместе с кучей, чтобы новая куча не появлялась сразу высокой
-		local h = math.max(r * MESH_HEIGHT, math.min(MESH_MIN_HEIGHT, r * 2))
-		vis.part.Size = Vector3.new(MESH_HALF_WIDTH * 2 * r, h, MESH_HALF_LENGTH * 2 * r)
-		vis.part.CFrame = CFrame.new(vis.pos.X, groundY - MESH_BURY + h / 2 - sink, vis.pos.Z)
-			* CFrame.Angles(0, vis.yaw, 0)
-		return
-	end
-	local cf = CFrame.new(vis.pos.X, groundY + r * MOUND_CENTER_Y - sink, vis.pos.Z) * CFrame.Angles(0, vis.yaw, 0)
-	vis.part.Size = Vector3.new(MOUND_HALF_WIDTH, MOUND_HALF_HEIGHT, MOUND_HALF_LENGTH) * (2 * r)
-	vis.part.CFrame = cf
-end
-
-local template = snowGame:FindFirstChild("PileMound")
-local useMesh = template ~= nil
-	and template:IsA("MeshPart")
-	and template:FindFirstChildOfClass("SurfaceAppearance") ~= nil
-
--- Запасной сугроб: Part с эллипсоидом (SpecialMesh Sphere растягивается по Size)
-local function moundPart(server: BasePart): BasePart
-	if useMesh and template then
-		local mesh = (template :: MeshPart):Clone()
-		mesh.Name = "SnowPileVisual"
-		return mesh
-	end
-	local part = Instance.new("Part")
-	part.Name = "SnowPileVisual"
-	part.Material = Enum.Material.SmoothPlastic
-	part.Color = server.Color
-	part.Anchored = true
-	part.CanCollide = false
-	part.CanQuery = false
-	part.CanTouch = false
-	part.CastShadow = true
-	local mesh = Instance.new("SpecialMesh")
-	mesh.MeshType = Enum.MeshType.Sphere
-	mesh.Parent = part
-	return part
+	-- Минимальную высоту растим вместе с кучей, чтобы новая куча не появлялась сразу высокой
+	local h = math.max(r * MESH_HEIGHT, math.min(MESH_MIN_HEIGHT, r * 2))
+	vis.part.Size = Vector3.new(MESH_HALF_WIDTH * 2 * r, h, MESH_HALF_LENGTH * 2 * r)
+	vis.part.CFrame = CFrame.new(vis.pos.X, groundY - MESH_BURY + h / 2 - sink, vis.pos.Z)
+		* CFrame.Angles(0, vis.yaw, 0)
 end
 
 local function addPile(server: Instance)
@@ -135,12 +102,12 @@ local function addPile(server: Instance)
 		return
 	end
 	server.LocalTransparencyModifier = 1
-	local part = moundPart(server)
+	local part = (template :: MeshPart):Clone()
+	part.Name = "SnowPileVisual"
 	local pos = flat(server.Position)
 	local vis: Vis = {
 		server = server,
 		part = part,
-		isMesh = part:IsA("MeshPart"),
 		pos = pos,
 		lastPos = pos,
 		yaw = rng:NextNumber(0, math.pi),

@@ -17,6 +17,8 @@ local config = require(snowGame:WaitForChild("Config"))
 local remotes = snowGame:WaitForChild("Remotes")
 local blowState = remotes:WaitForChild("BlowState")
 local toolClick = remotes:WaitForChild("ToolClick")
+-- Что держим сейчас — для звука инструментов (ToolSfxClient)
+local toolUse = require(snowGame:WaitForChild("ToolUse"))
 local RunService = game:GetService("RunService")
 
 local player = Players.LocalPlayer
@@ -190,6 +192,9 @@ local function setBlowing(isOn: boolean)
 	end
 	blowing = isOn
 	blowState:FireServer(isOn, aimDirection())
+	if not isOn then
+		toolUse.setHeld(nil)
+	end
 	if isOn then
 		blowGen += 1
 		local gen = blowGen
@@ -198,6 +203,7 @@ local function setBlowing(isOn: boolean)
 				task.wait(config.BlowAimInterval)
 				if blowing and gen == blowGen then
 					blowState:FireServer(true, aimDirection())
+					toolUse.keepAlive()
 				end
 			end
 		end)
@@ -224,6 +230,7 @@ local function press(tool: Tool?)
 		return
 	end
 	setBlowing(true)
+	toolUse.setHeld(toolCfgOf(tool).Id)
 	setSway(tool, true)
 end
 

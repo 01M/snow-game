@@ -17,7 +17,6 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 local SoundService = game:GetService("SoundService")
 local ContentProvider = game:GetService("ContentProvider")
-local UserInputService = game:GetService("UserInputService")
 
 local snowGame = ReplicatedStorage:WaitForChild("SnowGame")
 local config = require(snowGame:WaitForChild("Config")) :: any
@@ -77,21 +76,8 @@ local function shakeDegrees(): number
 	return SHAKE_DEGREES
 end
 
--- Слабое устройство: телефон без клавиатуры или вручную выбрано качество графики 1–3
-local function isLite(): boolean
-	if studio("DebugShovelLite") == true then
-		return true
-	end
-	local ok, level = pcall(function()
-		return UserSettings():GetService("UserGameSettings").SavedQualityLevel
-	end)
-	if ok and level ~= Enum.SavedQualitySetting.Automatic and level.Value <= 3 then
-		return true
-	end
-	return UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled
-end
-
-local lite = isLite()
+-- Слабое устройство (телефон без клавиатуры, качество графики 1–3, в Studio DebugShovelLite) — общий признак ToolUse
+local lite = (require(snowGame:WaitForChild("ToolUse")) :: any).isLite()
 local rng = Random.new()
 
 local function setupPart(p: BasePart)

@@ -5,6 +5,9 @@
 -- Свою кучу (держу Движок, куча перед игроком) ставим по своему персонажу той же формулой, что PileServer.push:
 -- сервер видит персонажа на пинг позже, без предсказания куча отстаёт от скребка и догоняет рывками.
 -- Исчезновение: слияние — куча съезжает в соседнюю, люк — тонет в крышке, иначе быстро тает; новая куча вырастает.
+-- Вид — сугроб, а не шар: приплюснутый эллипсоид (SpecialMesh Sphere), вытянутый по направлению толкания,
+-- плюс один мягкий бугорок со своими размерами у каждой кучи. След на ширину кучи примерно равен радиусу сервера,
+-- чтобы Рука/Лопата (PileServer.take) и слияние куч совпадали с тем, что видно.
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
@@ -28,12 +31,29 @@ local DIE_MAX_TIME = 0.6
 local MERGE_SLACK = 1.5 -- к порогу слияния сервера (×0.7 суммы радиусов), чтобы найти, куда съехала куча
 local MANHOLE_SINK = 0.6 -- насколько тонет в люке (доля радиуса)
 
+-- Форма сугроба в долях радиуса сервера r. Центр эллипсоида на MOUND_CENTER_Y·r над землёй, нижняя часть
+-- в земле: на земле след шириной ≈ 2·0.83·HALF_WIDTH·r ≈ 2r, верх на (CENTER_Y + HALF_HEIGHT)·r — как у шара.
+local MOUND_HALF_WIDTH = 1.2 -- поперёк толкания
+local MOUND_HALF_LENGTH = 1.35 -- вдоль толкания
+local MOUND_HALF_HEIGHT = 0.8
+local MOUND_CENTER_Y = 0.45
+local YAW_K = 6 -- скорость поворота сугроба к направлению толкания
+local YAW_MIN_SPEED = 0.6 -- studs/с: медленнее — направление не меняем
+-- Бугорок: размер и место в долях r (случайный разброс у каждой кучи)
+local LUMP_SIZE = Vector3.new(0.6, 0.38, 0.55)
+local LUMP_SPREAD = 0.2
+
 local groundY: number = config.GroundTopY
 
 type Vis = {
 	server: BasePart,
 	part: Part,
+	lump: Part,
+	lumpOffset: Vector3, -- в долях r, в системе сугроба
+	lumpScale: number,
 	pos: Vector3, -- плоская (Y = 0)
+	lastPos: Vector3,
+	yaw: number, -- поворот сугроба вокруг Y (длинная ось — вдоль толкания)
 	radius: number,
 	blend: number, -- 0 — сервер, 1 — предсказание
 	dying: boolean,
@@ -61,22 +81,21 @@ local function serverRadius(server: BasePart): number
 	return server.Size.X / 2
 end
 
+local rng = Random.new()
+
 local function render(vis: Vis, sink: number)
 	local r = math.max(vis.radius, 0.01)
-	local d = r * 2
-	vis.part.Size = Vector3.new(d, d, d)
-	-- Как PileServer.place: шар чуть утоплен в землю
-	vis.part.Position = Vector3.new(vis.pos.X, groundY + r * 0.15 - sink, vis.pos.Z)
+	local cf = CFrame.new(vis.pos.X, groundY + r * MOUND_CENTER_Y - sink, vis.pos.Z) * CFrame.Angles(0, vis.yaw, 0)
+	vis.part.Size = Vector3.new(MOUND_HALF_WIDTH, MOUND_HALF_HEIGHT, MOUND_HALF_LENGTH) * (2 * r)
+	vis.part.CFrame = cf
+	vis.lump.Size = LUMP_SIZE * (vis.lumpScale * r)
+	vis.lump.CFrame = cf * CFrame.new(vis.lumpOffset * r)
 end
 
-local function addPile(server: Instance)
-	if not server:IsA("BasePart") or visuals[server] then
-		return
-	end
-	server.LocalTransparencyModifier = 1
+-- Часть сугроба: Part с эллипсоидом (SpecialMesh Sphere растягивается по Size)
+local function moundPart(server: BasePart, name: string): Part
 	local part = Instance.new("Part")
-	part.Name = "SnowPileVisual"
-	part.Shape = Enum.PartType.Ball
+	part.Name = name
 	part.Material = server.Material
 	part.Color = server.Color
 	part.Anchored = true
@@ -84,12 +103,38 @@ local function addPile(server: Instance)
 	part.CanQuery = false
 	part.CanTouch = false
 	part.CastShadow = true
-	part.TopSurface = Enum.SurfaceType.Smooth
-	part.BottomSurface = Enum.SurfaceType.Smooth
+	local mesh = Instance.new("SpecialMesh")
+	mesh.MeshType = Enum.MeshType.Sphere
+	mesh.Parent = part
+	return part
+end
+
+local function addPile(server: Instance)
+	if not server:IsA("BasePart") or visuals[server] then
+		return
+	end
+	server.LocalTransparencyModifier = 1
+	local part = moundPart(server, "SnowPileVisual")
+	local lump = moundPart(server, "Lump")
+	lump.CastShadow = false
+	-- Бугорок сбоку от гребня, на склоне; утоплен наполовину, чтобы не было резкого края
+	local side = if rng:NextNumber() < 0.5 then -1 else 1
+	local lx = side * rng:NextNumber(0.2, 0.2 + LUMP_SPREAD * 2)
+	local lz = rng:NextNumber(-LUMP_SPREAD * 2, LUMP_SPREAD)
+	-- Высота поверхности эллипсоида в этой точке, центр бугорка чуть выше неё
+	local surface = MOUND_HALF_HEIGHT
+		* math.sqrt(math.max(1 - (lx / MOUND_HALF_WIDTH) ^ 2 - (lz / MOUND_HALF_LENGTH) ^ 2, 0))
+	local lumpOffset = Vector3.new(lx, surface + 0.04, lz)
+	local pos = flat(server.Position)
 	local vis: Vis = {
 		server = server,
 		part = part,
-		pos = flat(server.Position),
+		lump = lump,
+		lumpOffset = lumpOffset,
+		lumpScale = rng:NextNumber(1 - LUMP_SPREAD, 1 + LUMP_SPREAD),
+		pos = pos,
+		lastPos = pos,
+		yaw = rng:NextNumber(0, math.pi),
 		radius = 0, -- вырастает из нуля
 		blend = 0,
 		dying = false,
@@ -99,6 +144,7 @@ local function addPile(server: Instance)
 	}
 	render(vis, 0)
 	part.Parent = visualFolder
+	lump.Parent = part
 	visuals[server] = vis
 end
 
@@ -205,6 +251,14 @@ RunService.Heartbeat:Connect(function(dt: number)
 		local k = POS_K + (PREDICT_POS_K - POS_K) * vis.blend
 		vis.pos += (target - vis.pos) * ease(k, dt)
 		vis.radius += (r - vis.radius) * ease(SIZE_K, dt)
+		-- Длинная ось — по движению; сугроб симметричен, поэтому угол по модулю π (без разворота при отъезде)
+		local move = vis.pos - vis.lastPos
+		vis.lastPos = vis.pos
+		if dt > 0 and move.Magnitude / dt > YAW_MIN_SPEED then
+			local want = math.atan2(-move.X, -move.Z)
+			local diff = (want - vis.yaw + math.pi / 2) % math.pi - math.pi / 2
+			vis.yaw += diff * ease(YAW_K, dt)
+		end
 		render(vis, 0)
 	end
 

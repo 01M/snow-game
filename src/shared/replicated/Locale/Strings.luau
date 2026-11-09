@@ -237,6 +237,7 @@ return {
 	["MatchEnd.Title"] = { en = "YARD CLEARED!", ru = "ДВОР ОЧИЩЕН!" },
 	["MatchEnd.Snow"] = { en = "Snow collected: {n}", ru = "Собрано снега: {n}" },
 	["MatchEnd.Cash"] = { en = "Earned: {n} Cash", ru = "Заработано: {n} Cash" },
+	["MatchEnd.Crystals"] = { en = "Crystals: +{n}", ru = "Кристаллы: +{n}" },
 	["MatchEnd.Countdown"] = {
 		en = "Back to the lobby in {n} s…",
 		ru = "Возврат в лобби через {n} сек…",
@@ -437,6 +438,12 @@ return {
 	["Stat.TipJar.Name"] = { en = "Tip Jar", ru = "Чаевые" },
 	["Stat.TipJar.Desc"] = { en = "More Cash for snow", ru = "Больше Cash за снег" },
 	["Stat.TipJar.Effect"] = { en = "+{n}% Cash", ru = "+{n}% Cash" },
+	["Stat.CrystalSense.Name"] = { en = "Crystal Sense", ru = "Чутьё на кристаллы" },
+	["Stat.CrystalSense.Desc"] = {
+		en = "More Crystals in matches",
+		ru = "Больше кристаллов в матчах",
+	},
+	["Stat.CrystalSense.Effect"] = { en = "+{n}% Crystals", ru = "+{n}% кристаллов" },
 
 	-- Окно ежедневной награды (Lobby.DailyGui)
 	["Daily.Title"] = { en = "Daily rewards", ru = "Ежедневные награды" },

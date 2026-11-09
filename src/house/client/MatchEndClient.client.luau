@@ -41,7 +41,7 @@ local card = Ui.new("Frame", {
 	Name = "SummaryCard",
 	AnchorPoint = Vector2.new(0.5, 0.5),
 	Position = UDim2.fromScale(0.5, 0.5),
-	Size = UDim2.fromOffset(460, 390),
+	Size = UDim2.fromOffset(460, 444),
 	BackgroundColor3 = Ui.Color.paper,
 	Parent = dim,
 }, { Ui.corner(26), Ui.border(4) })
@@ -94,6 +94,7 @@ local function statRow(name: string, icon: string, y: number)
 end
 local snowLabel = statRow("Snow", "Snow", 98)
 local cashLabel = statRow("Cash", "Cash", 152)
+local crystalsLabel = statRow("Crystals", "Gem", 206)
 local countdownLabel = Ui.label({
 	Name = "Countdown",
 	AnchorPoint = Vector2.new(0.5, 1),
@@ -114,7 +115,7 @@ local againButton = Ui.button({
 	Text = L("MatchEnd.PlayAgain"),
 	TextSize = 24,
 	Radius = 18,
-	Position = UDim2.fromOffset(20, 222),
+	Position = UDim2.fromOffset(20, 276),
 	Size = UDim2.fromOffset(200, 72),
 	Parent = card,
 })
@@ -124,7 +125,7 @@ local lobbyButton = Ui.button({
 	Text = L("MatchEnd.ToLobby"),
 	TextSize = 24,
 	Radius = 18,
-	Position = UDim2.fromOffset(240, 222),
+	Position = UDim2.fromOffset(240, 276),
 	Size = UDim2.fromOffset(200, 72),
 	Parent = card,
 })
@@ -141,6 +142,8 @@ local function refresh()
 	snowLabel.Text = L("MatchEnd.Snow", { n = snow })
 	-- MatchCashEarned копят MelterServer, PileServer (люки, ×0.5) и MatchServer (остаток рюкзака)
 	cashLabel.Text = L("MatchEnd.Cash", { n = player:GetAttribute("MatchCashEarned") or 0 })
+	-- MatchCrystals копит PlayerData.addCrystals: находки, зоны, конец матча (с Crystal Sense)
+	crystalsLabel.Text = L("MatchEnd.Crystals", { n = player:GetAttribute("MatchCrystals") or 0 })
 
 	local t = workspace:GetAttribute("ReturnCountdown")
 	local myChoice = player:GetAttribute("EndChoice")
@@ -188,6 +191,7 @@ workspace:GetAttributeChangedSignal("MatchState"):Connect(onMatchState)
 workspace:GetAttributeChangedSignal("ReturnCountdown"):Connect(refresh)
 player:GetAttributeChangedSignal("SnowCollected"):Connect(refresh)
 player:GetAttributeChangedSignal("MatchCashEarned"):Connect(refresh)
+player:GetAttributeChangedSignal("MatchCrystals"):Connect(refresh)
 player:GetAttributeChangedSignal("EndChoice"):Connect(refresh)
 workspace:GetAttributeChangedSignal("PlayAgainVotes"):Connect(refresh)
 workspace:GetAttributeChangedSignal("PlayAgainTotal"):Connect(refresh)

@@ -22,6 +22,8 @@ Crystals.Stats = {
 	{ Id = "SnowBoots", Icon = "Boots", PerLevel = 1, Prices = { 10, 25, 45, 70, 100 } }, -- +WalkSpeed
 	{ Id = "StrongArms", Icon = "Hand", PerLevel = 0.05, Prices = { 10, 25, 45, 70, 100 } }, -- +доля скорости уборки
 	{ Id = "TipJar", Icon = "Cash", PerLevel = 0.1, Prices = { 20, 45, 75, 110, 150 } }, -- +доля Cash
+	-- +доля Crystals в матче (находки, зоны, конец матча), не ежедневная награда; дробный остаток копится (CrystalCarry)
+	{ Id = "CrystalSense", Icon = "Gem", PerLevel = 0.1, Prices = { 20, 45, 75, 110, 150 } },
 }
 
 export type Stat = { Id: string, Icon: string, PerLevel: number, Prices: { number } }
@@ -101,6 +103,10 @@ end
 
 function Crystals.cashMultiplier(player: Player): number
 	return 1 + Crystals.bonus(player, "TipJar")
+end
+
+function Crystals.crystalMultiplier(player: Player): number
+	return 1 + Crystals.bonus(player, "CrystalSense")
 end
 
 return Crystals

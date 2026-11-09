@@ -313,13 +313,21 @@ saveImpl = function(player, release)
 	return false
 end
 
--- Crystals за матч (находки, зоны, конец матча). Пока сохранение не загружено и блокировка не наша — ничего.
+-- Crystals за матч (находки, зоны, конец матча), с прибавкой Crystal Sense. Пока сохранение не загружено и блокировка
+-- не наша — ничего.
 -- Баланс сразу в атрибуте Crystals, за матч — MatchCrystals; в сохранение уходит на ближайшем сохранении
 -- (PlayerData.checkpoint, автосейв, выход). Возвращает начисленное.
 function PlayerData.addCrystals(player: Player, amount: number, reason: string): number
 	local data = loaded[player]
-	amount = math.floor(tonumber(amount) or 0)
-	if not data or released[player] or amount <= 0 then
+	local base = math.floor(tonumber(amount) or 0)
+	if not data or released[player] or base <= 0 then
+		return 0
+	end
+	-- Crystal Sense: +доля к награде; дробный остаток копится в атрибуте CrystalCarry (его держит MatchCache)
+	local exact = base * Crystals.crystalMultiplier(player) + ((player:GetAttribute("CrystalCarry") or 0) :: number)
+	amount = math.floor(exact + 1e-6)
+	player:SetAttribute("CrystalCarry", exact - amount)
+	if amount <= 0 then
 		return 0
 	end
 	data.Pending += amount

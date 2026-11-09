@@ -18,7 +18,7 @@ local BuyStat = script.Parent:WaitForChild("Remotes"):WaitForChild("BuyStat") ::
 
 local player = Players.LocalPlayer
 
-local PANEL_W, PANEL_H = 780, 500
+local PANEL_W, PANEL_H = 960, 500 -- 5 карточек в ряд; на узком экране окно уменьшает UIScale (fit)
 local CARD_W, CARD_H = 172, 330
 local GAP = 14
 local CLOSE_ACTION = "StatsGuiClose"
@@ -49,7 +49,7 @@ local function effectText(stat: Crystals.Stat, level: number): string
 	local v = Crystals.bonusAt(stat.Id, level)
 	if stat.Id == "SnowBoots" then
 		v += Crystals.BASE_WALK_SPEED
-	elseif stat.Id == "StrongArms" or stat.Id == "TipJar" then
+	elseif stat.Id == "StrongArms" or stat.Id == "TipJar" or stat.Id == "CrystalSense" then
 		v = math.floor(v * 100 + 0.5)
 	end
 	return L("Stat." .. stat.Id .. ".Effect", { n = v })

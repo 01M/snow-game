@@ -18,6 +18,7 @@ MatchCache.ATTRIBUTES = {
 	"IapCash",
 	"MatchCrystals",
 	"SnowCut", -- срезанные порции за матч (BlowServer): награды за зоны и таблица рекордов
+	"CrystalCarry", -- дробный остаток Crystal Sense (PlayerData.addCrystals)
 }
 
 export type State = {

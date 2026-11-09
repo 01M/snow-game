@@ -90,6 +90,8 @@ Oleg creates a new product in the Creator Dashboard and sends the id; `Id = 0` m
 - The filled key has no `SchemaVersion`, so every TestSave run checks the migration from the old format: Output shows `[SaveSchema] <name>: 0 → 2`.
 - `TestSaveFutureSchema = true` (together with TestSave) fills the key with `SchemaVersion = 999`: a check that a save from a newer version is not overwritten (in the match: kick `Kick.SaveTooNew`).
 
+**Daily reward test (Lobby):** the workspace attribute `DebugDayOffset` (a whole number of days, Studio only) is added to "today" by `DailyServer`. It is read on every claim and every refresh, so it can be changed during Play from the Server context: with TestSave the first claim is day 1; then `DebugDayOffset = 1` is day 2, `= 4` is day 5 (days 3 and 4 show as missed), `= 7` is the milestone day 8. A claim can be made from the Client context without the window: `ReplicatedStorage.Lobby.Remotes.ClaimDaily:InvokeServer()` returns `{ status, day, reward }`. Remove the attribute after the test.
+
 **Schema version:** the `SchemaVersion` field in the save; migration steps are in `ServerScriptService.Shared.SaveSchema`. Changing the save fields = a new step and `CURRENT + 1`; a released step is never edited.
 
 ## How to test purchases
@@ -113,7 +115,7 @@ Versions are pinned in `rokit.toml`: Rojo 7.7.1, StyLua 2.6.0, Selene 0.32.0, lu
 2. `stylua src`, then `stylua --check src`; if the check fails, repeat.
 3. `selene src` shows 0 warnings.
 4. `scripts/analyze.ps1` shows 0 errors.
-5. Debug attributes removed: `TestSave`, `TestSaveFutureSchema`, `ForceLanguage`, `DebugSnowBlocks`, `DebugSnowDepth`, `DebugTouchButton`, `DebugFinds`, `DebugShovelFxOld`, `DebugShovelShake`, `DebugShovelLite`.
+5. Debug attributes removed: `TestSave`, `TestSaveFutureSchema`, `DebugDayOffset`, `ForceLanguage`, `DebugSnowBlocks`, `DebugSnowDepth`, `DebugTouchButton`, `DebugFinds`, `DebugShovelFxOld`, `DebugShovelShake`, `DebugShovelLite`.
 
 ## Working rules
 

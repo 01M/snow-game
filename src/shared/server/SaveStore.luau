@@ -39,6 +39,12 @@ SaveStore.store = DataStoreService:GetDataStore(STORE_NAME)
 SaveStore.LOCK_TIMEOUT = 120 -- сек; блокировка старше считается брошенной (автосейв обновляет её раз в 60 сек)
 SaveStore.MAX_PURCHASES = 50
 
+-- Таблица рекордов: больше всего срезанного снега за один матч (SnowCut). Ключ — UserId, значение — целое.
+-- Пишет House Map в конце матча (MatchServer, только рекорд выше прежнего), читает лобби (LobbyRecordsServer).
+-- В Studio — своё хранилище; с TestSave не пишем, чтобы тесты не попадали в таблицу.
+SaveStore.records = DataStoreService:GetOrderedDataStore(if IS_STUDIO then "TopMatch_Studio" else "TopMatch_v1")
+SaveStore.TEST_SAVE = TEST_SAVE
+
 -- seeded[UserId]: false — заполняется сейчас, true — готово (за запуск один раз)
 local seeded: { [number]: boolean } = {}
 

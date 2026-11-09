@@ -33,7 +33,7 @@ local function label(
 	return t
 end
 
-local function formatCash(value: number): string
+local function formatNumber(value: number): string
 	local text = tostring(math.floor(value))
 	local grouped = text:reverse():gsub("(%d%d%d)", "%1,"):reverse()
 	return (grouped:gsub("^,", ""))
@@ -57,7 +57,8 @@ local function draw(gui: SurfaceGui)
 			local cash = row:FindFirstChild("Cash") :: TextLabel
 			rank.Text = if data then tostring(i) else ""
 			name.Text = if data then data.n elseif i == 1 then L("Lobby.Records.Empty") else ""
-			cash.Text = if data then "$" .. formatCash(data.c) else ""
+			-- значение — срезанный снег (порции) за лучший матч, единица — в заголовке доски
+			cash.Text = if data then formatNumber(data.c) else ""
 		end
 	end
 end

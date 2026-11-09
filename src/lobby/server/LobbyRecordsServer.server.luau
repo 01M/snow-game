@@ -1,19 +1,17 @@
 --!strict
--- Таблица лучших на беседке: сверху OrderedDataStore читаем ReadCount строк и отдаём клиентам атрибутом
--- TopPlayers (JSON) у ReplicatedStorage.Lobby. Лобби сюда больше не пишет: Cash живёт только в матче (B1, 2026-11-09);
--- новую таблицу (лучший матч) будет писать House Map. PlayerData не меняется: это отдельное хранилище.
-local DataStoreService = game:GetService("DataStoreService")
+-- Таблица лучших на беседке: больше всего срезанного снега за один матч. Хранилище — Shared.SaveStore.records
+-- (TopMatch_v1, в Studio TopMatch_Studio), пишет его House Map в конце матча (MatchServer). Лобби только читает:
+-- сверху ReadCount строк, атрибутом TopPlayers (JSON) у ReplicatedStorage.Lobby.
 local HttpService = game:GetService("HttpService")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local RunService = game:GetService("RunService")
 
-local IS_STUDIO = RunService:IsStudio()
-local STORE_NAME = if IS_STUDIO then "TopCash_Studio" else "TopCash_v1"
+local SaveStore = require(script.Parent:WaitForChild("Shared"):WaitForChild("SaveStore"))
+
 local READ_COUNT = 8
 local REFRESH_EVERY = 60
 
-local store = DataStoreService:GetOrderedDataStore(STORE_NAME)
+local store = SaveStore.records
 local LobbyFolder = ReplicatedStorage:WaitForChild("Lobby")
 local names: { [number]: string } = {}
 

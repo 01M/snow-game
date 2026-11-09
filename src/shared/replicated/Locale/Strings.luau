@@ -469,7 +469,7 @@ return {
 	["Lobby.World.ShopPrompt"] = { en = "Open shop", ru = "Открыть магазин" },
 	["Lobby.World.Daily"] = { en = "Daily rewards", ru = "Ежедневные награды" },
 	["Lobby.World.DailyPrompt"] = { en = "Open", ru = "Открыть" },
-	["Lobby.Records.Title"] = { en = "Top players", ru = "Лучшие игроки" },
+	["Lobby.Records.Title"] = { en = "Most snow in one match", ru = "Больше всего снега за матч" },
 	["Lobby.Records.Empty"] = { en = "No records yet", ru = "Рекордов пока нет" },
 	["Lobby.Hud.Throw"] = { en = "Throw", ru = "Бросить" },
 }

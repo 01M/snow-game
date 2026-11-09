@@ -10,6 +10,7 @@ local HttpService = game:GetService("HttpService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local PlayerData = require(script.Parent:WaitForChild("PlayerData"))
+local SaveStore = require(game:GetService("ServerScriptService"):WaitForChild("Shared"):WaitForChild("SaveStore"))
 local Shop = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Shop"))
 local Locale = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Locale"))
 local MatchAction = ReplicatedStorage:WaitForChild("SnowGame"):WaitForChild("Remotes"):WaitForChild("MatchAction")
@@ -58,6 +59,28 @@ local function sellBackpack(player)
 		player:SetAttribute("MatchCashEarned", (player:GetAttribute("MatchCashEarned") or 0) + earned)
 		bp.Value = 0
 	end
+end
+
+-- Рекорд матча: срезанный снег (SnowCut) в таблицу рекордов, если он больше прежнего. С TestSave не пишем
+local function submitRecord(player)
+	local cut = math.floor(tonumber(player:GetAttribute("SnowCut")) or 0)
+	if SaveStore.TEST_SAVE or cut <= 0 then
+		return
+	end
+	task.spawn(function()
+		local ok, err = pcall(function()
+			SaveStore.records:UpdateAsync(tostring(player.UserId), function(old)
+				local best = tonumber(old) or 0
+				if cut <= best then
+					return nil -- прежний рекорд не хуже: ничего не пишем
+				end
+				return cut
+			end)
+		end)
+		if not ok then
+			warn("[MatchServer] рекорд " .. player.Name .. " не записан: " .. tostring(err))
+		end
+	end)
 end
 
 -- Сколько игроков ещё здесь и сколько из них нажали «Ещё раз» — для карточки итогов
@@ -188,6 +211,7 @@ local function onMatchFinished()
 
 	for _, player in ipairs(Players:GetPlayers()) do
 		sellBackpack(player)
+		submitRecord(player)
 	end
 
 	-- Окно выбора: покупки и находки за это время попадут в сохранение перед телепортом (T-2)

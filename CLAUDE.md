@@ -83,11 +83,11 @@ Oleg creates a new product in the Creator Dashboard and sends the id; `Id = 0` m
 | Studio with TestSave | `PlayerData_Studio` | `test_<UserId>` |
 
 **TestSave:** the workspace attribute `TestSave = true` is set in edit mode before Play, in each place separately, and must be removed after the test. Outside Studio it has no effect.
-- At the start of each run the key is filled again: Cash 100000, UpgradeLevel 0, Crystals 50, only the free tools, no Daily (never claimed). Output will show `[SaveStore] TestSave включён`.
+- At the start of each run the key is filled again: Cash 100000, UpgradeLevel 0, Crystals 2000, only the free tools, no Daily (never claimed), no Stats. Output will show `[SaveStore] TestSave включён`.
 - Saving and receipts work as usual; the normal key is not changed.
 - **Only one place at a time.** The key is shared: starting the second place refills it and drops the first place's lock, so the first place's save is skipped.
 - The next Play refills the key again, so the save is checked after Stop, by reading `test_<UserId>` from `PlayerData_Studio`. `[unverified]` From edit mode (Command Bar, MCP) the DataStore answers `Access forbidden` (2026-11-08); it can be read during Play from the Server context.
-- The filled key has no `SchemaVersion`, so every TestSave run checks the migration from the old format: Output shows `[SaveSchema] <name>: 0 → 2`.
+- The filled key has no `SchemaVersion`, so every TestSave run checks the migration from the old format: Output shows `[SaveSchema] <name>: 0 → 3`.
 - `TestSaveFutureSchema = true` (together with TestSave) fills the key with `SchemaVersion = 999`: a check that a save from a newer version is not overwritten (in the match: kick `Kick.SaveTooNew`).
 
 **Daily reward test (Lobby):** the workspace attribute `DebugDayOffset` (a whole number of days, Studio only) is added to "today" by `DailyServer`. It is read on every claim and every refresh, so it can be changed during Play from the Server context: with TestSave the first claim is day 1; then `DebugDayOffset = 1` is day 2, `= 4` is day 5 (days 3 and 4 show as missed), `= 7` is the milestone day 8. A claim can be made from the Client context without the window: `ReplicatedStorage.Lobby.Remotes.ClaimDaily:InvokeServer()` returns `{ status, day, reward }`. Remove the attribute after the test.

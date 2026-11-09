@@ -10,7 +10,7 @@ local SaveSchema = {}
 
 export type Status = "ok" | "newer" | "failed"
 
-SaveSchema.CURRENT = 2
+SaveSchema.CURRENT = 3
 
 local steps: { [number]: (data: { [string]: any }) -> () } = {
 	-- 0 → 1: поля те же, только появляется SchemaVersion
@@ -45,6 +45,13 @@ local steps: { [number]: (data: { [string]: any }) -> () } = {
 			daily.Total = count(old.Total)
 		end
 		data.Daily = daily
+	end,
+	-- 2 → 3: Stats — постоянные статы за Crystals ({ [Id] = уровень }, Shared.Crystals). Шаг только создаёт таблицу;
+	-- уровни проверяются при чтении и покупке, не здесь.
+	[3] = function(data)
+		if typeof(data.Stats) ~= "table" then
+			data.Stats = {}
+		end
 	end,
 }
 

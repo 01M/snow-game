@@ -169,7 +169,7 @@ Numbers and lists are deliberately not repeated here: the source of truth is `Co
 ## Interface look (`Ui`)
 
 - `ReplicatedStorage.Shared.Ui` — shared colours, fonts (Nunito; Amatic SC for "handwritten" captions, both have Cyrillic) and pieces: a button with an outline, a "lip" and a snow cap, a dark plate, a progress bar, `autoScale`.
-- Icons are one atlas `assets/ui/icons.svg` → `icons.png` (128 px cell), uploaded as `rbxassetid://109532873251724`. The cell number is `Ui.Icons`. A new icon: draw it in the SVG, render without background, upload again and change `Ui.ATLAS`.
+- Icons are one atlas `assets/ui/icons.svg` → `icons.png` (128 px cell), uploaded as `rbxassetid://101963241650337`. The cell number is `Ui.Icons`. A new icon: draw it in the SVG, render without background, upload again and change `Ui.ATLAS`.
 - `UIListLayout` sorts by name by default: in lists set `SortOrder = LayoutOrder`, and don't put the snow cap inside a frame with a list.
 
 ## Match HUD (`GameHudClient`)

@@ -13,6 +13,7 @@ local L = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Locale"
 local ShopGui = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Shop"):WaitForChild("Gui"))
 local Ui = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Ui"))
 local DailyGui = require(ReplicatedStorage:WaitForChild("Lobby"):WaitForChild("DailyGui"))
+local StatsGui = require(ReplicatedStorage:WaitForChild("Lobby"):WaitForChild("StatsGui"))
 local LobbyRemotes = ReplicatedStorage:WaitForChild("Lobby"):WaitForChild("Remotes")
 local QueueAction = LobbyRemotes:WaitForChild("QueueAction")
 local QueueState = LobbyRemotes:WaitForChild("QueueState")
@@ -107,14 +108,16 @@ local function showToast(str)
 	end)
 end
 
--- Слева: Магазин / Пригласить / Награды
-local left = group("Left", Vector2.new(0, 0.5), UDim2.new(0, 16, 0.55, 0), Vector2.new(104, 364))
+-- Слева: Магазин / Пригласить / Награды / Улучшения (постоянные статы за Crystals, окно Lobby.StatsGui)
+local left = group("Left", Vector2.new(0, 0.5), UDim2.new(0, 16, 0.55, 0), Vector2.new(104, 494))
 new("UIListLayout", { Padding = UDim.new(0, 26), SortOrder = Enum.SortOrder.LayoutOrder, Parent = left })
 local shopBtn = squareButton(left, 1, "green", "Shop", "Shop", L("Lobby.Hud.Shop"))
 local inviteBtn = squareButton(left, 2, "blue", "Invite", "Invite", L("Lobby.Hud.Invite"))
 local dailyBtn = squareButton(left, 3, "amber", "Gift", "Daily", L("Lobby.Hud.Daily"))
 shopBtn.Activated:Connect(ShopGui.toggle)
 dailyBtn.Activated:Connect(DailyGui.toggle)
+local upgradesBtn = squareButton(left, 4, "blue", "Upgrade", "Upgrades", L("Lobby.Hud.Upgrades"))
+upgradesBtn.Activated:Connect(StatsGui.toggle)
 
 -- Красная точка на «Наградах», пока награда за сегодня не получена (атрибут DailyReady ставит DailyServer)
 local dailyDot = new("Frame", {
@@ -132,6 +135,21 @@ local function refreshDailyDot()
 end
 player:GetAttributeChangedSignal("DailyReady"):Connect(refreshDailyDot)
 refreshDailyDot()
+
+-- Прилавок Upgrades: ProximityPrompt с тегом StatsPrompt (лежит в месте, не в Rojo) открывает окно постоянных улучшений
+local function hookStatsPrompt(prompt: Instance)
+	if prompt:IsA("ProximityPrompt") then
+		prompt.Triggered:Connect(function(who)
+			if who == player then
+				StatsGui.open()
+			end
+		end)
+	end
+end
+CollectionService:GetInstanceAddedSignal("StatsPrompt"):Connect(hookStatsPrompt)
+for _, prompt in CollectionService:GetTagged("StatsPrompt") do
+	hookStatsPrompt(prompt)
+end
 
 -- Награды в беседке: ProximityPrompt с тегом DailyPrompt (лежит в месте, не в Rojo) открывает окно наград
 local DAILY_PROMPT_TAG = "DailyPrompt"

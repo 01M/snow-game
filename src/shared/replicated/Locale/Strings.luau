@@ -386,6 +386,37 @@ return {
 	["Lobby.Hud.Shop"] = { en = "Shop", ru = "Магазин" },
 	["Lobby.Hud.Invite"] = { en = "Invite", ru = "Пригласить" },
 	["Lobby.Hud.Daily"] = { en = "Daily", ru = "Награды" },
+	["Lobby.Hud.Upgrades"] = { en = "Upgrades", ru = "Улучшения" },
+
+	-- Окно постоянных статов за Crystals (Lobby.StatsGui)
+	["Stats.Title"] = { en = "Permanent upgrades", ru = "Постоянные улучшения" },
+	["Stats.Hint"] = {
+		en = "Bought with Crystals, they work in every match.",
+		ru = "Покупаются за кристаллы и действуют в каждом матче.",
+	},
+	["Stats.Max"] = { en = "MAX", ru = "МАКС" },
+	["Stats.Bought"] = { en = "{name}: level {n}!", ru = "{name}: уровень {n}!" },
+	["Stats.NotEnough"] = { en = "Not enough Crystals", ru = "Не хватает кристаллов" },
+	["Stats.Busy"] = { en = "Try again in a moment", ru = "Попробуй ещё раз через минутку" },
+	["Stats.Unavailable"] = {
+		en = "Something went wrong, try again later",
+		ru = "Не получилось, попробуй позже",
+	},
+	["Stat.DeepPockets.Name"] = { en = "Deep Pockets", ru = "Глубокие карманы" },
+	["Stat.DeepPockets.Desc"] = { en = "Bigger backpack", ru = "Рюкзак вмещает больше" },
+	["Stat.DeepPockets.Effect"] = { en = "+{n} snow", ru = "+{n} снега" },
+	["Stat.SnowBoots.Name"] = { en = "Snow Boots", ru = "Зимние ботинки" },
+	["Stat.SnowBoots.Desc"] = { en = "Walk faster", ru = "Ходишь быстрее" },
+	["Stat.SnowBoots.Effect"] = { en = "Speed {n}", ru = "Скорость {n}" },
+	["Stat.StrongArms.Name"] = { en = "Strong Arms", ru = "Крепкие руки" },
+	["Stat.StrongArms.Desc"] = {
+		en = "Every tool clears faster",
+		ru = "Любой инструмент убирает быстрее",
+	},
+	["Stat.StrongArms.Effect"] = { en = "+{n}% speed", ru = "+{n}% скорости" },
+	["Stat.TipJar.Name"] = { en = "Tip Jar", ru = "Чаевые" },
+	["Stat.TipJar.Desc"] = { en = "More Cash for snow", ru = "Больше Cash за снег" },
+	["Stat.TipJar.Effect"] = { en = "+{n}% Cash", ru = "+{n}% Cash" },
 
 	-- Окно ежедневной награды (Lobby.DailyGui)
 	["Daily.Title"] = { en = "Daily rewards", ru = "Ежедневные награды" },
@@ -412,7 +443,8 @@ return {
 
 	-- Надписи в мире лобби
 	["Lobby.World.Shop"] = { en = "Shop", ru = "Магазин" },
-	["Lobby.World.Upgrades"] = { en = "Upgrades", ru = "Апгрейды" },
+	["Lobby.World.Upgrades"] = { en = "Upgrades", ru = "Улучшения" },
+	["Lobby.World.UpgradesPrompt"] = { en = "Open", ru = "Открыть" },
 	["Lobby.World.Records"] = { en = "Records & Rewards", ru = "Рекорды и награды" },
 	["Lobby.World.ShopPrompt"] = { en = "Open shop", ru = "Открыть магазин" },
 	["Lobby.World.Daily"] = { en = "Daily rewards", ru = "Ежедневные награды" },

@@ -10,6 +10,7 @@ local RunService = game:GetService("RunService")
 local snowGame = ReplicatedStorage:WaitForChild("SnowGame")
 local config = require(snowGame:WaitForChild("Config"))
 local zoneConfig = require(snowGame:WaitForChild("ZoneConfig"))
+local Crystals = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Crystals"))
 local SnowField = require(script.Parent:WaitForChild("SnowField"))
 local ToolServer = require(script.Parent:WaitForChild("ToolServer"))
 local PileServer = require(script.Parent:WaitForChild("PileServer"))
@@ -287,9 +288,9 @@ local function getSnowTool(player: Player): (Tool?, any)
 	return tool, toolCfg
 end
 
--- Параметры инструмента с учётом купленных игроком апгрейдов
+-- Параметры инструмента с учётом купленных игроком апгрейдов и стата Strong Arms
 local function toolStats(player: Player, toolCfg)
-	return config.getToolStats(toolCfg, ToolServer.levels(player, toolCfg.Id))
+	return config.getToolStats(toolCfg, ToolServer.levels(player, toolCfg.Id), Crystals.cutMultiplier(player))
 end
 
 -- Удержание (зажал — тянет) или клики. Рука кликает, пока не куплен апгрейд «Удержание»

@@ -186,8 +186,9 @@ function Config.getToolUpgradePrice(upgrade, level: number): number?
 	return math.floor(upgrade.BasePrice * (Config.UpgradePriceGrowth ^ level))
 end
 
--- Параметры инструмента с учётом уровней апгрейдов: levels = { [UpgradeId] = уровень }
-function Config.getToolStats(toolCfg, levels: { [string]: number }?)
+-- Параметры инструмента с учётом уровней апгрейдов: levels = { [UpgradeId] = уровень };
+-- cutMultiplier — постоянный стат Strong Arms (Shared.Crystals.cutMultiplier): скорость уборки и PileTake всех инструментов
+function Config.getToolStats(toolCfg, levels: { [string]: number }?, cutMultiplier: number?)
 	levels = levels or {}
 	local stats = {
 		Range = toolCfg.Range,
@@ -196,7 +197,7 @@ function Config.getToolStats(toolCfg, levels: { [string]: number }?)
 		ClickRate = toolCfg.ClickRate,
 		Hold = toolCfg.Mode ~= "click",
 		StripWidth = toolCfg.StripWidth,
-		Speed = 1, -- множитель скорости от апгрейдов (для PileTake)
+		Speed = 1, -- множитель скорости от апгрейдов и Strong Arms (для PileTake)
 	}
 	for _, u in toolCfg.Upgrades or {} do
 		local lv = math.clamp(tonumber((levels :: { [string]: number })[u.Id]) or 0, 0, u.MaxLevel)
@@ -216,6 +217,12 @@ function Config.getToolStats(toolCfg, levels: { [string]: number }?)
 			end
 		end
 	end
+	local k = cutMultiplier or 1
+	if k ~= 1 then
+		stats.MeltRate *= k
+		stats.ClickRate = stats.ClickRate and stats.ClickRate * k
+		stats.Speed *= k
+	end
 	return stats
 end
 
@@ -223,9 +230,10 @@ function Config.getUpgradePrice(level: number): number
 	return math.floor(Config.UpgradeBasePrice * (Config.UpgradePriceGrowth ^ level))
 end
 
--- Вместимость рюкзака на уровне апгрейда level; multiplier — пасс «Большой рюкзак» (Shop.backpackMultiplier)
-function Config.getBackpackCapacity(level: number, multiplier: number?): number
-	return (Config.BackpackCapacity + Config.UpgradeCapacityBoost * level) * (multiplier or 1)
+-- Вместимость рюкзака на уровне апгрейда level; multiplier — пасс «Большой рюкзак» (Shop.backpackMultiplier),
+-- bonus — постоянный стат Deep Pockets (Shared.Crystals.backpackBonus), прибавляется к базе до множителя пасса
+function Config.getBackpackCapacity(level: number, multiplier: number?, bonus: number?): number
+	return (Config.BackpackCapacity + (bonus or 0) + Config.UpgradeCapacityBoost * level) * (multiplier or 1)
 end
 
 return Config

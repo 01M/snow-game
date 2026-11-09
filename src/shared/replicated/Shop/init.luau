@@ -5,6 +5,8 @@
 -- Владелец пасса получает атрибут Pass_<Key> = true (ставит ShopServer), личный буст — атрибут BoostUntil (os.time),
 -- «Метель для всех» — workspace BlizzardUntil (GetServerTimeNow).
 -- Общий модуль Lobby и House Map (src/shared/replicated/Shop → ReplicatedStorage.Shared.Shop).
+local Crystals = require(script.Parent:WaitForChild("Crystals"))
+
 local Shop = {}
 
 Shop.Passes = {
@@ -65,7 +67,7 @@ function Shop.blizzardLeft(): number
 	return if type(untilTime) == "number" then math.max(0, untilTime - workspace:GetServerTimeNow()) else 0
 end
 
--- Множитель Cash за снег (снегоплавилка, люки, продажа в конце матча); бонусы перемножаются
+-- Множитель Cash за снег (снегоплавилка, люки, продажа в конце матча); бонусы перемножаются, в т.ч. стат Tip Jar
 function Shop.cashMultiplier(player: Player): number
 	local m = 1
 	if Shop.hasPass(player, "X2Cash") then
@@ -77,6 +79,7 @@ function Shop.cashMultiplier(player: Player): number
 	if Shop.boostLeft(player) > 0 then
 		m *= Shop.BOOST_X
 	end
+	m *= Crystals.cashMultiplier(player)
 	if Shop.blizzardLeft() > 0 then
 		m *= Shop.BLIZZARD_X
 	end

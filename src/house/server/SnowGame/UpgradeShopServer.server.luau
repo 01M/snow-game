@@ -7,6 +7,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local snowGame = ReplicatedStorage:WaitForChild("SnowGame")
 local config = require(snowGame:WaitForChild("Config"))
 local Shop = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Shop"))
+local Crystals = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Crystals"))
 local buyRemote = snowGame:WaitForChild("Remotes"):WaitForChild("BuyUpgrade") :: RemoteEvent
 
 local yard = workspace:WaitForChild("SnowYard")
@@ -38,7 +39,10 @@ local function buyBackpackUpgrade(player: Player)
 
 	if cash.Value >= price then
 		cash.Value -= price
-		player:SetAttribute("BackpackCapacity", config.getBackpackCapacity(level + 1, Shop.backpackMultiplier(player)))
+		player:SetAttribute(
+			"BackpackCapacity",
+			config.getBackpackCapacity(level + 1, Shop.backpackMultiplier(player), Crystals.backpackBonus(player))
+		)
 		player:SetAttribute("BackpackUpgradeLevel", level + 1)
 		-- покупки за матч (для задачи «Улучши рюкзак» в журнале)
 		player:SetAttribute("UpgradesBought", ((player:GetAttribute("UpgradesBought") or 0) :: number) + 1)

@@ -1,6 +1,7 @@
 -- Сохранение прогресса игрока в DataStore (общий для всех мест experience).
 -- Схема: { Cash, UpgradeLevel, OwnedTools = { id }, ToolUpgrades = { [toolId] = { [upgradeId] = уровень } },
 --   Purchases = { id чека }, BoostUntil = os.time, OnboardingStep = пройдено шагов Config.Onboarding, Collection = { id находки }, Session = { Job, Time } }. OwnedTools/ToolUpgrades держит и проверяет ToolServer.
+-- Crystals, Daily и Stats пишет только лобби: здесь Stats только читаются (атрибуты Stat_<Id>), сохранение их не трогает.
 -- Purchases — последние MAX_PURCHASES чеков покупок за Robux (чтобы повтор ProcessReceipt не выдал товар дважды),
 -- BoostUntil — конец личного буста ×2 Cash (атрибут игрока BoostUntil). Лобби пишет покупки в тот же ключ само (ShopServer).
 -- SchemaVersion — версия схемы (Shared.SaveSchema): загрузка доводит её до текущей, сохранение новее не трогаем.
@@ -14,6 +15,7 @@ local SaveStore = require(ServerScriptService:WaitForChild("Shared"):WaitForChil
 local SaveSchema = require(ServerScriptService:WaitForChild("Shared"):WaitForChild("SaveSchema"))
 local ToolServer = require(script.Parent:WaitForChild("ToolServer"))
 local Finds = require(game:GetService("ReplicatedStorage"):WaitForChild("SnowGame"):WaitForChild("Finds"))
+local Crystals = require(game:GetService("ReplicatedStorage"):WaitForChild("Shared"):WaitForChild("Crystals"))
 
 local LOAD_ATTEMPTS = 6 -- последняя попытка забирает блокировку силой
 local SAVE_ATTEMPTS = 3
@@ -150,6 +152,8 @@ function PlayerData.load(player)
 				BoostUntil = toCount(result.BoostUntil),
 				OnboardingStep = toCount(result.OnboardingStep),
 				Collection = sanitizeCollection(result.Collection),
+				-- только чтение: Stats пишет лобби (StatServer), saveImpl их не трогает
+				Stats = Crystals.cleanStats(result.Stats),
 			}
 			loaded[player] = data
 			released[player] = nil
@@ -161,6 +165,7 @@ function PlayerData.load(player)
 				BoostUntil = data.BoostUntil,
 				OnboardingStep = data.OnboardingStep,
 				Collection = data.Collection,
+				Stats = data.Stats,
 			}
 		end
 		if not ok and RunService:IsStudio() and string.find(tostring(result), "403") then

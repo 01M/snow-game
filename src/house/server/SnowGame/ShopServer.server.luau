@@ -8,6 +8,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local ServerScriptService = game:GetService("ServerScriptService")
 
 local Shop = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Shop"))
+local Crystals = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Crystals"))
 local config = require(ReplicatedStorage:WaitForChild("SnowGame"):WaitForChild("Config"))
 local PlayerData = require(script.Parent:WaitForChild("PlayerData"))
 local Analytics = require(ServerScriptService:WaitForChild("Shared"):WaitForChild("Analytics"))
@@ -28,7 +29,10 @@ local function onPlayerAdded(player: Player)
 	player:GetAttributeChangedSignal("Pass_BigBackpack"):Connect(function()
 		local level = player:GetAttribute("BackpackUpgradeLevel")
 		if level ~= nil then
-			player:SetAttribute("BackpackCapacity", config.getBackpackCapacity(level, Shop.backpackMultiplier(player)))
+			player:SetAttribute(
+				"BackpackCapacity",
+				config.getBackpackCapacity(level, Shop.backpackMultiplier(player), Crystals.backpackBonus(player))
+			)
 		end
 	end)
 	checkPasses(player)

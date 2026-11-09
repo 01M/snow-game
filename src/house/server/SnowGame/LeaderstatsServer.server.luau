@@ -10,6 +10,7 @@ local PlayerData = require(script.Parent:WaitForChild("PlayerData"))
 local ToolServer = require(script.Parent:WaitForChild("ToolServer"))
 local Locale = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Locale"))
 local Shop = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Shop"))
+local Crystals = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Crystals"))
 
 local AUTOSAVE_INTERVAL = 60
 
@@ -42,10 +43,27 @@ local function onPlayerAdded(player: Player)
 	backpack.Value = 0
 	backpack.Parent = leaderstats
 
+	-- Постоянные статы за Crystals (только чтение, покупаются в лобби): до вместимости, она учитывает Deep Pockets
+	local stats = data.Stats or {}
+	for _, stat in Crystals.Stats do
+		player:SetAttribute("Stat_" .. stat.Id, stats[stat.Id] or 0)
+	end
+	-- Snow Boots: скорость ходьбы при каждом появлении персонажа (база — Crystals.BASE_WALK_SPEED)
+	local function applyWalkSpeed(character: Model)
+		local humanoid = character:WaitForChild("Humanoid", 10) :: Humanoid?
+		if humanoid then
+			humanoid.WalkSpeed = Crystals.walkSpeed(player)
+		end
+	end
+	player.CharacterAdded:Connect(applyWalkSpeed)
+	if player.Character then
+		task.spawn(applyWalkSpeed, player.Character)
+	end
+
 	-- Per-player upgradeable capacity (×2 с пассом «Большой рюкзак»; если пасс узнают позже, пересчитает ShopServer)
 	player:SetAttribute(
 		"BackpackCapacity",
-		config.getBackpackCapacity(data.UpgradeLevel, Shop.backpackMultiplier(player))
+		config.getBackpackCapacity(data.UpgradeLevel, Shop.backpackMultiplier(player), Crystals.backpackBonus(player))
 	)
 	player:SetAttribute("BackpackUpgradeLevel", data.UpgradeLevel)
 	-- Личный буст ×2 Cash из магазина (мог быть куплен в лобби)

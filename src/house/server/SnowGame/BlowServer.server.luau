@@ -465,6 +465,18 @@ task.spawn(function()
 	end
 end)
 
+-- Мягкий край среза: у границ конуса (полосы), у дальности и у MinDistance срез сходит на нет плавно
+-- (smoothstep) на полосе шириной CUT_EDGE_SOFT studs, поделенной пополам границей. Снятое за тик почти
+-- не меняется: сколько не добрали внутри полосы, столько добавили снаружи
+local CUT_EDGE_SOFT = 1.5
+local CUT_EDGE_HALF = CUT_EDGE_SOFT / 2
+
+-- 1 далеко внутри границы, 0 далеко снаружи; d — расстояние за границу (studs, внутри — отрицательное)
+local function edgeFade(d: number): number
+	local t = math.clamp(0.5 - d / CUT_EDGE_SOFT, 0, 1)
+	return t * t * (3 - 2 * t)
+end
+
 -- ============================================================
 -- Срез снега одним инструментом: конус от взгляда, порции в рюкзак, комья, счёт зон.
 -- rateMax — сколько снега снимается в центре конуса за один вызов (тик удержания или клик),
@@ -476,7 +488,8 @@ end)
 -- ============================================================
 local function cutSnow(player: Player, tool: Tool?, toolCfg, stats, rateMax: number, dt: number): number
 	local range = stats.Range
-	local coneCos = math.cos(math.rad(math.min(stats.HalfAngle, 85)))
+	local coneAngle = math.rad(math.min(stats.HalfAngle, 85))
+	local coneCos = math.cos(coneAngle)
 	-- Полоса (Снегоуборщик): прямоугольник шириной StripWidth перед соплом вместо конуса
 	local strip = toolCfg.Shape == "strip" and stats.StripWidth ~= nil
 	local halfWidth = strip and stats.StripWidth / 2 or 0
@@ -557,7 +570,7 @@ local function cutSnow(player: Player, tool: Tool?, toolCfg, stats, rateMax: num
 			table.insert(samples, at)
 		end
 	end
-	local scanRadius = strip and math.sqrt(reach * reach + halfWidth * halfWidth) + 1 or reach
+	local scanRadius = (strip and math.sqrt(reach * reach + halfWidth * halfWidth) + 1 or reach) + CUT_EDGE_HALF
 
 	-- Зона определяется по точке снега, а не по ногам: можно чистить с тротуара или через границу зон.
 	-- Закрытые (locked) и завершённые зоны не трогаем.
@@ -584,7 +597,9 @@ local function cutSnow(player: Player, tool: Tool?, toolCfg, stats, rateMax: num
 				-- Дистанция — от игрока, угол — от вершины конуса у сопла
 				local rx, rz = wx - origin.X, wz - origin.Z
 				local distRoot = math.sqrt(rx * rx + rz * rz)
-				if distRoot < minDist then
+				-- fade — мягкий край (edgeFade) у каждой границы формы
+				local fade = edgeFade(minDist - distRoot)
+				if fade <= 0 then
 					return
 				end
 				local dx, dz = wx - apex.X, wz - apex.Z
@@ -593,28 +608,33 @@ local function cutSnow(player: Player, tool: Tool?, toolCfg, stats, rateMax: num
 					-- Полоса: впереди сопла, не дальше reach от игрока по взгляду, сбоку не дальше halfWidth
 					local fwd = dx * look.X + dz * look.Z
 					local side = math.abs(dx * look.Z - dz * look.X)
-					if fwd < 0 or rx * look.X + rz * look.Z > reach or side > halfWidth then
+					fade *= edgeFade(-fwd) * edgeFade(rx * look.X + rz * look.Z - reach) * edgeFade(side - halfWidth)
+					if fade <= 0 then
 						return
 					end
-					t = 1 - side / halfWidth
+					t = math.max(0, 1 - side / halfWidth)
 				else
-					if distRoot > reach then
-						return
-					end
+					fade *= edgeFade(distRoot - reach)
 					local dist = math.sqrt(dx * dx + dz * dz)
-					if dist < 0.05 then
+					if fade <= 0 or dist < 0.05 then
 						return
 					end
 					local dot = (dx * look.X + dz * look.Z) / dist
-					if dot < coneCos then
+					-- Боковой край конуса: расстояние от точки до его образующей (внутри — отрицательное)
+					local beyond = math.acos(math.clamp(dot, -1, 1)) - coneAngle
+					fade *= edgeFade(if beyond < math.pi / 2 then dist * math.sin(beyond) else dist)
+					if fade <= 0 then
 						return
 					end
-					t = (dot - coneCos) / (1 - coneCos)
+					t = math.max(0, (dot - coneCos) / (1 - coneCos))
 				end
 
 				-- Сильнее в центре конуса (полосы) и ближе к соплу
 				local d = math.min(distRoot / range, 1)
-				local rate = rateMax * (config.EdgeMeltRatio + (1 - config.EdgeMeltRatio) * t) * (1 - 0.5 * d * d)
+				local rate = rateMax
+					* fade
+					* (config.EdgeMeltRatio + (1 - config.EdgeMeltRatio) * t)
+					* (1 - 0.5 * d * d)
 
 				local got = field:remove(i, math.min(rate, (freePortions - gained) * pv))
 				if got > 0 then

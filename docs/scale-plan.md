@@ -4,6 +4,14 @@
 
 > Снимок на 28.10.2026, текущее состояние описано в CLAUDE.md и `docs/`. Отметки «сделано 08.11» сверены с кодом `main` на 08.11.2026.
 
+> **Snapshot note, 2026-11-09** (checked against `main`). Statements below that no longer match the code:
+> - P0-5 "the «скоро!» placeholder buttons are still there": removed from the lobby HUD on 2026-11-02.
+> - P0-7 "module `ReplicatedStorage.Locale`": it is `ReplicatedStorage.Shared.Locale` (`src/shared`).
+> - P1-3 "the «СЛЕД. ПЕРК» bar is a placeholder": there is no perk bar in the code any more.
+> - P1-5 "Play again: not done, waiting for Oleg": done 2026-11-08 (GD-5, `MatchServer`, `MatchEndClient`).
+> - P3 "delete the disabled BackpackClient, MoneyClient, ProgressClient, TaskClient": none of them exist in `src/` now; the ServerStorage backups are still there (CLAUDE.md, Known cleanup).
+> - P3 "GameHudClient takes 900 from `Zones[1].Size`": the HUD reads the zone's `Total` value now.
+
 ## Коротко
 
 Ядро игры (убрал снег → рюкзак → продал → апгрейд) работает и сделано аккуратно: remotes проверяются, сохранение идёт через UpdateAsync с блокировкой сессии. Но для десятков тысяч онлайна сейчас не хватает трёх вещей:

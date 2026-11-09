@@ -12,11 +12,12 @@
 
 # Snow Cleaning Simulator
 
-A co-op snow-clearing simulator for Roblox (up to 4 players) with zones and player progression. Core loop: clear snow → fill the backpack → sell it for Cash at the snow melter (or push a pile onto a heating-main manhole) → buy tools and upgrades → clear more. A match ends when every zone of the lot is cleared, then the group returns to the lobby.
+A co-op snow-clearing simulator for Roblox (up to 4 players) with zones and player progression. Core loop: clear snow → fill the backpack → sell it for Cash at the snow melter (or push a pile onto a heating-main manhole) → buy tools and upgrades → clear more. A match ends when every zone of the lot is cleared; then each player chooses "Play again" (a new match together with the others who chose it) or the lobby.
 
 - `docs/systems.md` — game systems and non-obvious details of the code.
 - `docs/studio-world.md` — what is not in `src/`: the map, assets, graphics, Blender models.
-- `docs/scale-plan.md`, `docs/shop-plan.md` — plans, snapshot as of 2026-10-28.
+- `docs/scale-plan.md`, `docs/shop-plan.md` — plans from 2026-10-28, with dated notes on what is done since.
+- `docs/audit-2026-11-03.md` — code and Studio audit of 2026-11-03, with dated notes on what is done since.
 
 `[unverified]` means this cannot be confirmed from the code or in Studio.
 
@@ -45,7 +46,7 @@ What lives where:
 |---|---|---|---|
 | **shared** | Analytics, SaveSchema, SaveStore | Locale (+Strings), Shop (+Gui), Ui (interface look, icons) | ChatTagClient, LocaleClient, SnowfallClient |
 | **lobby** | LobbyServer, LobbyCashServer, LobbyRecordsServer, ShopServer, SlideRagdollServer, SnowballServer | Lobby/Maps, Lobby/Snowball, Lobby/Remotes | LobbyHudClient, LobbyMenuClient, LobbyRecordsClient, LobbyTruckClient, SlideRagdollClient, SnowballClient |
-| **house** | SnowGame/: BlowServer, SnowField, PileServer, ToolServer, ToolShopServer, MelterServer, UpgradeShopServer, LeaderstatsServer, PlayerData, MatchServer, ShopServer, AnalyticsHooks, OnboardingServer, FindServer | SnowGame/: Config, ZoneConfig, Finds, Remotes, ShovelSwing, ToolUse | FindClient, GameHudClient, GateSignClient, HideCoreGui, MatchEndClient, PassShowcaseClient, RewardLightsClient, SellPointerClient, ShovelChunksClient, SnowMeshClient, SnowParticles, ToolClient, ToolSfxClient, ToolShopClient, UpgradeShopClient |
+| **house** | SnowGame/: BlowServer, SnowField, PileServer, ToolServer, ToolShopServer, MelterServer, UpgradeShopServer, LeaderstatsServer, PlayerData, MatchServer, ShopServer, AnalyticsHooks, OnboardingServer, FindServer | SnowGame/: Config, ZoneConfig, Finds, Remotes, ShovelSwing, ToolUse, PileMound (pile mesh template) | FindClient, GameHudClient, GateSignClient, HideCoreGui, MatchEndClient, PassShowcaseClient, PileClient, RewardLightsClient, SellPointerClient, ShovelChunksClient, SnowMeshClient, SnowParticles, ToolClient, ToolSfxClient, ToolShopClient, UpgradeShopClient |
 
 **Robux shop** — two different server scripts and shared modules; this is not a duplicate:
 
@@ -94,7 +95,7 @@ Oleg creates a new product in the Creator Dashboard and sends the id; `Id = 0` m
 ## How to test purchases
 
 - **For Cash** (tools, upgrades, backpack): TestSave in House Map, Play, buy in the shed, in the journal or at the stall. Check `leaderstats.Cash` and the player attributes `OwnedTools`, `ToolUpgrades`, `BackpackUpgradeLevel`.
-- **For Robux:** TestSave in one place, Play, the shop window: the "Shop" button in the lobby, 🛒 or the B key in the match. The Roblox confirmation dialog is CoreGui and cannot be clicked through MCP; Oleg confirms the purchase. `[unverified]` Whether Robux are charged for a purchase in Studio: there are recent DevForum reports of real charges. So buy only the cheapest product and compare the balance before and after.
+- **For Robux:** TestSave in one place, Play, the shop window: the "Shop" button in the lobby, the shop button in the HUD or the B key in the match. The Roblox confirmation dialog is CoreGui and cannot be clicked through MCP; Oleg confirms the purchase. `[unverified]` Whether Robux are charged for a purchase in Studio: there are recent DevForum reports of real charges. So buy only the cheapest product and compare the balance before and after.
 - `[unverified]` As the game owner, Oleg counts as owning all passes, so a pass purchase cannot be tested on his account. Without a purchase, bonuses are tested with the player attributes `Pass_<Key>` (keys in `Shop.Passes`) and `BoostUntil`, and the workspace attribute `BlizzardUntil`.
 - `Blizzard` (`MatchOnly`) is sold only in the match. Other products in the lobby answer `NotProcessedYet` while a match server holds the data.
 - Teleports work in Studio since 2026-11-05 (only `TeleportAsync`, normal Play): the destination opens as a new test server in the same Play session, and MCP sees it as a Server/Client of the same Studio. Tested 2026-11-08 solo: match → lobby and match → new match. The destination ran the code from the open copy of the place (with Rojo changes not yet published); `TestSave` exists in the destination only if it is set in that place, and the new server refills the `test_` key (so carrying Cash over cannot be tested this way); `game.PrivateServerId` and `game.JobId` are empty, `PrivateServerOwnerId = 0`. `[unverified]` When the copy of the place is taken: an attribute set later in edit mode did not reach the destination. A group of several players and reserved servers can only be tested after publishing.
@@ -130,7 +131,7 @@ Versions are pinned in `rokit.toml`: Rojo 7.7.1, StyLua 2.6.0, Selene 0.32.0, lu
 
 - Main language English, second Russian (Oleg, 2026-10-28): the audience is tens of thousands online. The language is picked from `Player.LocaleId`.
 - Snow is a heightmap on the server and an EditableMesh on the client, not Parts. If there are no meshes, fallback snow in blocks.
-- In a match zones do not regenerate (`MATCH_MODE = true`) and open one after another. The match ends when all zones are cleared, then everyone returns to the lobby.
+- In a match zones do not regenerate (`MATCH_MODE = true`) and open one after another. The match ends when all zones are cleared, then each player chooses "Play again" or the lobby (GD-5, 2026-11-08).
 - The internal ids `Blower` and `Vacuum` were not changed when they were renamed to Snow Pusher (ru «Движок») and Snowblower (ru «Снегоуборщик»): old saves stay compatible.
 - Backpack and capacity are not saved. A purchase in the lobby writes straight into the save; if a match server holds it, the receipt waits (`NotProcessedYet`).
 - In a match the player list is hidden (Tab opens the journal, which lists all players), chat is on. First person is the built-in `LockFirstPerson`, without a custom camera script.
@@ -143,4 +144,4 @@ Found during the cleanup on 2026-10-31, not yet changed in the code.
 - `Config.luau`: `SnowCellFolder`, `CellSize`, `GridStep`, `ParticleLifetime` are unused.
 - `BlowServer`: nobody reads the zone attributes `DisplayName` and `Order` (nor the field `ZoneConfig.DisplayName` that exists for them); with `MATCH_MODE = true` `startRegen` is not called, and with it `RegenDelay`, `RegenDuration` are not needed.
 - Nobody reads the workspace attribute `BlizzardBy` (match `ShopServer`) or the string `Shop.BlizzardBy`.
-- Old copies in ServerStorage: House Map `_Backup_BeforeTools`, `_Candidates`, `_OldBaseplateTexture`, `_OldCollector`, `_OldSnowblower`, `_OldSnowmelter`, `_OldSunsetSky`, `_OldToolModels`, `_OldUpgradeShop`, `_OldHouse`, `_OldPineUnions`, `_OldFencePillars`, `_OldFenceCaps`, `_OldNeighbors`, `_OldLamps`; Lobby `_Candidates`, `_OldBaseplateTexture`, `_OldSky`.
+- Old copies in ServerStorage: House Map `_Backup_BeforeTools`, `_Candidates`, `_OldBaseplateTexture`, `_OldCollector`, `_OldSnowblower`, `_OldSnowmelter`, `_OldSunsetSky`, `_OldToolModels`, `_OldUpgradeShop`, `_OldHouse`, `_OldPineUnions`, `_OldFencePillars`, `_OldFenceCaps`, `_OldNeighbors`, `_OldLamps`, and since then `_ShovelCandidates`, `_OldShovel`; Lobby `_Candidates`, `_OldBaseplateTexture`, `_OldSky`, and since then `_OldLobby`, `_OldPlazaStone` (checked in Studio 2026-11-09).

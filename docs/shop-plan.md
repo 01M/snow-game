@@ -4,6 +4,8 @@
 
 > План от 28.10.2026. **На 08.11.2026 сделан весь:** набор утверждён, все 4 пасса и 5 товаров созданы, их id стоят в `src/shared/replicated/Shop/init.luau`, магазин работает в лобби и в матче. Текущее состояние описано в CLAUDE.md и `docs/systems.md`. Цены в Robux задаются в Creator Dashboard, в коде их нет: `[не проверено]`, что они совпадают с таблицами ниже.
 
+> **Snapshot note, 2026-11-09** (checked against `main`): the Cash packs in `Shop/init.luau` are 300 / 1,100 / 3,600, as in the table below. Still outdated below: the HUD already shows the Cash multiplier (x1 is hidden) instead of the "(x1.00)" stub, and the shop in the match is a separate window (HUD button or B), not a journal tab.
+
 ## Что продаётся
 
 **Геймпассы** (покупка навсегда):

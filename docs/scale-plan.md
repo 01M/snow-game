@@ -76,3 +76,5 @@
 Прочитал CLAUDE.md и overview.md (от 14.10, частично устарел). В Studio через MCP только читал: обработчики всех RemoteEvent в House Map и в лобби, MatchServer, HideCoreGui, SnowMeshClient; поиск по AnalyticsService, MarketplaceService и TouchEnabled ничего не нашёл. Play mode не запускал, код не менял.
 
 Не протестировано: всё про производительность и мобилки — это оценки по коду, а не замеры. Доля мобильных игроков, англоязычная аудитория и сезонность — из общих знаний о Roblox, не из данных этой игры.
+
+- 2026-11-09: rebirth was replaced by another design: Cash, tools and upgrades live one match, permanent progress is Crystals (daily reward, first finds, cleared zones, finished matches) spent on five permanent stats in the lobby. The records board ranks the most snow cut in one match. Details: `docs/systems.md`.

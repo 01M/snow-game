@@ -12,7 +12,7 @@
 
 # Snow Cleaning Simulator
 
-A co-op snow-clearing simulator for Roblox (up to 4 players) with zones and player progression. Core loop: clear snow → fill the backpack → sell it for Cash at the snow melter (or push a pile onto a heating-main manhole) → buy tools and upgrades → clear more. A match ends when every zone of the lot is cleared; then each player chooses "Play again" (a new match together with the others who chose it) or the lobby.
+A co-op snow-clearing simulator for Roblox (up to 4 players) with zones and player progression. Core loop: clear snow → fill the backpack → sell it for Cash at the snow melter (or push a pile onto a heating-main manhole) → buy tools and upgrades → clear more. Cash, tools and upgrades live one match; permanent progress is Crystals (daily reward in the lobby, first finds, cleared zones, finished matches) spent on permanent stats in the lobby. A match ends when every zone of the lot is cleared; then each player chooses "Play again" (a new match together with the others who chose it) or the lobby.
 
 - `docs/systems.md` — game systems and non-obvious details of the code.
 - `docs/studio-world.md` — what is not in `src/`: the map, assets, graphics, Blender models.
@@ -46,7 +46,7 @@ What lives where:
 |---|---|---|---|
 | **shared** | Analytics, SaveSchema, SaveStore | Crystals (permanent stats config), Daily (daily reward config and day math), Locale (+Strings), Shop (+Gui), Ui (interface look, icons) | ChatTagClient, LocaleClient, SnowfallClient |
 | **lobby** | LobbyServer, LobbyCashServer, LobbyRecordsServer, DailyServer, StatServer, ShopServer, SlideRagdollServer, SnowballServer | Lobby/Maps, Lobby/Snowball, Lobby/DailyGui, Lobby/StatsGui, Lobby/Remotes | LobbyHudClient, LobbyMenuClient, LobbyRecordsClient, LobbyTruckClient, SlideRagdollClient, SnowballClient |
-| **house** | SnowGame/: BlowServer, SnowField, PileServer, ToolServer, ToolShopServer, MelterServer, UpgradeShopServer, LeaderstatsServer, PlayerData, MatchServer, ShopServer, AnalyticsHooks, OnboardingServer, FindServer | SnowGame/: Config, ZoneConfig, Finds, Remotes, ShovelSwing, ToolUse, PileMound (pile mesh template) | FindClient, GameHudClient, GateSignClient, HideCoreGui, MatchEndClient, PassShowcaseClient, PileClient, RewardLightsClient, SellPointerClient, ShovelChunksClient, SnowMeshClient, SnowParticles, ToolClient, ToolSfxClient, ToolShopClient, UpgradeShopClient |
+| **house** | SnowGame/: BlowServer, SnowField, PileServer, ToolServer, ToolShopServer, MelterServer, UpgradeShopServer, LeaderstatsServer, PlayerData, MatchCache, MatchServer, ShopServer, AnalyticsHooks, OnboardingServer, FindServer | SnowGame/: Config, ZoneConfig, Finds, Remotes, ShovelSwing, ToolUse, PileMound (pile mesh template) | FindClient, GameHudClient, GateSignClient, HideCoreGui, MatchEndClient, PassShowcaseClient, PileClient, RewardLightsClient, SellPointerClient, ShovelChunksClient, SnowMeshClient, SnowParticles, ToolClient, ToolSfxClient, ToolShopClient, UpgradeShopClient |
 
 **Robux shop** — two different server scripts and shared modules; this is not a duplicate:
 
@@ -69,12 +69,13 @@ Oleg creates a new product in the Creator Dashboard and sends the id; `Id = 0` m
 - git push is done by Oleg; threads only commit locally.
 - Code only reaches the open place; it reaches the game after Oleg publishes. `*.rbxl` and `backups/` (copies of the places) are not in git.
 - **Publishing when `SaveSchema.CURRENT` changes:** House Map first, then Lobby, and when publishing choose to restart outdated servers, so that old servers do not run next to new ones. Otherwise the new lobby bumps the save version and an old match will kick the player (`Kick.SaveTooNew`).
+- **Publishing the B1 change (per-match Cash, 2026-11-09):** Lobby first, then House Map; an old Lobby would sell Cash packs that the new House Map treats as match-only. No schema step was involved.
 - `[unverified]` `rojo serve` 7.7.1 sometimes crashes when files and folders in `src/` are deleted (`change_processor.rs:179`). Fixed by restarting and reconnecting; better delete folders while the server is stopped.
 - `[unverified]` If `syncback` is run again, it adds StarterPlayer properties and empty `SerializedOverrides` to the projects; these must be removed.
 
 ## Saves and TestSave
 
-`ServerScriptService.Shared.SaveStore` is the only place where the store and key are defined. It is used by `PlayerData` (match, with a session lock), `LobbyCashServer` (read only), the lobby `ShopServer` (writes purchases), `DailyServer` (writes Crystals and Daily) and `StatServer` (writes Crystals and Stats). Who writes which field: `docs/systems.md`, "Save and lock".
+`ServerScriptService.Shared.SaveStore` is the only place where the store and key are defined. It is used by `PlayerData` (match, with a session lock), `LobbyCashServer` (read only), the lobby `ShopServer` (writes purchases), `DailyServer` (writes Crystals and Daily) , `StatServer` (writes Crystals and Stats) and `MatchServer` (the records store `SaveStore.records`). Who writes which field: `docs/systems.md`, "Save and lock".
 
 | Run | Store | Key |
 |---|---|---|
@@ -142,7 +143,7 @@ Versions are pinned in `rokit.toml`: Rojo 7.7.1, StyLua 2.6.0, Selene 0.32.0, lu
 - Snow is a heightmap on the server and an EditableMesh on the client, not Parts. If there are no meshes, fallback snow in blocks.
 - In a match zones do not regenerate (`MATCH_MODE = true`) and open one after another. The match ends when all zones are cleared, then each player chooses "Play again" or the lobby (GD-5, 2026-11-08).
 - The internal ids `Blower` and `Vacuum` were not changed when they were renamed to Snow Pusher (ru «Движок») and Snowblower (ru «Снегоуборщик»): old saves stay compatible.
-- Backpack and capacity are not saved. A purchase in the lobby writes straight into the save; if a match server holds it, the receipt waits (`NotProcessedYet`).
+- Cash, tools, tool upgrades and the backpack live one match (B1, Oleg 2026-11-09): every join starts with Cash 0 and the Hand; `MatchCache` keeps them only for a rejoin to the same server. Old save fields `Cash`, `UpgradeLevel`, `OwnedTools`, `ToolUpgrades` stay untouched. Cash packs are match-only. A purchase in the lobby writes straight into the save; if a match server holds it, the receipt waits (`NotProcessedYet`).
 - In a match the player list is hidden (Tab opens the journal, which lists all players), chat is on. First person is the built-in `LockFirstPerson`, without a custom camera script.
 - Don't use skyboxes from the Toolbox: `[unverified]` they contained third-party scripts.
 

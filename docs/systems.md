@@ -4,7 +4,7 @@ Numbers and lists are deliberately not repeated here: the source of truth is `Co
 
 ## Match loop
 
-1. `LeaderstatsServer` loads the player through `PlayerData`, creates `leaderstats` (Cash, Backpack), `ToolServer` gives out the tools.
+1. `LeaderstatsServer` loads the player through `PlayerData`, creates `leaderstats` (Cash, Backpack), `ToolServer` gives out the tools. Since B1 (2026-11-09) every join starts with Cash 0, backpack level 0 and the Hand only: Cash, tools, upgrades and the backpack live one match (see "Per-match progress").
 2. The player clears snow: `ToolClient` → `BlowState` or `ToolClick` → `BlowServer.cutSnow`. The snow goes into the backpack or, with the Snow Pusher, into a pile.
 3. The backpack is sold in `Snowmelter.SellZone` (`MelterServer`); a pile on a manhole pays Cash right away (`PileServer`).
 4. Cash is spent on tools, their upgrades and the backpack.
@@ -97,10 +97,10 @@ Numbers and lists are deliberately not repeated here: the source of truth is `Co
 - Numbers and the list — `Finds.luau`. At the start of a match the server picks a random snow point in the first field of the zone for each find. The server decides everything: `BlowServer.cutSnow` reports every cut point (`onCut`), and when a zone is cleared out — `claimZone`.
 - **Icicle:** sticks out of the snow; when the point under it is cut → portions go straight into the backpack, even over capacity. The Snow Pusher also picks it up into the backpack.
 - **Golden snowflake:** a chance per match. It sparkles when snow nearby starts being cut; when its point is cut → Cash with the shop multiplier.
-- **Lost item:** when its point is cut → the item appears with a badge and a prompt. The first player picks it up; a new one opens a slot in the collection, a repeat gives a little Cash.
+- **Lost item:** when its point is cut → the item appears with a badge and a prompt. The first player picks it up; a new one opens a slot in the collection and gives Crystals by its rarity (once ever), a repeat gives a little Cash. Which items lie in a match is picked by rarity weight (`Finds.Rarity`, `Finds.pickLost`).
 - **Snowman gnome:** one random place from `GnomeSpots`, stands in the open, even behind locked gates. Each player finds it on their own, once per match.
-- **Collection:** player attribute `Collection` ("Id,Id"), in the save the field `Collection`. For the whole set, one `SetCash` once. The journal tab shows all slots.
-- **Testing in Studio:** the workspace attribute `DebugFinds = true` before Play puts the golden snowflake and the items in the first zone.
+- **Collection:** player attribute `Collection` ("Id,Id"), in the save the field `Collection`. For the whole set, `SetCrystals` once (the old 1 000 Cash is gone). The journal tab shows all slots. First finds and the set are saved right away (`PlayerData.checkpoint`).
+- **Testing in Studio:** the workspace attribute `DebugFinds = true` before Play puts the golden snowflake and the items in the first zone. The find prompts do not fire from MCP (`InputHoldBegin` or a key press, 2026-11-09), so rewards are tested with the player attribute `DebugCollect` (CLAUDE.md).
 
 ## Reward lights (`RewardLightsClient`)
 
@@ -124,22 +124,23 @@ Numbers and lists are deliberately not repeated here: the source of truth is `Co
 
 ## Save and lock (`PlayerData`)
 
-- Data: `SchemaVersion`, `Cash`, `UpgradeLevel`, `OwnedTools`, `ToolUpgrades`, `Purchases` (last 50 receipts), `BoostUntil`, `OnboardingStep`, `Collection` (find ids), `Crystals`, `Daily = {First, Claimed, Total}`, `Stats = {[Id] = level}`, `Session = {Job, Time}`.
+- Data: `SchemaVersion`, `Purchases` (last 50 receipts), `BoostUntil`, `OnboardingStep`, `Collection` (find ids), `Crystals`, `Daily = {First, Claimed, Total}`, `Stats = {[Id] = level}`, `Session = {Job, Time}`. Old saves still hold `Cash`, `UpgradeLevel`, `OwnedTools`, `ToolUpgrades`: since B1 nobody reads or writes them.
 - Who writes which field (one save key, `Shared.SaveStore`). The match save writes only the fields it knows onto the stored table, so fields of the lobby survive it (tested 2026-11-09: an autosave kept `Crystals` and `Daily`).
 
 | Field | Written by | When |
 |---|---|---|
-| `Cash`, `UpgradeLevel`, `OwnedTools`, `ToolUpgrades`, `OnboardingStep`, `Collection` | House `PlayerData` | autosave, leaving, teleport |
+| `OnboardingStep`, `Collection` | House `PlayerData` | autosave, leaving, teleport, checkpoints |
 | `Session` | House `PlayerData` | load and autosave; cleared on release |
-| `Purchases`, `BoostUntil` (and `Cash` from packs) | House `PlayerData.grantReceipt` or Lobby `ShopServer` | the lobby only without a fresh `Session` |
-| `Crystals` | Lobby `DailyServer` (rewards) and `StatServer` (spending) | only without a fresh `Session`; House never writes them |
+| `Purchases`, `BoostUntil` | House `PlayerData.grantReceipt` or Lobby `ShopServer` | the lobby only without a fresh `Session`; Cash packs are match-only |
+| `Crystals` | House `PlayerData` while it holds the `Session` (match rewards, written as a delta), otherwise Lobby `DailyServer` (rewards) and `StatServer` (spending) | the lobby only without a fresh `Session` |
 | `Daily` | Lobby `DailyServer` only | only without a fresh `Session`; House never writes it |
 | `Stats` | Lobby `StatServer` only | only without a fresh `Session`; House only reads them into `Stat_<Id>` |
 | `SchemaVersion` | everyone, through `SaveSchema.upgrade` | every write |
 
 - Schema version (`Shared.SaveSchema`, currently 3; no field means 0; step 2 added `Crystals` and `Daily`, step 3 an empty `Stats` table, both with their own frozen code; levels are validated when read and when bought, not in the migration): loading in the match, saving, and a purchase in the lobby bring the save to the current version inside `UpdateAsync`. A save newer than this game or a failed step → the write is cancelled (the function returns `nil`); warn and kick come after `UpdateAsync`, because the function may run several times. The match kicks with `Kick.SaveTooNew`, the lobby answers the receipt with `NotProcessedYet`. `LobbyCashServer` only reads and does not check the version.
 - Only the server that loaded the player may write. Someone else's fresh lock (younger than 120 s) → wait; the 6th attempt, roughly after 15 s, takes it by force. If loading fails — Kick. In Studio without API access the game runs without saving.
-- Autosave every 60 s. `BindToClose` also waits for saves started from `PlayerRemoving` (`waitForSaves(25)`).
+- Autosave every 60 s. `BindToClose` also waits for saves started from `PlayerRemoving` (`waitForSaves(25)`). A save that releases the lock (leaving, teleport) tries 6 times instead of 3.
+- **Crystals in the match (2026-11-09):** `PlayerData.addCrystals(player, amount, reason)` does nothing until the save is loaded and the lock is held; it applies Crystal Sense, raises the attributes `Crystals` and `MatchCrystals` and logs a `Gameplay` source. The not-yet-saved part is `Pending`: each save sends `sent = Pending − InFlight` and writes `old.Crystals + sent`, and after success subtracts exactly `sent`. So a lobby reward written in between and rewards that arrive during a save both survive, and overlapping saves (autosave + checkpoint) never send the same amount twice (tested: three overlapping rewards 7, 4, 2 → +13 in the key). `PlayerData.checkpoint(player)` saves at once: after a first find, a cleared zone and the end of the match. Writes to one key a few seconds apart are queued by Roblox ("request was added to queue"), not lost.
 - `MatchServer` saves the player with the lock released once, right before their teleport: on "Lobby" (in the match or in the choice window) immediately, the others at the end of the 20-second choice window. This way the save also gets what was bought or found during the window, the next server loads the player on the first attempt, and `PlayerRemoving` does not save a second time (`isLoaded` = false). After the lock is released, changes are no longer saved (important if the teleport fails). The Blizzard (`MatchOnly`) is not granted after the match ends: the receipt waits for the next match.
 
 ## Robux shop
@@ -148,6 +149,7 @@ Numbers and lists are deliberately not repeated here: the source of truth is `Co
 - Pass ownership → player attribute `Pass_<Key>`. Personal boost → attribute `BoostUntil` (`os.time`, saved). "Blizzard" → workspace `BlizzardUntil` (`GetServerTimeNow`) and `BlizzardBy`.
 - `Shop.cashMultiplier` multiplies the bonuses; it is applied by `MelterServer`, `PileServer`, `MatchServer`. Capacity: `Config.getBackpackCapacity(level, Shop.backpackMultiplier(player))`. Auto-sell is in `MelterServer`: a full backpack sells anywhere. VIP — `ChatTagClient`, a chat prefix.
 - **Match:** `ProcessReceipt` → `PlayerData.grantReceipt` (receipt id in `Purchases`, saved right away, a repeat does not grant twice). A Cash pack sets the attribute `IapCash` so that analytics records the income as IAP.
+- **Cash packs** (CashS/M/L) are `MatchOnly` since B1: Cash lives one match, so they are sold only in a match and their texts say "for this match only". A pack receipt in the lobby answers `NotProcessedYet` and is granted in the next match.
 - **Lobby:** `UpdateAsync` straight in the save, without a session lock. A fresh `Session` or `MatchOnly` → `NotProcessedYet`, and Roblox retries the receipt later. `LobbyCashServer` shows `Cash` and `BoostUntil` through attributes.
 - Window: on PC in the match the B key, because the mouse is locked in `LockFirstPerson`. A Modal button in the window frees it.
 - `[unverified]` Prices are set in the Creator Dashboard; the window gets them through `GetProductInfo`.
@@ -166,7 +168,7 @@ Numbers and lists are deliberately not repeated here: the source of truth is `Co
 - Funnel (`Analytics.ONBOARDING`): in the lobby steps 1–3 are set by `LobbyServer`, in the match 4–9 by `AnalyticsHooks`.
 - `AnalyticsHooks` watches `leaderstats.Cash` and attributes and determines the source. Income: `CashPack`, `Manhole`, `MatchEndSale`, `SnowMelter`. Spending: `Tool:<Id>`, `ToolUpgrade:<Tool>.<Upgrade>`, `Backpack`. **A new source or spend of Cash must be added there.**
 - Custom events: `QuickPlay`, `MatchDuration`, `BuyPass_<Key>`, `BuyProduct_<Key>`, `DailyClaim` (value = the personal day).
-- Crystals: source `TimedReward` with sku `DailyBase` or `DailyMilestone` (lobby `DailyServer`); sink `Shop` with sku `Stat:<Id>` (lobby `StatServer`).
+- Crystals: source `TimedReward` with sku `DailyBase` or `DailyMilestone` (lobby `DailyServer`); source `Gameplay` with sku `FirstFind:<Id>`, `CollectionSet`, `ZoneClear:<Zone>`, `MatchFinish` (match `PlayerData.addCrystals`); sink `Shop` with sku `Stat:<Id>` (lobby `StatServer`).
 
 ## Interface look (`Ui`)
 
@@ -178,7 +180,7 @@ Numbers and lists are deliberately not repeated here: the source of truth is `Co
 
 - `PlayerGui.GameHud` in three groups, each with its own `UIScale` (`Ui.autoScale`, 1280x720 layout, scale 0.6–1.2). Top left, under the Roblox menu: the task card (the current step of the newcomer chain, see below). Centre: the backpack with a bar (full — amber and "take it to the melter"), the zone and timer labels (`MatchStartTime`, `MatchEndTime`), a pop-up "+N" when Cash grows. Right: Cash with the multiplier (x1 hidden), the journal (Tab) and shop (B) buttons; key labels are visible only with a keyboard. The bottom of the screen is free for the stick, jump and the "Clear" button on phones.
 - `PlayerGui.JournalGui` (Tab): the "Snow Service" wooden clipboard with a paper sheet, a clip and snow on top; bookmark tabs Journal, Upgrades, Collection, Tips. Upgrade and find icons come from the `Ui` atlas (`Finds.Items[].Icon` is the icon name). While the journal is open, the HUD and the chat window are hidden, a Modal button frees the mouse.
-- Player attributes per match: `SnowCollected`, `SnowSold`, `UpgradesBought`, `MatchCashEarned` (Cash for snow; purchases don't reduce it).
+- Player attributes per match: `SnowCollected`, `SnowSold`, `UpgradesBought`, `MatchCashEarned` (Cash for snow; purchases don't reduce it), `SnowCut` (portions cut, for zone rewards and records), `MatchCrystals` (Crystals earned), `CrystalCarry` (Crystal Sense fraction). All of them are in `MatchCache.ATTRIBUTES`.
 - `MatchEndClient` — the results screen and countdown. `HideCoreGui` turns off the PlayerList.
 
 ## Lobby
@@ -189,17 +191,36 @@ Numbers and lists are deliberately not repeated here: the source of truth is `Co
 - "Friends only": `IsFriendsWith` in the background with a cache; strangers are pushed out.
 - `quickPlay` (the PLAY button, 1 s cooldown): puts the player on the pad of a group that is filling up — `starting` first, then `setup`, among equals the one with more players, then the one with the earlier start. If there is none, takes an empty one and starts the countdown at once. Not on a pad within 2 s → toast `Lobby.Hud.NoFreePads`.
 - Signs: `Sign.BoardGui.Board.Strip.Top` and `.Main`, above the pad `Pad.PadGui.Count` and `.Status`. The texts are set by `LobbyServer`; **do not rename these objects or the `QueuePads` folder.**
-- `LobbyHudClient`: Cash and Crystals, PLAY, shop, invite, daily rewards (red dot while `DailyReady`), permanent upgrades, music (`SoundService.LobbyMusic`, muted locally; with an empty `SoundId` there is no button). The placeholder buttons (Clans, Classes, Stats, Feedback, Updates) were removed on 2026-11-02: add a new button together with its window.
+- `LobbyHudClient`: Crystals (no Cash since B1), PLAY, shop, invite, daily rewards (red dot while `DailyReady`), permanent upgrades, music (`SoundService.LobbyMusic`, muted locally; with an empty `SoundId` there is no button). The placeholder buttons (Clans, Classes, Stats, Feedback, Updates) were removed on 2026-11-02: add a new button together with its window.
 - `LobbyMenuClient`: the "Game settings" and "Map choice" panels for the host; jump = leave the pad. The map card takes `Image` and `Icon` from `Maps` if they are set.
 - The map name is the key `Map.<Id>`.
 - `LobbyTruckClient`: on `QueueState` the truck's beacons blink (`setup` slower, `starting` and `teleporting` faster), during the countdown the meshes shake and there is smoke. Display only.
-- `LobbyRecordsServer`: on entering the lobby and when the `Cash` attribute changes, writes the player's Cash to the OrderedDataStore `TopCash_v1` (in Studio `TopCash_Studio`, does not write with TestSave), and once per 60 s reads the top 8 into the `TopPlayers` attribute on `ReplicatedStorage.Lobby`. `PlayerData` is not changed. The table shows the current Cash, not the all-time earnings: there is no other counter in the save. A player gets into it only by entering the lobby.
+- Records board: most snow cut (`SnowCut`) in one match. The OrderedDataStore is `SaveStore.records` (`TopMatch_v1`, in Studio `TopMatch_Studio`). House `MatchServer` writes it at the end of a match with `UpdateAsync`, only when the new value beats the stored one, and not under TestSave; `LobbyRecordsServer` reads the top 8 once per 60 s into the `TopPlayers` attribute on `ReplicatedStorage.Lobby`, `LobbyRecordsClient` draws it under the title `Lobby.Records.Title`. Paid multipliers do not affect it. The old `TopCash_v1` is no longer read or written.
 - Ragdoll on the slide: `SlideRagdollServer` starts it when the character's root is inside a part with the `SlideStart` tag, and ends it when the character has rolled to a stop (slower than 5 studs/s for half a second, but not earlier than 1 s), and in any case after 6 s. It turns off the animation joints (`AnimationConstraint` of the new rig, `Motor6D` of the old one) and turns on limb collision. The character attribute `Ragdoll` is read by `SlideRagdollClient`: the Humanoid state and the tumble are controlled by the character's owner.
 - Snowballs: `SnowballClient` (LMB on the world, a button on touch screens) sends only the direction to `ThrowSnowball`. `SnowballServer` checks its type and rate, computes the flight and the hit with a ray itself, `SnowballFx` shows them to everyone. No damage and no knockback, so nobody can knock a player off a pad. Numbers in `Lobby/Snowball.luau`.
 
+## Per-match progress and Crystals in a match (B1 + part C, 2026-11-09)
+
+- **Cash lives one match.** Every join into a match starts with Cash 0, backpack level 0 and the Hand only; tools, tool upgrades and the backpack are bought again each match. Permanent progress is only Crystals and the stats bought with them. Onboarding steps stay saved, their rewards are match Cash.
+- **Rejoin (`MatchCache`).** A player who leaves while the match is running is stored by UserId (Cash, bought tools, upgrades and the attributes in `MatchCache.ATTRIBUTES`); joining the same server again restores it before `leaderstats` appear, so `AnalyticsHooks` does not log the restore as income. Cleared when `MatchState` becomes `finished` and on `BindToClose`. `[unverified]` whether a disconnected player can get back into the same reserved server at all.
+- **Studio:** `StartCash` sets Cash on a fresh join; `DebugRejoin` runs the store → reset → restore path (a real rejoin cannot be done in a Studio Play).
+- **Crystal sources in a match** (numbers in `Shared.Crystals.Match` and `Finds.Rarity`), all through `PlayerData.addCrystals` and multiplied by Crystal Sense:
+
+| Source | Crystals | When |
+|---|---|---|
+| First find of an item | Common 5, Uncommon 10, Rare 25, Gnome 5 | once per item, ever |
+| Full collection | 50 (`SetCrystals`) | once, ever |
+| Zone cleared | 3 | to every player who cut 20+ portions since that zone opened |
+| Match finished | 15 | to every player who cut 20+ portions in the match |
+
+- **Work = portions cut** (`SnowCut`, `BlowServer.addCut`): snow cut into the backpack or into a Snow Pusher pile; snow taken back out of a pile is not counted again, icicles are not counted. When a zone opens, `BlowServer.snapshotWork` stores everyone's `SnowCut`; a player who joins later counts from 0.
+- **Notices:** the find popup (`FindClient`) shows "+N Crystals" for a first find, the collection, a cleared zone (`ZoneCrystals`) and, 2.5 s later, the finished match (`MatchCrystals`). The match-end card shows `MatchCrystals`.
+- **Studio tests:** `DebugCollect` (a find through the real `collect()`), `DebugFinishZone` (finish an active zone at once), `SnowCut` set from the Server context, `TestSaveStats` for Crystal Sense (CLAUDE.md).
+- **Publishing this change: Lobby first, then House Map.** An old Lobby would still sell Cash packs that the new House Map treats as match-only. There is no schema step, so no `SaveTooNew` kicks either way. Until House Map is published, matches pay no Crystals and the records board stays empty.
+
 ## Daily reward (`DailyServer`, `Lobby.DailyGui`, 2026-11-09)
 
-- **Crystals** are the persistent currency (Cash will later become per-match). For now the only source is the daily reward in the lobby; they are spent on permanent upgrades (next section).
+- **Crystals** are the persistent currency (Cash will later become per-match). Sources: the daily reward in the lobby and rewards in a match (next sections); they are spent on permanent upgrades.
 - **Model** (`Shared.Daily`, all numbers in `Daily.Config`): a personal day counter. Day 1 is the UTC day of the first claim (`Daily.First` = `os.time() // 86400`), day n = today − `First` + 1. One claim per UTC day, by server `os.time()` only. Days 1, 8, 15… (every 7th) give `MilestoneReward` 100, other days `BaseReward` 25. There is no streak reset: a missed day only stays unclaimed. `Daily.Claimed` keeps the claimed personal days of the last 14 days, enough for the window.
 - **Claim:** the client calls the RemoteFunction `Lobby.Remotes.ClaimDaily` without arguments (one at a time per player, 1 s cooldown). `DailyServer` writes like the lobby `ShopServer`: `SaveStore.prepare`, `UpdateAsync` with `SaveSchema.upgrade` inside, no yields in the function. A fresh `Session` (a match server holds the data) → `Busy`; today already in `Claimed` → `Already`, so a double click or a second server never pays twice. Answers: `Ok` (with `day` and `reward`), `Already`, `Busy`, `Unavailable`, `NotYet` (only with a negative day shift).
 - **Attributes:** `LobbyCashServer` reads `Crystals`, `DailyFirst` (0 = never claimed) and `DailyClaimed` (`"1,2,4"`) on entry; `DailyServer` sets the same after a claim and computes `DailyDay` and `DailyReady` from them (no DataStore read) on entry, after a claim, at every UTC midnight and when `DebugDayOffset` changes.
@@ -209,7 +230,7 @@ Numbers and lists are deliberately not repeated here: the source of truth is `Co
 
 ## Permanent upgrades (`StatServer`, `Lobby.StatsGui`, 2026-11-09)
 
-- Four stats bought with Crystals, 5 levels each, no random rolls. All numbers are in `Shared.Crystals` (`Crystals.Stats`, `BASE_WALK_SPEED`); names and texts are `Stat.<Id>.Name/.Desc/.Effect` in Locale.
+- Five stats bought with Crystals, 5 levels each, no random rolls. All numbers are in `Shared.Crystals` (`Crystals.Stats`, `BASE_WALK_SPEED`); names and texts are `Stat.<Id>.Name/.Desc/.Effect` in Locale.
 
 | Stat (`Id`) | Per level | At level 5 | Prices, Crystals | Where it applies (match) |
 |---|---|---|---|---|
@@ -217,6 +238,7 @@ Numbers and lists are deliberately not repeated here: the source of truth is `Co
 | Snow Boots (`SnowBoots`) | +1 WalkSpeed | 16 → 21 | 10 / 25 / 45 / 70 / 100 | `LeaderstatsServer` sets `Humanoid.WalkSpeed` on every spawn |
 | Strong Arms (`StrongArms`) | +5% cut speed, all tools | +25% | 10 / 25 / 45 / 70 / 100 | `Config.getToolStats(tool, levels, cutMultiplier)`: `MeltRate`, `ClickRate` and `Speed` (PileTake); `BlowServer` passes it |
 | Tip Jar (`TipJar`) | +10% Cash | +50% | 20 / 45 / 75 / 110 / 150 | `Shop.cashMultiplier`, multiplied with x2 Cash, VIP, boost and Blizzard (also shown in the match HUD) |
+| Crystal Sense (`CrystalSense`) | +10% Crystals | +50% | 20 / 45 / 75 / 110 / 150 | `PlayerData.addCrystals`: every Crystal reward in a match (not the daily); the fraction is kept in `CrystalCarry` |
 
 - **Buying (lobby only):** the client calls the RemoteFunction `Lobby.Remotes.BuyStat(statId, expectedLevel)` with the level it wants to buy. `StatServer` buys only if the stored level is `expectedLevel − 1`, below the maximum, and the Crystals cover the price from the server config. The debit and the new level are one `UpdateAsync` (same pattern as the daily claim: schema upgrade inside, fresh `Session` → `Busy`, per-player busy flag, 0.5 s cooldown). Answers: `Ok`, `AlreadyOwned` (level mismatch, also a repeated click), `NotEnough`, `Max`, `Busy`, `Unavailable`. After the write it sets `Crystals` and `Stat_<Id>`.
 - **Attributes:** `Stat_<Id>` (level 0–5). In the lobby `LobbyCashServer` and `StatServer` set them; in the match `PlayerData.load` reads `Stats` (cleaned by `Crystals.cleanStats`: unknown ids dropped, levels clamped) and `LeaderstatsServer` sets them. The match save never writes `Stats` (tested 2026-11-09).

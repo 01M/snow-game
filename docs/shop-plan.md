@@ -52,3 +52,5 @@
 - Интерфейс: кнопка «Магазин» в лобби откроет окно с пассами и товарами (сейчас это заглушка «скоро!»), а в журнале матча появится вкладка «Магазин».
 - Аналитика: покупки за Robux пойдут в экономику как IAP.
 - Проверка: как проверять покупки — в CLAUDE.md («Как проверять покупки»). Прежнее «в Studio покупки бесплатные» не подтверждено: `[не проверено]`, на DevForum есть сообщения о реальных списаниях.
+
+- 2026-11-09 (B1): Cash lives one match. The Cash packs CashS/M/L are `MatchOnly` now (sold only in a match, texts say "for this match only"); Crystal packs are not designed yet. Details: `docs/systems.md`, "Per-match progress and Crystals in a match".

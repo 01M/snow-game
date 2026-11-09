@@ -3,6 +3,7 @@
 -- Cash и уровень апгрейда грузятся/сохраняются через PlayerData; Backpack не сохраняется.
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
 
 local snowGame = ReplicatedStorage:WaitForChild("SnowGame")
 local config = require(snowGame:WaitForChild("Config"))
@@ -43,6 +44,21 @@ local function onPlayerAdded(player: Player)
 	backpack.Value = 0
 	backpack.Parent = leaderstats
 
+	-- Crystals: баланс из сохранения, награды матча добавляет PlayerData.addCrystals
+	player:SetAttribute("Crystals", data.Crystals or 0)
+	player:SetAttribute("MatchCrystals", 0)
+	-- Studio: атрибут игрока DebugGiveCrystals = N начисляет N Crystals через PlayerData.addCrystals и сохраняет
+	-- (код из Command Bar/MCP получает свою копию модулей, поэтому напрямую addCrystals оттуда не проверить)
+	if RunService:IsStudio() then
+		player:GetAttributeChangedSignal("DebugGiveCrystals"):Connect(function()
+			local n = player:GetAttribute("DebugGiveCrystals")
+			if typeof(n) == "number" and n > 0 then
+				player:SetAttribute("DebugGiveCrystals", nil)
+				PlayerData.addCrystals(player, n, "Debug")
+				PlayerData.checkpoint(player)
+			end
+		end)
+	end
 	-- Постоянные статы за Crystals (только чтение, покупаются в лобби): до вместимости, она учитывает Deep Pockets
 	local stats = data.Stats or {}
 	for _, stat in Crystals.Stats do

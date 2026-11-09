@@ -16,9 +16,11 @@ local SaveSchema = require(ServerScriptService:WaitForChild("Shared"):WaitForChi
 local ToolServer = require(script.Parent:WaitForChild("ToolServer"))
 local Finds = require(game:GetService("ReplicatedStorage"):WaitForChild("SnowGame"):WaitForChild("Finds"))
 local Crystals = require(game:GetService("ReplicatedStorage"):WaitForChild("Shared"):WaitForChild("Crystals"))
+local Analytics = require(ServerScriptService:WaitForChild("Shared"):WaitForChild("Analytics"))
 
 local LOAD_ATTEMPTS = 6 -- последняя попытка забирает блокировку силой
 local SAVE_ATTEMPTS = 3
+local FINAL_SAVE_ATTEMPTS = 6 -- сохранение со снятием блокировки (выход, телепорт): после него данных уже нет
 local RETRY_WAIT = 3
 
 local store = SaveStore.store
@@ -154,6 +156,10 @@ function PlayerData.load(player)
 				Collection = sanitizeCollection(result.Collection),
 				-- только чтение: Stats пишет лобби (StatServer), saveImpl их не трогает
 				Stats = Crystals.cleanStats(result.Stats),
+				-- Crystals: баланс для показа и ещё не сохранённая прибавка (сохранение добавляет её к сохранённому)
+				Crystals = toCount(result.Crystals),
+				Pending = 0,
+				InFlight = 0,
 			}
 			loaded[player] = data
 			released[player] = nil
@@ -166,6 +172,7 @@ function PlayerData.load(player)
 				OnboardingStep = data.OnboardingStep,
 				Collection = data.Collection,
 				Stats = data.Stats,
+				Crystals = data.Crystals,
 			}
 		end
 		if not ok and RunService:IsStudio() and string.find(tostring(result), "403") then
@@ -233,7 +240,15 @@ saveImpl = function(player, release)
 		released[player] = true
 	end
 	local key = SaveStore.key(player)
-	for attempt = 1, SAVE_ATTEMPTS do
+	-- Crystals пишем прибавкой к сохранённому: так награда лобби, записанная в промежутке, не затирается.
+	-- sent — прибавка на момент начала; награды, пришедшие во время сохранения, остаются в Pending.
+	-- InFlight — уже отправленное другими сохранениями этого игрока (автосейв и checkpoint могут идти вместе):
+	-- каждое сохранение отправляет только своё, поэтому прибавка не попадёт в сохранение дважды
+	local sent = data.Pending - data.InFlight
+	data.InFlight += sent
+	local storedCrystals = data.Crystals
+	local attempts = if release then FINAL_SAVE_ATTEMPTS else SAVE_ATTEMPTS
+	for attempt = 1, attempts do
 		local owned = true
 		local schemaStatus: SaveSchema.Status = "ok"
 		local ok, err = pcall(function()
@@ -258,11 +273,25 @@ saveImpl = function(player, release)
 				old.BoostUntil = data.BoostUntil
 				old.OnboardingStep = data.OnboardingStep
 				old.Collection = data.Collection
+				old.Crystals = toCount(old.Crystals) + sent
+				storedCrystals = old.Crystals
 				old.Session = not release and { Job = jobId, Time = os.time() } or nil
 				return old
 			end)
 		end)
 		if ok then
+			data.InFlight -= sent
+			if owned and schemaStatus == "ok" and sent > 0 then
+				data.Pending -= sent
+				-- баланс = сохранённое (с наградами лобби) + то, что пришло во время сохранения
+				data.Crystals = storedCrystals + data.Pending
+				if player.Parent then
+					player:SetAttribute("Crystals", data.Crystals)
+				end
+			end
+			if release and data.Pending > 0 then
+				warn(string.format("[PlayerData] %s: %d Crystals не сохранены", player.Name, data.Pending))
+			end
 			if not owned then
 				warn(
 					string.format(
@@ -292,14 +321,42 @@ saveImpl = function(player, release)
 				tostring(err)
 			)
 		)
-		if attempt < SAVE_ATTEMPTS then
+		if attempt < attempts then
 			task.wait(RETRY_WAIT)
 		end
 	end
+	data.InFlight -= sent
 	if release then
+		if data.Pending > 0 then
+			warn(string.format("[PlayerData] %s: %d Crystals не сохранены", player.Name, data.Pending))
+		end
 		loaded[player] = nil
 	end
 	return false
+end
+
+-- Crystals за матч (находки, зоны, конец матча). Пока сохранение не загружено и блокировка не наша — ничего.
+-- Баланс сразу в атрибуте Crystals, за матч — MatchCrystals; в сохранение уходит на ближайшем сохранении
+-- (PlayerData.checkpoint, автосейв, выход). Возвращает начисленное.
+function PlayerData.addCrystals(player: Player, amount: number, reason: string): number
+	local data = loaded[player]
+	amount = math.floor(tonumber(amount) or 0)
+	if not data or released[player] or amount <= 0 then
+		return 0
+	end
+	data.Pending += amount
+	data.Crystals += amount
+	player:SetAttribute("Crystals", data.Crystals)
+	player:SetAttribute("MatchCrystals", ((player:GetAttribute("MatchCrystals") or 0) :: number) + amount)
+	Analytics.crystals(player, true, amount, data.Crystals, Enum.AnalyticsEconomyTransactionType.Gameplay, reason)
+	return amount
+end
+
+-- Сохранить сейчас, не дожидаясь автосейва (после награды Crystals); не ждёт окончания
+function PlayerData.checkpoint(player: Player)
+	if PlayerData.isLoaded(player) then
+		task.spawn(PlayerData.save, player, false)
+	end
 end
 
 -- Покупка за Robux (ProcessReceipt): apply() выдаёт товар в игре, id чека запоминается и сразу сохраняется.

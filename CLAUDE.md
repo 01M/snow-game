@@ -89,6 +89,7 @@ Oleg creates a new product in the Creator Dashboard and sends the id; `Id = 0` m
 - The next Play refills the key again, so the save is checked after Stop, by reading `test_<UserId>` from `PlayerData_Studio`. `[unverified]` From edit mode (Command Bar, MCP) the DataStore answers `Access forbidden` (2026-11-08); it can be read during Play from the Server context.
 - The filled key has no `SchemaVersion`, so every TestSave run checks the migration from the old format: Output shows `[SaveSchema] <name>: 0 → 3`.
 - `TestSaveFutureSchema = true` (together with TestSave) fills the key with `SchemaVersion = 999`: a check that a save from a newer version is not overwritten (in the match: kick `Kick.SaveTooNew`).
+- `DebugGiveCrystals` (a player attribute, House Map, Studio only): set it to N during Play from the Server context and the match gives N Crystals through `PlayerData.addCrystals` and saves at once; the attribute clears itself. Code run from the Command Bar or MCP gets its own copy of the modules, so `addCrystals` cannot be called from there directly.
 - `TestSaveStats` (together with TestSave, Studio only) also fills the key with permanent Crystal stats: a number is the level of all four stats (clamped to 0..5, e.g. `TestSaveStats = 5`), `true` means the max level. It lets the match effects be tried by feel in a House Map Play (Snow Boots 5 = WalkSpeed 21, Deep Pockets 5 = backpack base 55). Output shows `Stats <value>` in the `[SaveStore] TestSave включён` line. Remove the attribute after the test.
 
 **Daily reward test (Lobby):** the workspace attribute `DebugDayOffset` (a whole number of days, Studio only) is added to "today" by `DailyServer`. It is read on every claim and every refresh, so it can be changed during Play from the Server context: with TestSave the first claim is day 1; then `DebugDayOffset = 1` is day 2, `= 4` is day 5 (days 3 and 4 show as missed), `= 7` is the milestone day 8. A claim can be made from the Client context without the window: `ReplicatedStorage.Lobby.Remotes.ClaimDaily:InvokeServer()` returns `{ status, day, reward }`. Remove the attribute after the test.
@@ -117,7 +118,7 @@ Versions are pinned in `rokit.toml`: Rojo 7.7.1, StyLua 2.6.0, Selene 0.32.0, lu
 2. `stylua src`, then `stylua --check src`; if the check fails, repeat.
 3. `selene src` shows 0 warnings.
 4. `scripts/analyze.ps1` shows 0 errors.
-5. Debug attributes removed: `TestSave`, `TestSaveFutureSchema`, `TestSaveStats`, `DebugDayOffset`, `ForceLanguage`, `DebugSnowBlocks`, `DebugSnowDepth`, `DebugTouchButton`, `DebugFinds`, `DebugShovelFxOld`, `DebugShovelShake`, `DebugShovelLite`.
+5. Debug attributes removed: `TestSave`, `TestSaveFutureSchema`, `TestSaveStats`, `DebugDayOffset`, `DebugGiveCrystals` (player), `ForceLanguage`, `DebugSnowBlocks`, `DebugSnowDepth`, `DebugTouchButton`, `DebugFinds`, `DebugShovelFxOld`, `DebugShovelShake`, `DebugShovelLite`.
 
 ## Working rules
 

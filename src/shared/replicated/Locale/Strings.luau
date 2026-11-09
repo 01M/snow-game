@@ -413,8 +413,10 @@ return {
 	-- Надписи в мире лобби
 	["Lobby.World.Shop"] = { en = "Shop", ru = "Магазин" },
 	["Lobby.World.Upgrades"] = { en = "Upgrades", ru = "Апгрейды" },
-	["Lobby.World.Records"] = { en = "Records", ru = "Рекорды" },
+	["Lobby.World.Records"] = { en = "Records & Rewards", ru = "Рекорды и награды" },
 	["Lobby.World.ShopPrompt"] = { en = "Open shop", ru = "Открыть магазин" },
+	["Lobby.World.Daily"] = { en = "Daily rewards", ru = "Ежедневные награды" },
+	["Lobby.World.DailyPrompt"] = { en = "Open", ru = "Открыть" },
 	["Lobby.Records.Title"] = { en = "Top players", ru = "Лучшие игроки" },
 	["Lobby.Records.Empty"] = { en = "No records yet", ru = "Рекордов пока нет" },
 	["Lobby.Hud.Throw"] = { en = "Throw", ru = "Бросить" },

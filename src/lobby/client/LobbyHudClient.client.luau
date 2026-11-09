@@ -4,6 +4,7 @@
 local CollectionService = game:GetService("CollectionService")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
 local SocialService = game:GetService("SocialService")
 local SoundService = game:GetService("SoundService")
 local TweenService = game:GetService("TweenService")
@@ -147,6 +148,37 @@ CollectionService:GetInstanceAddedSignal(DAILY_PROMPT_TAG):Connect(hookDailyProm
 for _, prompt in CollectionService:GetTagged(DAILY_PROMPT_TAG) do
 	hookDailyPrompt(prompt)
 end
+
+-- Подарок над местом наград: пустой BillboardGui с тегом DailyMarker (в месте); иконку рисуем здесь,
+-- пока награда ждёт — подарок покачивается и ярче, после получения — неподвижный и бледнее
+local markers: { ImageLabel } = {}
+local function hookDailyMarker(marker: Instance)
+	if marker:IsA("BillboardGui") and not marker:FindFirstChild("Gift") then
+		table.insert(
+			markers,
+			Ui.icon("Gift", {
+				Name = "Gift",
+				AnchorPoint = Vector2.new(0.5, 0.5),
+				Position = UDim2.fromScale(0.5, 0.5),
+				Size = UDim2.fromScale(1, 1),
+				Parent = marker,
+			})
+		)
+	end
+end
+CollectionService:GetInstanceAddedSignal("DailyMarker"):Connect(hookDailyMarker)
+for _, marker in CollectionService:GetTagged("DailyMarker") do
+	hookDailyMarker(marker)
+end
+local markerTime = 0
+RunService.Heartbeat:Connect(function(dt)
+	markerTime += dt
+	local isReady = player:GetAttribute("DailyReady") == true
+	for _, icon in markers do
+		icon.Rotation = if isReady then 10 * math.sin(markerTime * 3) else 0
+		icon.ImageTransparency = if isReady then 0 else 0.45
+	end
+end)
 
 -- Прилавок «Магазин» в мире: ProximityPrompt с тегом ShopPrompt (лежит в месте, не в Rojo) открывает то же окно
 local SHOP_PROMPT_TAG = "ShopPrompt"

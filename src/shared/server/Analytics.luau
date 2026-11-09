@@ -63,9 +63,10 @@ function Analytics.onboarding(player: Player, stepName: string)
 	send("LogOnboardingFunnelStepEvent", player, step, stepName)
 end
 
--- Cash: приход (isSource) или расход; amount > 0, balance — Cash после операции, sku — откуда/на что
-function Analytics.cash(
+-- Валюта currency: приход (isSource) или расход; amount > 0, balance — остаток после операции, sku — откуда/на что
+function Analytics.economy(
 	player: Player,
+	currency: string,
 	isSource: boolean,
 	amount: number,
 	balance: number,
@@ -76,7 +77,29 @@ function Analytics.cash(
 		return
 	end
 	local flow = if isSource then Enum.AnalyticsEconomyFlowType.Source else Enum.AnalyticsEconomyFlowType.Sink
-	send("LogEconomyEvent", player, flow, "Cash", amount, balance, transactionType.Name, sku)
+	send("LogEconomyEvent", player, flow, currency, amount, balance, transactionType.Name, sku)
+end
+
+function Analytics.cash(
+	player: Player,
+	isSource: boolean,
+	amount: number,
+	balance: number,
+	transactionType: Enum.AnalyticsEconomyTransactionType,
+	sku: string
+)
+	Analytics.economy(player, "Cash", isSource, amount, balance, transactionType, sku)
+end
+
+function Analytics.crystals(
+	player: Player,
+	isSource: boolean,
+	amount: number,
+	balance: number,
+	transactionType: Enum.AnalyticsEconomyTransactionType,
+	sku: string
+)
+	Analytics.economy(player, "Crystals", isSource, amount, balance, transactionType, sku)
 end
 
 function Analytics.custom(player: Player, eventName: string, value: number?)

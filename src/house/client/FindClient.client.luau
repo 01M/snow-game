@@ -65,7 +65,8 @@ local function show(text: string, sound: Sound)
 end
 
 findEvent.OnClientEvent:Connect(function(kind: string, id: string?, value: number)
-	local name = id and L("Find.Item." .. id)
+	-- id — вещь коллекции, у ZoneCrystals — имя зоны
+	local name = if id and kind ~= "ZoneCrystals" then L("Find.Item." .. id) else nil
 	if kind == "Ice" then
 		show(L("Find.Ice", { n = value }), pingSound)
 	elseif kind == "Gold" then
@@ -76,6 +77,13 @@ findEvent.OnClientEvent:Connect(function(kind: string, id: string?, value: numbe
 		show(L("Find.Duplicate", { name = name, cash = value }), pingSound)
 	elseif kind == "SetDone" then
 		show(L("Find.SetDone", { n = value }), jackpotSound)
+	elseif kind == "ZoneCrystals" then
+		show(L("Find.ZoneCrystals", { zone = L("Zone." .. tostring(id)), n = value }), pingSound)
+	elseif kind == "MatchCrystals" then
+		-- приходит вместе с наградой за последнюю зону: показываем после неё
+		task.delay(POPUP_TIME, function()
+			show(L("Find.MatchCrystals", { n = value }), jackpotSound)
+		end)
 	end
 	if id == "Gnome" then
 		local folder = workspace:WaitForChild("SnowYard"):FindFirstChild("Finds")

@@ -17,6 +17,7 @@ MatchCache.ATTRIBUTES = {
 	"FindCash",
 	"IapCash",
 	"MatchCrystals",
+	"SnowCut", -- срезанные порции за матч (BlowServer): награды за зоны и таблица рекордов
 }
 
 export type State = {

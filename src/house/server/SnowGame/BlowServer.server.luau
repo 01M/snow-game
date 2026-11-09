@@ -15,7 +15,9 @@ local SnowField = require(script.Parent:WaitForChild("SnowField"))
 local ToolServer = require(script.Parent:WaitForChild("ToolServer"))
 local PileServer = require(script.Parent:WaitForChild("PileServer"))
 local FindServer = require(script.Parent:WaitForChild("FindServer"))
+local PlayerData = require(script.Parent:WaitForChild("PlayerData"))
 local remotes = snowGame:WaitForChild("Remotes")
+local findEvent = remotes:WaitForChild("FindEvent") :: RemoteEvent
 local blowState = remotes:WaitForChild("BlowState")
 local blowParticles = remotes:WaitForChild("BlowParticles")
 local snowSync = remotes:WaitForChild("SnowSync")
@@ -191,9 +193,69 @@ local function startRegen(zone)
 	end)
 end
 
+-- Работа игрока в матче: срезанные порции (в рюкзак и в кучу Движка). Атрибут SnowCut — целые порции
+-- (его хранит MatchCache при перезаходе и читает таблица рекордов), дробный остаток — здесь
+local cutFraction: { [Player]: number } = {}
+
+local function addCut(player: Player, portions: number)
+	local total = ((player:GetAttribute("SnowCut") or 0) :: number) + (cutFraction[player] or 0) + portions
+	local whole = math.floor(total + 1e-6)
+	cutFraction[player] = total - whole
+	if whole ~= player:GetAttribute("SnowCut") then
+		player:SetAttribute("SnowCut", whole)
+	end
+end
+
+Players.PlayerRemoving:Connect(function(player)
+	cutFraction[player] = nil
+end)
+
+-- Зона открылась: запомнить, сколько каждый уже срезал (награда за зону — за работу после этого)
+local function snapshotWork(zone)
+	zone.workAtOpen = {}
+	for _, player in Players:GetPlayers() do
+		zone.workAtOpen[player.UserId] = (player:GetAttribute("SnowCut") or 0) :: number
+	end
+end
+
+-- Crystals за очищенную зону и за конец матча (Crystals.Match), одно сохранение на игрока
+local function rewardZone(zone, matchFinished: boolean)
+	local rules = Crystals.Match
+	for _, player in Players:GetPlayers() do
+		local cut = (player:GetAttribute("SnowCut") or 0) :: number
+		local since = (zone.workAtOpen and zone.workAtOpen[player.UserId]) or 0
+		local got = 0
+		if cut - since >= rules.MinWork then
+			local n = PlayerData.addCrystals(player, rules.ZoneClear, "ZoneClear:" .. zone.config.Name)
+			got += n
+			if n > 0 then
+				findEvent:FireClient(player, "ZoneCrystals", zone.config.Name, n)
+			end
+		end
+		if matchFinished and cut >= rules.MinWork then
+			local n = PlayerData.addCrystals(player, rules.MatchFinish, "MatchFinish")
+			got += n
+			if n > 0 then
+				findEvent:FireClient(player, "MatchCrystals", nil, n)
+			end
+		end
+		if got > 0 then
+			PlayerData.checkpoint(player)
+		end
+	end
+end
+
 local function finishZone(zone)
 	zone.state = "finished"
 	zone.stateValue.Value = "finished"
+
+	local lastZone = true
+	for _, z in ipairs(zones) do
+		if z.state ~= "finished" then
+			lastZone = false
+		end
+	end
+	rewardZone(zone, lastZone)
 
 	-- Этап ещё не очищен целиком: следующий подождёт
 	for _, z in ipairs(zones) do
@@ -207,6 +269,7 @@ local function finishZone(zone)
 	for _, z in ipairs(zones) do
 		if z.state == "locked" and (not nextStage or z.config.Stage == nextStage) then
 			nextStage = z.config.Stage
+			snapshotWork(z)
 			z.state = "active"
 			z.stateValue.Value = "active"
 			openGate(z.config.Gate)
@@ -240,6 +303,23 @@ local function tryFinish(zone)
 	if piles == 0 then
 		finishZone(zone)
 	end
+end
+
+-- Studio: атрибут workspace DebugFinishZone = "<имя зоны>" сразу завершает открытую зону (награды, следующий этап,
+-- конец матча — как в игре; снег остаётся лежать). Атрибут сам сбрасывается
+if RunService:IsStudio() then
+	workspace:GetAttributeChangedSignal("DebugFinishZone"):Connect(function()
+		local name = workspace:GetAttribute("DebugFinishZone")
+		if name == nil then
+			return
+		end
+		workspace:SetAttribute("DebugFinishZone", nil)
+		for _, zone in ipairs(zones) do
+			if zone.config.Name == name and zone.state == "active" then
+				finishZone(zone)
+			end
+		end
+	end)
 end
 
 task.spawn(function()
@@ -557,6 +637,7 @@ local function cutSnow(player: Player, tool: Tool?, toolCfg, stats, rateMax: num
 		or (origin + look * 2 + Vector3.new(0, 1.5, 0))
 
 	local gained = 0 -- собрано, в порциях (у зон разный объём порции)
+	local fromPile = 0 -- из них взято из куч (уже срезано раньше — в работу не считается)
 	local samples = {}
 	local touched = 0
 	local hitZones = {}
@@ -567,6 +648,7 @@ local function cutSnow(player: Player, tool: Tool?, toolCfg, stats, rateMax: num
 			PileServer.take(origin, look, reach, coneCos, math.min(toolCfg.PileTake * stats.Speed * dt, freePortions))
 		if took > 0 then
 			gained += took
+			fromPile = took
 			touched += 1
 			table.insert(samples, at)
 		end
@@ -667,6 +749,9 @@ local function cutSnow(player: Player, tool: Tool?, toolCfg, stats, rateMax: num
 		end
 		return 0
 	end
+
+	-- работа игрока для наград за зоны и таблицы рекордов: срезанное, куда бы оно ни пошло
+	addCut(player, gained - fromPile)
 
 	if toPile then
 		-- Движок: всё в кучу перед игроком, комья летят в неё

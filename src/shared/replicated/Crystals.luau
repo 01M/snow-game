@@ -8,6 +8,14 @@ local Crystals = {}
 Crystals.BASE_WALK_SPEED = 16 -- обычная скорость ходьбы в матче; Snow Boots добавляют к ней
 Crystals.BUY_COOLDOWN = 0.5 -- сек между покупками одного игрока
 
+-- Награды в матче (BlowServer). MinWork — сколько порций снега игрок должен срезать (в рюкзак или в кучу):
+-- для зоны — с её открытия, для конца матча — за матч. Так игрок, который стоял в стороне, награды не получает
+Crystals.Match = {
+	ZoneClear = 3,
+	MatchFinish = 15,
+	MinWork = 20,
+}
+
 -- PerLevel — прибавка за уровень; Prices[L] — цена уровня L (уровней столько, сколько цен)
 Crystals.Stats = {
 	{ Id = "DeepPockets", Icon = "Backpack", PerLevel = 5, Prices = { 10, 25, 45, 70, 100 } }, -- +вместимость рюкзака

@@ -167,6 +167,14 @@ return {
 		en = "New find: {name}! +{n} Crystals",
 		ru = "Новая находка: {name}! Кристаллы: +{n}",
 	},
+	["Find.ZoneCrystals"] = {
+		en = "{zone} cleared! +{n} Crystals",
+		ru = "Зона «{zone}» убрана! Кристаллы: +{n}",
+	},
+	["Find.MatchCrystals"] = {
+		en = "The whole lot is clean! +{n} Crystals",
+		ru = "Весь участок убран! Кристаллы: +{n}",
+	},
 	["Find.Duplicate"] = { en = "{name} again: +{cash} Cash", ru = "Снова {name}: +{cash} Cash" },
 	["Find.SetDone"] = {
 		en = "Collection complete! +{n} Crystals",

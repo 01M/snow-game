@@ -1,7 +1,7 @@
 -- ShopServer (лобби): геймпассы и покупки за Robux. Список товаров — ReplicatedStorage.Shared.Shop.
 -- Пассы: UserOwnsGamePassAsync → атрибут Pass_<Key> (для окна магазина и метки VIP в чате).
 -- Разовые покупки лобби пишет прямо в сохранение House Map (тот же store и ключ, что PlayerData):
--- UpdateAsync добавляет Cash / продлевает BoostUntil и записывает id чека в Purchases (повтор чека ничего не даёт).
+-- UpdateAsync продлевает BoostUntil и записывает id чека в Purchases (повтор чека ничего не даёт); пачки Cash — MatchOnly.
 -- Если данные сейчас держит сервер матча (свежая Session) или товар только для матча — NotProcessedYet:
 -- Roblox повторит чек позже, и его выдаст сервер, где игрок будет тогда.
 -- Перед записью сохранение доводится до текущей схемы (Shared.SaveSchema); сохранение новее — тоже NotProcessedYet.
@@ -108,18 +108,12 @@ MarketplaceService.ProcessReceipt = function(info)
 	if not player or not product or product.MatchOnly then
 		return Enum.ProductPurchaseDecision.NotProcessedYet
 	end
-	local before = player:GetAttribute("Cash")
+	-- Пачки Cash — MatchOnly (Cash живёт только в матче), поэтому сюда доходит только буст
 	local data = grantInStore(player, info.PurchaseId, product)
 	if not data then
 		return Enum.ProductPurchaseDecision.NotProcessedYet
 	end
-	-- показ в лобби: баланс (LobbyCashServer) и буст
-	local cash = math.floor(tonumber(data.Cash) or 0)
-	player:SetAttribute("Cash", cash)
 	player:SetAttribute("BoostUntil", tonumber(data.BoostUntil) or 0)
-	if product.Cash and type(before) == "number" and cash > before then
-		Analytics.cash(player, true, cash - before, cash, Enum.AnalyticsEconomyTransactionType.IAP, "CashPack")
-	end
 	Analytics.custom(player, "BuyProduct_" .. product.Key)
 	return Enum.ProductPurchaseDecision.PurchaseGranted
 end

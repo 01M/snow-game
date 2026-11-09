@@ -1,4 +1,5 @@
--- Показ баланса Cash, буста, Crystals и ежедневной награды в лобби: только читаем сохранение (без блокировки сессии).
+-- Показ буста, Crystals, ежедневной награды и статов в лобби: только читаем сохранение (без блокировки сессии).
+-- Cash в лобби не показываем и не читаем: он живёт только внутри матча (поле Cash в сохранении больше не обновляется).
 -- Пишут в сохранение в лобби только ShopServer (покупки за Robux), DailyServer (Crystals и Daily) и StatServer (Stats).
 -- Атрибуты Stat_<Id> — уровни постоянных статов (Shared.Crystals).
 -- Атрибуты Crystals, DailyFirst (0 — ещё не получал), DailyClaimed ("1,2,4"); DailyDay и DailyReady считает DailyServer.
@@ -23,11 +24,6 @@ local function loadCash(player)
 			return store:GetAsync(SaveStore.key(player))
 		end)
 		if ok then
-			local cash = typeof(result) == "table" and tonumber(result.Cash) or 0
-			if cash ~= cash then
-				cash = 0
-			end
-			player:SetAttribute("Cash", math.max(0, math.floor(cash)))
 			player:SetAttribute("BoostUntil", typeof(result) == "table" and tonumber(result.BoostUntil) or 0)
 			local data = typeof(result) == "table" and result or {}
 			local daily = Daily.sanitize(data.Daily)
@@ -42,7 +38,6 @@ local function loadCash(player)
 		end
 		if RunService:IsStudio() and string.find(tostring(result), "403") then
 			warn("[LobbyCashServer] в Studio выключен доступ к API Services, баланс 0")
-			player:SetAttribute("Cash", 0)
 			player:SetAttribute("Crystals", 0)
 			return
 		end

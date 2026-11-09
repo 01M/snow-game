@@ -1,4 +1,4 @@
--- HUD лобби: баланс Cash и Crystals справа сверху, кнопки «Магазин», «Пригласить» и «Награды» (окно Lobby.DailyGui) слева, музыка справа внизу,
+-- HUD лобби: баланс Crystals справа сверху (Cash есть только в матче), кнопки «Магазин», «Пригласить» и «Награды» (окно Lobby.DailyGui) слева, музыка справа внизу,
 -- внизу по центру «ИГРАТЬ» (быстрый вход, QueueAction "quickPlay"). Вид — общий Ui (ReplicatedStorage.Shared.Ui).
 -- Кнопок без работающей функции здесь нет: новую кнопку добавлять вместе с её окном.
 local CollectionService = game:GetService("CollectionService")
@@ -223,47 +223,13 @@ inviteBtn.Activated:Connect(function()
 	end
 end)
 
--- Справа сверху: баланс
-local right = group("Right", Vector2.new(1, 0), UDim2.new(1, -20, 0, 10), Vector2.new(300, 140))
-local cashPill = Ui.pill({
-	Name = "Cash",
-	AnchorPoint = Vector2.new(1, 0),
-	Position = UDim2.fromScale(1, 0),
-	Size = UDim2.fromOffset(0, 60),
-	AutomaticSize = Enum.AutomaticSize.X,
-	Parent = right,
-})
-new("UIListLayout", {
-	FillDirection = Enum.FillDirection.Horizontal,
-	VerticalAlignment = Enum.VerticalAlignment.Center,
-	Padding = UDim.new(0, 8),
-	SortOrder = Enum.SortOrder.LayoutOrder,
-	Parent = cashPill,
-})
-new("UIPadding", { PaddingLeft = UDim.new(0, 7), PaddingRight = UDim.new(0, 18), Parent = cashPill })
-Ui.icon("Cash", { Size = UDim2.fromOffset(44, 44), LayoutOrder = 1, Parent = cashPill })
-local amount = Ui.label({
-	Name = "Amount",
-	Size = UDim2.fromOffset(0, 60),
-	AutomaticSize = Enum.AutomaticSize.X,
-	Text = "...",
-	TextSize = 30,
-	LayoutOrder = 2,
-	Parent = cashPill,
-})
-
-local function refreshCash()
-	local cash = player:GetAttribute("Cash")
-	amount.Text = cash ~= nil and Ui.number(cash) or "..."
-end
-player:GetAttributeChangedSignal("Cash"):Connect(refreshCash)
-refreshCash()
-
--- Под Cash: Crystals (атрибут ставят LobbyCashServer и DailyServer)
+-- Справа сверху: Crystals (атрибут ставят LobbyCashServer, DailyServer, StatServer).
+-- Cash в лобби не показываем: он живёт только внутри матча
+local right = group("Right", Vector2.new(1, 0), UDim2.new(1, -20, 0, 10), Vector2.new(300, 70))
 local crystalPill = Ui.pill({
 	Name = "Crystals",
 	AnchorPoint = Vector2.new(1, 0),
-	Position = UDim2.new(1, 0, 0, 70),
+	Position = UDim2.fromScale(1, 0),
 	Size = UDim2.fromOffset(0, 60),
 	AutomaticSize = Enum.AutomaticSize.X,
 	Parent = right,

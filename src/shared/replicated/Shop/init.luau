@@ -17,11 +17,11 @@ Shop.Passes = {
 }
 
 -- Cash — сколько Cash даёт пачка; BoostMinutes — личный ×2 Cash; BlizzardMinutes — ×2 Cash всем в матче.
--- MatchOnly — продаётся и выдаётся только в матче
+-- MatchOnly — продаётся и выдаётся только в матче. Пачки Cash — MatchOnly: Cash живёт один матч (B1, 2026-11-09)
 Shop.Products = {
-	{ Key = "CashS", Id = 3723261055, Icon = "CashS", Cash = 300 },
-	{ Key = "CashM", Id = 3723261117, Icon = "CashM", Cash = 1100 },
-	{ Key = "CashL", Id = 3723261166, Icon = "CashL", Cash = 3600 },
+	{ Key = "CashS", Id = 3723261055, Icon = "CashS", Cash = 300, MatchOnly = true },
+	{ Key = "CashM", Id = 3723261117, Icon = "CashM", Cash = 1100, MatchOnly = true },
+	{ Key = "CashL", Id = 3723261166, Icon = "CashL", Cash = 3600, MatchOnly = true },
 	{ Key = "Boost", Id = 3723261211, Icon = "Boost", BoostMinutes = 15 },
 	{ Key = "Blizzard", Id = 3723261365, Icon = "Blizzard", BlizzardMinutes = 10, MatchOnly = true },
 }

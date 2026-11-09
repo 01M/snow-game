@@ -288,11 +288,20 @@ return {
 	["Shop.Pass.VIP.Name"] = { en = "VIP", ru = "VIP" },
 	["Shop.Pass.VIP.Desc"] = { en = "[VIP] chat tag and +10% Cash", ru = "Метка [VIP] в чате и +10% Cash" },
 	["Shop.Product.CashS.Name"] = { en = "300 Cash", ru = "300 Cash" },
-	["Shop.Product.CashS.Desc"] = { en = "A handful of Cash", ru = "Горстка Cash" },
+	["Shop.Product.CashS.Desc"] = {
+		en = "A handful of Cash for this match only",
+		ru = "Горстка Cash только на этот матч",
+	},
 	["Shop.Product.CashM.Name"] = { en = "1,100 Cash", ru = "1 100 Cash" },
-	["Shop.Product.CashM.Desc"] = { en = "A bag of Cash", ru = "Мешок Cash" },
+	["Shop.Product.CashM.Desc"] = {
+		en = "A bag of Cash for this match only",
+		ru = "Мешок Cash только на этот матч",
+	},
 	["Shop.Product.CashL.Name"] = { en = "3,600 Cash", ru = "3 600 Cash" },
-	["Shop.Product.CashL.Desc"] = { en = "A whole vault of Cash", ru = "Целый сейф Cash" },
+	["Shop.Product.CashL.Desc"] = {
+		en = "A whole vault of Cash for this match only",
+		ru = "Целый сейф Cash только на этот матч",
+	},
 	["Shop.Product.Boost.Name"] = { en = "Snow Boost", ru = "Снежный буст" },
 	["Shop.Product.Boost.Desc"] = { en = "x2 Cash for 15 minutes", ru = "×2 Cash на 15 минут" },
 	["Shop.Product.Blizzard.Name"] = { en = "Blizzard for Everyone", ru = "Метель для всех" },

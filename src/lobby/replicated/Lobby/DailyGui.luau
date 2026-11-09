@@ -24,6 +24,13 @@ local PANEL_W, PANEL_H = 760, 520
 local CARD_W, CARD_H = 160, 150
 local GAP = 16
 local CLOSE_ACTION = "DailyGuiClose"
+-- Состояния карточки: прозрачность иконки у полученной и пропущенной, серый тон пропущенной
+-- (у ImageLabel нет насыщенности, серость — умножением цвета). Check в атласе уже зелёный,
+-- Close — светлый, его красим в красный
+local ICON_DIM = 0.6
+local MISSED_TINT = Color3.fromRGB(150, 150, 150)
+local CHECK_TINT = Color3.new(1, 1, 1)
+local CLOSE_TINT = Ui.Color.red
 
 local DailyGui = {}
 
@@ -31,7 +38,7 @@ type Card = {
 	frame: Frame,
 	title: TextLabel,
 	amount: TextLabel,
-	gift: ImageLabel,
+	icon: ImageLabel,
 	mark: ImageLabel,
 	ring: UIStroke,
 	pulse: UIScale,
@@ -94,8 +101,9 @@ local function makeCard(parent: Instance, index: number): Card
 		TextXAlignment = Enum.TextXAlignment.Center,
 		Parent = frame,
 	})
-	local gift = Ui.icon("Gift", {
-		Name = "Gift",
+	-- Большая иконка награды: Gift у вехи, Gem у обычного дня (refresh)
+	local icon = Ui.icon("Gem", {
+		Name = "Icon",
 		AnchorPoint = Vector2.new(0.5, 0),
 		Position = UDim2.new(0.5, 0, 0, 38),
 		Size = UDim2.fromOffset(60, 60),
@@ -128,16 +136,17 @@ local function makeCard(parent: Instance, index: number): Card
 		LayoutOrder = 2,
 		Parent = row,
 	})
+	-- Отметка поверх иконки: Check — получено, Close — пропущено
 	local mark = Ui.icon("Check", {
 		Name = "Mark",
 		AnchorPoint = Vector2.new(0.5, 0.5),
-		Position = UDim2.new(1, -10, 0, 10),
-		Size = UDim2.fromOffset(46, 46),
+		Position = UDim2.new(0.5, 0, 0, 38 + 30),
+		Size = UDim2.fromOffset(56, 56),
 		ZIndex = 3,
 		Visible = false,
 		Parent = frame,
 	})
-	return { frame = frame, title = title, amount = amount, gift = gift, mark = mark, ring = ring, pulse = pulse }
+	return { frame = frame, title = title, amount = amount, icon = icon, mark = mark, ring = ring, pulse = pulse }
 end
 
 -- Перерисовать карточки и кнопку по атрибутам
@@ -156,11 +165,15 @@ local function refresh()
 		local isToday = day == n
 		card.title.Text = L("Daily.Day", { n = day })
 		card.amount.Text = "+" .. Daily.rewardFor(day)
-		card.gift.Visible = milestone
+		Ui.setIcon(card.icon, if milestone then "Gift" else "Gem")
+		-- Получено — иконка приглушена; пропущено — приглушена и серая, карточка тоже
+		card.icon.ImageTransparency = if isClaimed or missed then ICON_DIM else 0
+		card.icon.ImageColor3 = if missed then MISSED_TINT else Color3.new(1, 1, 1)
 		card.frame.BackgroundColor3 = if milestone then Ui.Color.amber else Ui.Color.paper
 		card.frame.BackgroundTransparency = if missed then 0.45 else 0
 		card.mark.Visible = isClaimed or missed
 		Ui.setIcon(card.mark, if isClaimed then "Check" else "Close")
+		card.mark.ImageColor3 = if isClaimed then CHECK_TINT else CLOSE_TINT
 		if isToday and not isClaimed then
 			card.ring.Color = Ui.Color.green
 			card.ring.Thickness = 6

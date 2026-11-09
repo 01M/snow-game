@@ -83,11 +83,11 @@ Oleg creates a new product in the Creator Dashboard and sends the id; `Id = 0` m
 | Studio with TestSave | `PlayerData_Studio` | `test_<UserId>` |
 
 **TestSave:** the workspace attribute `TestSave = true` is set in edit mode before Play, in each place separately, and must be removed after the test. Outside Studio it has no effect.
-- At the start of each run the key is filled again: Cash 100000, UpgradeLevel 0, only the free tools. Output will show `[SaveStore] TestSave включён`.
+- At the start of each run the key is filled again: Cash 100000, UpgradeLevel 0, Crystals 50, only the free tools, no Daily (never claimed). Output will show `[SaveStore] TestSave включён`.
 - Saving and receipts work as usual; the normal key is not changed.
 - **Only one place at a time.** The key is shared: starting the second place refills it and drops the first place's lock, so the first place's save is skipped.
 - The next Play refills the key again, so the save is checked after Stop, by reading `test_<UserId>` from `PlayerData_Studio`. `[unverified]` From edit mode (Command Bar, MCP) the DataStore answers `Access forbidden` (2026-11-08); it can be read during Play from the Server context.
-- The filled key has no `SchemaVersion`, so every TestSave run checks the migration from the old format: Output shows `[SaveSchema] <name>: 0 → 1`.
+- The filled key has no `SchemaVersion`, so every TestSave run checks the migration from the old format: Output shows `[SaveSchema] <name>: 0 → 2`.
 - `TestSaveFutureSchema = true` (together with TestSave) fills the key with `SchemaVersion = 999`: a check that a save from a newer version is not overwritten (in the match: kick `Kick.SaveTooNew`).
 
 **Schema version:** the `SchemaVersion` field in the save; migration steps are in `ServerScriptService.Shared.SaveSchema`. Changing the save fields = a new step and `CURRENT + 1`; a released step is never edited.

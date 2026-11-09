@@ -10,7 +10,7 @@ local IS_STUDIO = RunService:IsStudio()
 local STORE_NAME = IS_STUDIO and "PlayerData_Studio" or "PlayerData_v1"
 local TEST_SAVE = IS_STUDIO and workspace:GetAttribute("TestSave") == true
 -- Без SchemaVersion: каждый запуск с TestSave проверяет миграцию со старого формата (версия 0)
-local TEST_SEED = { Cash = 100000, UpgradeLevel = 0 }
+local TEST_SEED = { Cash = 100000, UpgradeLevel = 0, Crystals = 50 }
 -- TestSaveFutureSchema (вместе с TestSave): заполнить ключ сохранением «из будущей версии» — проверка,
 -- что его никто не перезаписывает. После теста атрибут убрать.
 local TEST_FUTURE_SCHEMA = TEST_SAVE and workspace:GetAttribute("TestSaveFutureSchema") == true

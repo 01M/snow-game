@@ -10,11 +10,42 @@ local SaveSchema = {}
 
 export type Status = "ok" | "newer" | "failed"
 
-SaveSchema.CURRENT = 1
+SaveSchema.CURRENT = 2
 
 local steps: { [number]: (data: { [string]: any }) -> () } = {
 	-- 0 → 1: поля те же, только появляется SchemaVersion
 	[1] = function(_data) end,
+	-- 1 → 2: Crystals (постоянная валюта) и Daily (ежедневная награда лобби, Shared.Daily).
+	-- Daily = { First = номер UTC-дня первого получения или nil, Claimed = { номера личных дней }, Total = всего получений }.
+	-- Код намеренно свой, без общего модуля: выпущенный шаг не меняется, даже если санитайзер Daily потом изменится.
+	[2] = function(data)
+		local function count(v: any): number
+			local n = tonumber(v) or 0
+			if n ~= n or n == math.huge then
+				return 0
+			end
+			return math.max(0, math.floor(n))
+		end
+		data.Crystals = count(data.Crystals)
+		local old = data.Daily
+		local daily: { [string]: any } = { Claimed = {}, Total = 0 }
+		if typeof(old) == "table" then
+			local first = old.First
+			if typeof(first) == "number" and first == first and first == math.floor(first) and first > 0 then
+				daily.First = first
+			end
+			if typeof(old.Claimed) == "table" then
+				for _, day in old.Claimed do
+					if typeof(day) == "number" and day == math.floor(day) and day >= 1 then
+						table.insert(daily.Claimed, day)
+					end
+				end
+				table.sort(daily.Claimed)
+			end
+			daily.Total = count(old.Total)
+		end
+		data.Daily = daily
+	end,
 }
 
 -- Версия схемы таблицы сохранения; нет поля или мусор — 0

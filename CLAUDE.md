@@ -83,12 +83,14 @@ Oleg creates a new product in the Creator Dashboard and sends the id; `Id = 0` m
 | Studio with TestSave | `PlayerData_Studio` | `test_<UserId>` |
 
 **TestSave:** the workspace attribute `TestSave = true` is set in edit mode before Play, in each place separately, and must be removed after the test. Outside Studio it has no effect.
-- At the start of each run the key is filled again: Cash 100000, UpgradeLevel 0, Crystals 2000, only the free tools, no Daily (never claimed), no Stats. Output will show `[SaveStore] TestSave включён`.
+- At the start of each run the key is filled again: Crystals 2000, no Daily (never claimed), no Stats. Cash is not in the save any more (it lives one match): for Cash tests use `StartCash`. Output will show `[SaveStore] TestSave включён`.
 - Saving and receipts work as usual; the normal key is not changed.
 - **Only one place at a time.** The key is shared: starting the second place refills it and drops the first place's lock, so the first place's save is skipped.
 - The next Play refills the key again, so the save is checked after Stop, by reading `test_<UserId>` from `PlayerData_Studio`. `[unverified]` From edit mode (Command Bar, MCP) the DataStore answers `Access forbidden` (2026-11-08); it can be read during Play from the Server context.
 - The filled key has no `SchemaVersion`, so every TestSave run checks the migration from the old format: Output shows `[SaveSchema] <name>: 0 → 3`.
 - `TestSaveFutureSchema = true` (together with TestSave) fills the key with `SchemaVersion = 999`: a check that a save from a newer version is not overwritten (in the match: kick `Kick.SaveTooNew`).
+- `StartCash` (a workspace attribute, House Map, Studio only, set in edit mode): Cash on the first join into the match; without it every join starts with 0. A rejoin restored from `MatchCache` ignores it. Remove the attribute after the test.
+- `DebugRejoin = true` (a player attribute, House Map, Studio only, during Play from the Server context): puts the match progress into `MatchCache`, resets it and restores it, the same path as a leave and rejoin on one server (a real rejoin cannot be done in a Studio Play). The attribute clears itself.
 - `DebugGiveCrystals` (a player attribute, House Map, Studio only): set it to N during Play from the Server context and the match gives N Crystals through `PlayerData.addCrystals` and saves at once; the attribute clears itself. Code run from the Command Bar or MCP gets its own copy of the modules, so `addCrystals` cannot be called from there directly.
 - `TestSaveStats` (together with TestSave, Studio only) also fills the key with permanent Crystal stats: a number is the level of all four stats (clamped to 0..5, e.g. `TestSaveStats = 5`), `true` means the max level. It lets the match effects be tried by feel in a House Map Play (Snow Boots 5 = WalkSpeed 21, Deep Pockets 5 = backpack base 55). Output shows `Stats <value>` in the `[SaveStore] TestSave включён` line. Remove the attribute after the test.
 
@@ -98,7 +100,7 @@ Oleg creates a new product in the Creator Dashboard and sends the id; `Id = 0` m
 
 ## How to test purchases
 
-- **For Cash** (tools, upgrades, backpack): TestSave in House Map, Play, buy in the shed, in the journal or at the stall. Check `leaderstats.Cash` and the player attributes `OwnedTools`, `ToolUpgrades`, `BackpackUpgradeLevel`.
+- **For Cash** (tools, upgrades, backpack; all per match): `StartCash` (and TestSave) in House Map, Play, buy in the shed, in the journal or at the stall. Check `leaderstats.Cash` and the player attributes `OwnedTools`, `ToolUpgrades`, `BackpackUpgradeLevel`.
 - **For Crystals** (permanent stats): TestSave in the Lobby (2000 Crystals), Play, the Upgrades button or the Upgrades stall, or `ReplicatedStorage.Lobby.Remotes.BuyStat:InvokeServer(id, level)` from the Client. Check the attributes `Crystals` and `Stat_<Id>`. To test the match effects, set `TestSaveStats` (see "Saves and TestSave") in House Map together with TestSave.
 - **For Robux:** TestSave in one place, Play, the shop window: the "Shop" button in the lobby, the shop button in the HUD or the B key in the match. The Roblox confirmation dialog is CoreGui and cannot be clicked through MCP; Oleg confirms the purchase. `[unverified]` Whether Robux are charged for a purchase in Studio: there are recent DevForum reports of real charges. So buy only the cheapest product and compare the balance before and after.
 - `[unverified]` As the game owner, Oleg counts as owning all passes, so a pass purchase cannot be tested on his account. Without a purchase, bonuses are tested with the player attributes `Pass_<Key>` (keys in `Shop.Passes`) and `BoostUntil`, and the workspace attribute `BlizzardUntil`.
@@ -118,7 +120,7 @@ Versions are pinned in `rokit.toml`: Rojo 7.7.1, StyLua 2.6.0, Selene 0.32.0, lu
 2. `stylua src`, then `stylua --check src`; if the check fails, repeat.
 3. `selene src` shows 0 warnings.
 4. `scripts/analyze.ps1` shows 0 errors.
-5. Debug attributes removed: `TestSave`, `TestSaveFutureSchema`, `TestSaveStats`, `DebugDayOffset`, `DebugGiveCrystals` (player), `ForceLanguage`, `DebugSnowBlocks`, `DebugSnowDepth`, `DebugTouchButton`, `DebugFinds`, `DebugShovelFxOld`, `DebugShovelShake`, `DebugShovelLite`.
+5. Debug attributes removed: `TestSave`, `TestSaveFutureSchema`, `TestSaveStats`, `StartCash`, `DebugDayOffset`, `DebugGiveCrystals` and `DebugRejoin` (player), `ForceLanguage`, `DebugSnowBlocks`, `DebugSnowDepth`, `DebugTouchButton`, `DebugFinds`, `DebugShovelFxOld`, `DebugShovelShake`, `DebugShovelLite`.
 
 ## Working rules
 

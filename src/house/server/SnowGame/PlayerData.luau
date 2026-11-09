@@ -1,7 +1,10 @@
 -- Сохранение прогресса игрока в DataStore (общий для всех мест experience).
--- Схема: { Cash, UpgradeLevel, OwnedTools = { id }, ToolUpgrades = { [toolId] = { [upgradeId] = уровень } },
---   Purchases = { id чека }, BoostUntil = os.time, OnboardingStep = пройдено шагов Config.Onboarding, Collection = { id находки }, Session = { Job, Time } }. OwnedTools/ToolUpgrades держит и проверяет ToolServer.
--- Crystals, Daily и Stats пишет только лобби: здесь Stats только читаются (атрибуты Stat_<Id>), сохранение их не трогает.
+-- Схема (что пишет матч): { Purchases = { id чека }, BoostUntil = os.time, OnboardingStep = пройдено шагов Config.Onboarding,
+--   Collection = { id находки }, Crystals (прибавкой, см. saveImpl), Session = { Job, Time } }.
+-- Cash, UpgradeLevel, OwnedTools, ToolUpgrades с 2026-11-09 (B1) не читаются и не пишутся: Cash и покупки живут один матч
+-- (MatchCache держит их при перезаходе на тот же сервер). Старые значения в сохранении остаются нетронутыми.
+-- Daily и Stats пишет только лобби (Stats здесь только читаются в атрибуты Stat_<Id>); Crystals — лобби, а матч, пока держит
+-- блокировку, добавляет к ним заработанное в матче.
 -- Purchases — последние MAX_PURCHASES чеков покупок за Robux (чтобы повтор ProcessReceipt не выдал товар дважды),
 -- BoostUntil — конец личного буста ×2 Cash (атрибут игрока BoostUntil). Лобби пишет покупки в тот же ключ само (ShopServer).
 -- SchemaVersion — версия схемы (Shared.SaveSchema): загрузка доводит её до текущей, сохранение новее не трогаем.
@@ -13,7 +16,6 @@ local ServerScriptService = game:GetService("ServerScriptService")
 
 local SaveStore = require(ServerScriptService:WaitForChild("Shared"):WaitForChild("SaveStore"))
 local SaveSchema = require(ServerScriptService:WaitForChild("Shared"):WaitForChild("SaveSchema"))
-local ToolServer = require(script.Parent:WaitForChild("ToolServer"))
 local Finds = require(game:GetService("ReplicatedStorage"):WaitForChild("SnowGame"):WaitForChild("Finds"))
 local Crystals = require(game:GetService("ReplicatedStorage"):WaitForChild("Shared"):WaitForChild("Crystals"))
 local Analytics = require(ServerScriptService:WaitForChild("Shared"):WaitForChild("Analytics"))
@@ -59,17 +61,6 @@ end
 
 local function snapshot(player)
 	local data = loaded[player]
-	local ls = player:FindFirstChild("leaderstats")
-	local cash = ls and ls:FindFirstChild("Cash")
-	if cash then
-		data.Cash = toCount(cash.Value)
-	end
-	local level = player:GetAttribute("BackpackUpgradeLevel")
-	if level ~= nil then
-		data.UpgradeLevel = toCount(level)
-	end
-	data.OwnedTools = ToolServer.ownedList(player) or data.OwnedTools
-	data.ToolUpgrades = ToolServer.upgradesTable(player) or data.ToolUpgrades
 	local boost = player:GetAttribute("BoostUntil")
 	if boost ~= nil then
 		data.BoostUntil = toCount(boost)
@@ -86,7 +77,7 @@ local function snapshot(player)
 end
 
 -- Загружает данные и ставит блокировку.
--- Возвращает { Cash, UpgradeLevel, OwnedTools, ToolUpgrades, ... } или nil и причину:
+-- Возвращает { BoostUntil, OnboardingStep, Collection, Stats, Crystals } или nil и причину:
 -- "SaveTooNew" — сохранение из более новой версии игры (не тронуто), иначе ошибка загрузки.
 function PlayerData.load(player)
 	SaveStore.prepare(player)
@@ -145,11 +136,6 @@ function PlayerData.load(player)
 				print(string.format("[SaveSchema] %s: %d → %d", player.Name, schemaFrom, SaveSchema.CURRENT))
 			end
 			local data = {
-				Cash = toCount(result.Cash),
-				UpgradeLevel = toCount(result.UpgradeLevel),
-				-- сырые данные: ToolServer.setLoaded отфильтрует по Config.Tools
-				OwnedTools = typeof(result.OwnedTools) == "table" and result.OwnedTools or {},
-				ToolUpgrades = typeof(result.ToolUpgrades) == "table" and result.ToolUpgrades or {},
 				Purchases = typeof(result.Purchases) == "table" and result.Purchases or {},
 				BoostUntil = toCount(result.BoostUntil),
 				OnboardingStep = toCount(result.OnboardingStep),
@@ -164,10 +150,6 @@ function PlayerData.load(player)
 			loaded[player] = data
 			released[player] = nil
 			return {
-				Cash = data.Cash,
-				UpgradeLevel = data.UpgradeLevel,
-				OwnedTools = data.OwnedTools,
-				ToolUpgrades = data.ToolUpgrades,
 				BoostUntil = data.BoostUntil,
 				OnboardingStep = data.OnboardingStep,
 				Collection = data.Collection,
@@ -180,7 +162,7 @@ function PlayerData.load(player)
 			warn(
 				"[PlayerData] в Studio выключен доступ к API Services, игра без сохранения"
 			)
-			return { Cash = 0, UpgradeLevel = 0, OwnedTools = {}, ToolUpgrades = {}, BoostUntil = 0 }
+			return { BoostUntil = 0, Crystals = 0 }
 		end
 		if not ok then
 			warn(
@@ -212,7 +194,7 @@ function PlayerData.isLoaded(player)
 	return loaded[player] ~= nil and not released[player]
 end
 
--- Сохраняет текущие Cash/уровень. release = true снимает блокировку (выход, телепорт, закрытие).
+-- Сохраняет данные игрока. release = true снимает блокировку (выход, телепорт, закрытие).
 local saveImpl
 
 function PlayerData.save(player, release)
@@ -265,10 +247,6 @@ saveImpl = function(player, release)
 				if schemaStatus ~= "ok" then
 					return nil
 				end
-				old.Cash = data.Cash
-				old.UpgradeLevel = data.UpgradeLevel
-				old.OwnedTools = data.OwnedTools
-				old.ToolUpgrades = data.ToolUpgrades
 				old.Purchases = data.Purchases
 				old.BoostUntil = data.BoostUntil
 				old.OnboardingStep = data.OnboardingStep

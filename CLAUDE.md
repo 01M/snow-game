@@ -12,135 +12,135 @@
 
 # Snow Cleaning Simulator
 
-Кооперативный симулятор уборки снега для Roblox (до 4 игроков) с зонами и прогрессией игрока. Основной цикл: убрать снег → заполнить рюкзак → продать за Cash в снегоплавилке (или затолкать кучу на люк теплотрассы) → купить инструменты и апгрейды → убирать больше. Матч заканчивается, когда очищены все зоны участка, затем группа возвращается в лобби.
+A co-op snow-clearing simulator for Roblox (up to 4 players) with zones and player progression. Core loop: clear snow → fill the backpack → sell it for Cash at the snow melter (or push a pile onto a heating-main manhole) → buy tools and upgrades → clear more. A match ends when every zone of the lot is cleared, then the group returns to the lobby.
 
-- `docs/systems.md` — игровые системы и неочевидные детали кода.
-- `docs/studio-world.md` — то, чего нет в `src/`: карта, ассеты, графика, модели Blender.
-- `docs/scale-plan.md`, `docs/shop-plan.md` — планы, снимок на 2026-10-28.
+- `docs/systems.md` — game systems and non-obvious details of the code.
+- `docs/studio-world.md` — what is not in `src/`: the map, assets, graphics, Blender models.
+- `docs/scale-plan.md`, `docs/shop-plan.md` — plans, snapshot as of 2026-10-28.
 
-`[не проверено]` значит, что по коду и Studio это подтвердить нельзя.
+`[unverified]` means this cannot be confirmed from the code or in Studio.
 
-## Два места
+## Two places
 
-| Место | placeId | Назначение | Rojo |
+| Place | placeId | Purpose | Rojo |
 |---|---|---|---|
-| Lobby (стартовое) | 91608833946402 | Площадки очереди, меню хозяина, кнопка «ИГРАТЬ», магазин, телепорт группы | `lobby.project.json`, порт 34872 |
-| House Map | 77433112786408 | Матч на карте «Дом» | `house.project.json`, порт 34873 |
+| Lobby (start place) | 91608833946402 | Queue pads, host menu, PLAY button, shop, group teleport | `lobby.project.json`, port 34872 |
+| House Map | 77433112786408 | Match on the "House" map | `house.project.json`, port 34873 |
 
-Куда Rojo кладёт код (`<место>` = `lobby` или `house`):
+Where Rojo puts the code (`<place>` = `lobby` or `house`):
 
-| Папка | Studio |
+| Folder | Studio |
 |---|---|
-| `src/<место>/server` | ServerScriptService |
-| `src/<место>/replicated` | ReplicatedStorage |
-| `src/<место>/client` | StarterPlayer.StarterPlayerScripts |
-| `src/<место>/character` | StarterPlayer.StarterCharacterScripts (пусто) |
+| `src/<place>/server` | ServerScriptService |
+| `src/<place>/replicated` | ReplicatedStorage |
+| `src/<place>/client` | StarterPlayer.StarterPlayerScripts |
+| `src/<place>/character` | StarterPlayer.StarterCharacterScripts (empty) |
 | `src/shared/server` | ServerScriptService.Shared |
 | `src/shared/replicated` | ReplicatedStorage.Shared |
 | `src/shared/client` | StarterPlayerScripts.Shared |
 
-Что где лежит:
+What lives where:
 
-| Где | server | replicated | client |
+| Where | server | replicated | client |
 |---|---|---|---|
-| **shared** | Analytics, SaveSchema, SaveStore | Locale (+Strings), Shop (+Gui), Ui (вид интерфейса, иконки) | ChatTagClient, LocaleClient, SnowfallClient |
+| **shared** | Analytics, SaveSchema, SaveStore | Locale (+Strings), Shop (+Gui), Ui (interface look, icons) | ChatTagClient, LocaleClient, SnowfallClient |
 | **lobby** | LobbyServer, LobbyCashServer, LobbyRecordsServer, ShopServer, SlideRagdollServer, SnowballServer | Lobby/Maps, Lobby/Snowball, Lobby/Remotes | LobbyHudClient, LobbyMenuClient, LobbyRecordsClient, LobbyTruckClient, SlideRagdollClient, SnowballClient |
 | **house** | SnowGame/: BlowServer, SnowField, PileServer, ToolServer, ToolShopServer, MelterServer, UpgradeShopServer, LeaderstatsServer, PlayerData, MatchServer, ShopServer, AnalyticsHooks, OnboardingServer, FindServer | SnowGame/: Config, ZoneConfig, Finds, Remotes, ShovelSwing, ToolUse | FindClient, GameHudClient, GateSignClient, HideCoreGui, MatchEndClient, PassShowcaseClient, RewardLightsClient, SellPointerClient, ShovelChunksClient, SnowMeshClient, SnowParticles, ToolClient, ToolSfxClient, ToolShopClient, UpgradeShopClient |
 
-**Магазин за Robux** — два разных серверных скрипта и общие модули, это не дубль:
+**Robux shop** — two different server scripts and shared modules; this is not a duplicate:
 
-| Что менять | Файл |
+| What to change | File |
 |---|---|
-| Товары, id, бонусы | `src/shared/replicated/Shop/init.luau` |
-| Окно магазина | `src/shared/replicated/Shop/Gui.luau` |
-| Названия и описания | `src/shared/replicated/Locale/Strings.luau` (`Shop.*`) |
-| Выдача в лобби (прямо в DataStore) | `src/lobby/server/ShopServer.server.luau` |
-| Выдача в матче (через PlayerData) | `src/house/server/SnowGame/ShopServer.server.luau`, `PlayerData.grantReceipt` |
+| Products, ids, bonuses | `src/shared/replicated/Shop/init.luau` |
+| Shop window | `src/shared/replicated/Shop/Gui.luau` |
+| Names and descriptions | `src/shared/replicated/Locale/Strings.luau` (`Shop.*`) |
+| Granting in the lobby (straight into the DataStore) | `src/lobby/server/ShopServer.server.luau` |
+| Granting in the match (through PlayerData) | `src/house/server/SnowGame/ShopServer.server.luau`, `PlayerData.grantReceipt` |
 
-Новый товар создаёт в Creator Dashboard Олег и присылает id; `Id = 0` значит «ещё не создан», такой товар не показывается и не выдаётся. Новый тип товара обычно требует правки обоих ShopServer. Магазины за Cash — другие скрипты: инструменты `ToolServer`/`ToolShopServer`, рюкзак `UpgradeShopServer`.
+Oleg creates a new product in the Creator Dashboard and sends the id; `Id = 0` means "not created yet", and such a product is neither shown nor granted. A new product type usually needs changes in both ShopServers. The Cash shops are other scripts: tools `ToolServer`/`ToolShopServer`, backpack `UpgradeShopServer`.
 
 ## Rojo
 
-- Плагин ставится `rojo plugin install`. Запуск в отдельном терминале на каждое место. В Studio: Plugins → Rojo → `localhost`, порт места → Connect. `servePlaceIds` не даст подключить проект к чужому месту; место открывается из облака, а не из файла `.rbxl`.
-- Rojo удаляет из своих папок всё, чего нет в файлах. Новый объект там (RemoteEvent и т.п.) — файл `Имя.model.json` с `className`.
-- Rojo не управляет Workspace, Lighting, Terrain, SoundService, TextChatService, ServerStorage и свойствами StarterPlayer. Они живут в месте и сохраняются публикацией.
-- Предупреждение в Output про `rbxassetid://203785492` идёт от звука уведомления самого плагина Rojo (`RojoManagedPlugin.rbxm`), а не от игры: его можно игнорировать.
+- The plugin is installed with `rojo plugin install`. Run one serve per place, each in its own terminal. In Studio: Plugins → Rojo → `localhost`, the place's port → Connect. `servePlaceIds` will not let you connect a project to the wrong place; open the place from the cloud, not from an `.rbxl` file.
+- Rojo deletes everything in its folders that is not in the files. A new object there (RemoteEvent etc.) is a file `Name.model.json` with `className`.
+- Rojo does not manage Workspace, Lighting, Terrain, SoundService, TextChatService, ServerStorage or the properties of StarterPlayer. They live in the place and are saved by publishing.
+- The Output warning about `rbxassetid://203785492` comes from the notification sound of the Rojo plugin itself (`RojoManagedPlugin.rbxm`), not from the game: it can be ignored.
 - git push is done by Oleg; threads only commit locally.
-- Код доходит только до открытого места; в игру он попадает после публикации Олегом. `*.rbxl` и `backups/` (копии мест) не в git.
-- **Публикация при смене `SaveSchema.CURRENT`:** сначала House Map, затем Lobby, и при публикации выбрать перезапуск устаревших серверов (restart outdated servers), чтобы старые серверы не работали рядом с новыми. Иначе новое лобби поднимет версию сохранения, и старый матч будет кикать игрока (`Kick.SaveTooNew`).
-- `[не проверено]` `rojo serve` 7.7.1 иногда падает при удалении файлов и папок в `src/` (`change_processor.rs:179`). Лечится перезапуском и повторным подключением, папки лучше удалять при остановленном сервере.
-- `[не проверено]` Если снова запускать `syncback`, он дописывает в проекты свойства StarterPlayer и пустые `SerializedOverrides`; их надо убирать.
+- Code only reaches the open place; it reaches the game after Oleg publishes. `*.rbxl` and `backups/` (copies of the places) are not in git.
+- **Publishing when `SaveSchema.CURRENT` changes:** House Map first, then Lobby, and when publishing choose to restart outdated servers, so that old servers do not run next to new ones. Otherwise the new lobby bumps the save version and an old match will kick the player (`Kick.SaveTooNew`).
+- `[unverified]` `rojo serve` 7.7.1 sometimes crashes when files and folders in `src/` are deleted (`change_processor.rs:179`). Fixed by restarting and reconnecting; better delete folders while the server is stopped.
+- `[unverified]` If `syncback` is run again, it adds StarterPlayer properties and empty `SerializedOverrides` to the projects; these must be removed.
 
-## Сохранения и TestSave
+## Saves and TestSave
 
-`ServerScriptService.Shared.SaveStore` — единственное место, где заданы хранилище и ключ. Им пользуются `PlayerData` (матч, с блокировкой сессии), `LobbyCashServer` (только читает) и `ShopServer` лобби (пишет покупки).
+`ServerScriptService.Shared.SaveStore` is the only place where the store and key are defined. It is used by `PlayerData` (match, with a session lock), `LobbyCashServer` (read only) and the lobby `ShopServer` (writes purchases).
 
-| Запуск | Хранилище | Ключ |
+| Run | Store | Key |
 |---|---|---|
-| Опубликованная игра | `PlayerData_v1` (настоящие данные) | `u_<UserId>` |
-| Studio | `PlayerData_Studio` (постоянное облачное хранилище, не песочница) | `u_<UserId>` |
-| Studio с TestSave | `PlayerData_Studio` | `test_<UserId>` |
+| Published game | `PlayerData_v1` (real data) | `u_<UserId>` |
+| Studio | `PlayerData_Studio` (persistent cloud store, not a sandbox) | `u_<UserId>` |
+| Studio with TestSave | `PlayerData_Studio` | `test_<UserId>` |
 
-**TestSave:** атрибут workspace `TestSave = true` ставится в edit mode до Play, в каждом месте отдельно, после теста его надо убрать. Вне Studio он не действует.
-- В начале каждого запуска ключ заполняется заново: Cash 100000, UpgradeLevel 0, только бесплатные инструменты. В Output будет `[SaveStore] TestSave включён`.
-- Сохранение и чеки работают как обычно, обычный ключ не меняется.
-- **Только одно место за раз.** Ключ общий: старт второго места заново заполняет его и снимает блокировку первого, поэтому сохранение первого пропускается.
-- Следующий Play снова заполнит ключ, поэтому сохранение смотрят после Stop: чтением `test_<UserId>` из `PlayerData_Studio`. `[не проверено]` Из edit mode (Command Bar, MCP) DataStore отвечает `Access forbidden` (2026-11-08); читать можно во время Play из контекста Server.
-- Заполненный ключ без `SchemaVersion`, поэтому каждый запуск с TestSave проверяет миграцию со старого формата: в Output `[SaveSchema] <имя>: 0 → 1`.
-- `TestSaveFutureSchema = true` (вместе с TestSave) заполняет ключ с `SchemaVersion = 999`: проверка, что сохранение из более новой версии не перезаписывается (в матче — кик `Kick.SaveTooNew`).
+**TestSave:** the workspace attribute `TestSave = true` is set in edit mode before Play, in each place separately, and must be removed after the test. Outside Studio it has no effect.
+- At the start of each run the key is filled again: Cash 100000, UpgradeLevel 0, only the free tools. Output will show `[SaveStore] TestSave включён`.
+- Saving and receipts work as usual; the normal key is not changed.
+- **Only one place at a time.** The key is shared: starting the second place refills it and drops the first place's lock, so the first place's save is skipped.
+- The next Play refills the key again, so the save is checked after Stop, by reading `test_<UserId>` from `PlayerData_Studio`. `[unverified]` From edit mode (Command Bar, MCP) the DataStore answers `Access forbidden` (2026-11-08); it can be read during Play from the Server context.
+- The filled key has no `SchemaVersion`, so every TestSave run checks the migration from the old format: Output shows `[SaveSchema] <name>: 0 → 1`.
+- `TestSaveFutureSchema = true` (together with TestSave) fills the key with `SchemaVersion = 999`: a check that a save from a newer version is not overwritten (in the match: kick `Kick.SaveTooNew`).
 
-**Версия схемы:** поле `SchemaVersion` в сохранении, шаги миграции — `ServerScriptService.Shared.SaveSchema`. Изменение полей сохранения = новый шаг и `CURRENT + 1`; выпущенный шаг не правится.
+**Schema version:** the `SchemaVersion` field in the save; migration steps are in `ServerScriptService.Shared.SaveSchema`. Changing the save fields = a new step and `CURRENT + 1`; a released step is never edited.
 
-## Как проверять покупки
+## How to test purchases
 
-- **За Cash** (инструменты, апгрейды, рюкзак): TestSave в House Map, Play, купить в сарае, в журнале или у лавки. Проверить `leaderstats.Cash` и атрибуты игрока `OwnedTools`, `ToolUpgrades`, `BackpackUpgradeLevel`.
-- **За Robux:** TestSave в одном месте, Play, окно магазина: кнопка «Магазин» в лобби, 🛒 или клавиша B в матче. Окно подтверждения Roblox — CoreGui, через MCP оно не нажимается, покупку подтверждает Олег. `[не проверено]` Не списываются ли Robux при покупке в Studio: на DevForum есть свежие сообщения о реальных списаниях. Поэтому покупать только самый дешёвый товар и сверять баланс до и после.
-- `[не проверено]` У Олега как у владельца игры все пассы считаются купленными, поэтому покупку пасса на его аккаунте не проверить. Без покупки бонусы проверяются атрибутами игрока `Pass_<Key>` (ключи в `Shop.Passes`) и `BoostUntil`, атрибутом workspace `BlizzardUntil`.
-- `Blizzard` (`MatchOnly`) продаётся только в матче. Остальные товары в лобби отвечают `NotProcessedYet`, пока данные держит сервер матча.
-- Телепорт в Studio работает с 2026-11-05 (только `TeleportAsync`, обычный Play): место назначения открывается новым тестовым сервером в той же сессии Play, MCP видит его как Server/Client того же Studio. Проверено 2026-11-08 соло: матч → лобби и матч → новый матч. Назначение запустило код из открытой копии места (с правками Rojo, ещё не опубликованными); `TestSave` в назначении есть, только если он стоит в том месте, и новый сервер заново заполняет ключ `test_` (перенос Cash так не проверить); `game.PrivateServerId` и `game.JobId` пустые, `PrivateServerOwnerId = 0`. `[не проверено]` В какой момент берётся копия места: атрибут, поставленный в edit mode позже, в назначение не попал. Группа из нескольких игроков и reserved-серверы проверяются только после публикации.
+- **For Cash** (tools, upgrades, backpack): TestSave in House Map, Play, buy in the shed, in the journal or at the stall. Check `leaderstats.Cash` and the player attributes `OwnedTools`, `ToolUpgrades`, `BackpackUpgradeLevel`.
+- **For Robux:** TestSave in one place, Play, the shop window: the "Shop" button in the lobby, 🛒 or the B key in the match. The Roblox confirmation dialog is CoreGui and cannot be clicked through MCP; Oleg confirms the purchase. `[unverified]` Whether Robux are charged for a purchase in Studio: there are recent DevForum reports of real charges. So buy only the cheapest product and compare the balance before and after.
+- `[unverified]` As the game owner, Oleg counts as owning all passes, so a pass purchase cannot be tested on his account. Without a purchase, bonuses are tested with the player attributes `Pass_<Key>` (keys in `Shop.Passes`) and `BoostUntil`, and the workspace attribute `BlizzardUntil`.
+- `Blizzard` (`MatchOnly`) is sold only in the match. Other products in the lobby answer `NotProcessedYet` while a match server holds the data.
+- Teleports work in Studio since 2026-11-05 (only `TeleportAsync`, normal Play): the destination opens as a new test server in the same Play session, and MCP sees it as a Server/Client of the same Studio. Tested 2026-11-08 solo: match → lobby and match → new match. The destination ran the code from the open copy of the place (with Rojo changes not yet published); `TestSave` exists in the destination only if it is set in that place, and the new server refills the `test_` key (so carrying Cash over cannot be tested this way); `game.PrivateServerId` and `game.JobId` are empty, `PrivateServerOwnerId = 0`. `[unverified]` When the copy of the place is taken: an attribute set later in edit mode did not reach the destination. A group of several players and reserved servers can only be tested after publishing.
 
-## Инструменты разработки
+## Dev tools
 
-Версии закреплены в `rokit.toml`: Rojo 7.7.1, StyLua 2.6.0, Selene 0.32.0, luau-lsp 1.70.1. Установка: `rokit install`.
+Versions are pinned in `rokit.toml`: Rojo 7.7.1, StyLua 2.6.0, Selene 0.32.0, luau-lsp 1.70.1. Install: `rokit install`.
 
-- `stylua src` (табы, ширина 120), затем `stylua --check src`. `[не проверено]` За один проход форматирование может не стабилизироваться.
-- `selene src` (`std = "roblox"`, разрешён `roblox_manual_fromscale_or_fromoffset`). Перед коммитом нужно 0 предупреждений, как и в analyze. Ложное срабатывание: `-- selene: allow(<правило>)` с указанием причины. Настоящие предупреждения не исправлять без вопроса.
-- `scripts/analyze.ps1` проверяет каждое место вместе с `src/shared` по свежему sourcemap. Код выхода 0 только при 0 ошибок. Сгенерированное лежит в `.luau-lsp/` (не в git). Типы Roblox закреплены: `$typesVersion` в скрипте меняется вместе с версией luau-lsp. Файлы без `--!strict` проверяются в нестрогом режиме.
+- `stylua src` (tabs, width 120), then `stylua --check src`. `[unverified]` Formatting may not stabilise in one pass.
+- `selene src` (`std = "roblox"`, `roblox_manual_fromscale_or_fromoffset` allowed). 0 warnings are required before commit, like in analyze. A false positive: `-- selene: allow(<rule>)` with the reason. Do not fix real warnings without asking.
+- `scripts/analyze.ps1` checks each place together with `src/shared` against a fresh sourcemap. Exit code 0 only with 0 errors. Generated files are in `.luau-lsp/` (not in git). Roblox types are pinned: `$typesVersion` in the script changes together with the luau-lsp version. Files without `--!strict` are checked in non-strict mode.
 
-**Перед коммитом:**
-1. Изменение проверено в play mode.
-2. `stylua src`, затем `stylua --check src`; если check не прошёл, повторить.
-3. `selene src` показывает 0 предупреждений.
-4. `scripts/analyze.ps1` показывает 0 ошибок.
-5. Убраны отладочные атрибуты: `TestSave`, `TestSaveFutureSchema`, `ForceLanguage`, `DebugSnowBlocks`, `DebugSnowDepth`, `DebugTouchButton`, `DebugFinds`, `DebugShovelFxOld`, `DebugShovelShake`, `DebugShovelLite`.
+**Before committing:**
+1. The change is tested in play mode.
+2. `stylua src`, then `stylua --check src`; if the check fails, repeat.
+3. `selene src` shows 0 warnings.
+4. `scripts/analyze.ps1` shows 0 errors.
+5. Debug attributes removed: `TestSave`, `TestSaveFutureSchema`, `ForceLanguage`, `DebugSnowBlocks`, `DebugSnowDepth`, `DebugTouchButton`, `DebugFinds`, `DebugShovelFxOld`, `DebugShovelShake`, `DebugShovelLite`.
 
-## Правила работы
+## Working rules
 
-- Модуль переносится в `src/shared`, когда он понадобился второму месту. Заранее не переносить, между местами не копировать.
-- Объекты вне Rojo между местами пока синхронизируются вручную, правила нет. Если появятся общие модели, вариант — Roblox Packages.
-- Одно логическое изменение за раз, затем проверка в play mode и чтение Output. Несвязанные правки не объединять.
-- Вся игровая логика на сервере: Cash, цены, вместимость, зоны. RemoteEvent проверяет типы, диапазоны и частоту. Клиент только показывает.
-- Если правка затрагивает больше 3 скриптов или меняет архитектуру, сначала показать план. Резервные копии мест Олег делает сам.
-- Новые Parts — только когда нельзя обойтись ParticleEmitter, Beam, Billboard или EditableMesh.
-- Перед реализацией смотреть документацию Roblox и предпочитать встроенные возможности своему коду.
-- Весь текст интерфейса — через `Locale`: ключ в `Strings` с `en` и `ru`, литералы в UI не писать. `warn()` и комментарии можно по-русски.
-- «Протестировано» можно писать только после запуска в play mode и чтения Output, с результатом проверки.
+- A module moves to `src/shared` when a second place needs it. Don't move it in advance, don't copy between places.
+- Objects outside Rojo are synced between places by hand for now; there is no rule. If shared models appear, an option is Roblox Packages.
+- One logical change at a time, then a test in play mode and reading Output. Don't combine unrelated changes.
+- All game logic is on the server: Cash, prices, capacity, zones. A RemoteEvent checks types, ranges and rate. The client only displays.
+- If a change touches more than 3 scripts or changes the architecture, show a plan first. Oleg makes the backups of the places himself.
+- New Parts only when ParticleEmitter, Beam, Billboard or EditableMesh cannot do the job.
+- Before implementing, check the Roblox documentation and prefer built-in features to your own code.
+- All interface text goes through `Locale`: a key in `Strings` with `en` and `ru`, no literals in the UI. `warn()` and comments may be in Russian.
+- "Tested" may only be written after a run in play mode and reading Output, with the result of the check.
 
 ## Decisions
 
-- Основной язык английский, второй русский (Олег, 2026-10-28): аудитория — десятки тысяч онлайна. Язык определяется по `Player.LocaleId`.
-- Снег — карта высот на сервере и EditableMesh на клиенте, а не Parts. Если мешей нет, запасной снег блоками.
-- В матче зоны не регенерируют (`MATCH_MODE = true`) и открываются по очереди. Конец матча — все зоны очищены, затем возврат в лобби.
-- Внутренние id `Blower` и `Vacuum` не менялись при переименовании в Движок и Снегоуборщик: старые сохранения остаются совместимыми.
-- Backpack и вместимость не сохраняются. Покупка в лобби пишет прямо в сохранение; если его держит сервер матча, чек ждёт (`NotProcessedYet`).
-- В матче список игроков скрыт (Tab открывает журнал, в нём все игроки), чат включён. Первое лицо — встроенный `LockFirstPerson`, без своего скрипта камеры.
-- Скайбоксы из Toolbox не использовать: `[не проверено]` в них были чужие скрипты.
+- Main language English, second Russian (Oleg, 2026-10-28): the audience is tens of thousands online. The language is picked from `Player.LocaleId`.
+- Snow is a heightmap on the server and an EditableMesh on the client, not Parts. If there are no meshes, fallback snow in blocks.
+- In a match zones do not regenerate (`MATCH_MODE = true`) and open one after another. The match ends when all zones are cleared, then everyone returns to the lobby.
+- The internal ids `Blower` and `Vacuum` were not changed when they were renamed to Snow Pusher (ru «Движок») and Snowblower (ru «Снегоуборщик»): old saves stay compatible.
+- Backpack and capacity are not saved. A purchase in the lobby writes straight into the save; if a match server holds it, the receipt waits (`NotProcessedYet`).
+- In a match the player list is hidden (Tab opens the journal, which lists all players), chat is on. First person is the built-in `LockFirstPerson`, without a custom camera script.
+- Don't use skyboxes from the Toolbox: `[unverified]` they contained third-party scripts.
 
 ## Known cleanup
 
-Найдено при чистке 2026-10-31, в коде пока не менялось.
+Found during the cleanup on 2026-10-31, not yet changed in the code.
 
-- `Config.luau`: не используются `SnowCellFolder`, `CellSize`, `GridStep`, `ParticleLifetime`.
-- `BlowServer`: атрибуты зоны `DisplayName` и `Order` никто не читает (и поле `ZoneConfig.DisplayName` ради них); при `MATCH_MODE = true` не вызывается `startRegen`, и вместе с ней не нужны `RegenDelay`, `RegenDuration`.
-- Атрибут workspace `BlizzardBy` (`ShopServer` матча) и строку `Shop.BlizzardBy` никто не читает.
-- Старые копии в ServerStorage: House Map `_Backup_BeforeTools`, `_Candidates`, `_OldBaseplateTexture`, `_OldCollector`, `_OldSnowblower`, `_OldSnowmelter`, `_OldSunsetSky`, `_OldToolModels`, `_OldUpgradeShop`, `_OldHouse`, `_OldPineUnions`, `_OldFencePillars`, `_OldFenceCaps`, `_OldNeighbors`, `_OldLamps`; Lobby `_Candidates`, `_OldBaseplateTexture`, `_OldSky`.
+- `Config.luau`: `SnowCellFolder`, `CellSize`, `GridStep`, `ParticleLifetime` are unused.
+- `BlowServer`: nobody reads the zone attributes `DisplayName` and `Order` (nor the field `ZoneConfig.DisplayName` that exists for them); with `MATCH_MODE = true` `startRegen` is not called, and with it `RegenDelay`, `RegenDuration` are not needed.
+- Nobody reads the workspace attribute `BlizzardBy` (match `ShopServer`) or the string `Shop.BlizzardBy`.
+- Old copies in ServerStorage: House Map `_Backup_BeforeTools`, `_Candidates`, `_OldBaseplateTexture`, `_OldCollector`, `_OldSnowblower`, `_OldSnowmelter`, `_OldSunsetSky`, `_OldToolModels`, `_OldUpgradeShop`, `_OldHouse`, `_OldPineUnions`, `_OldFencePillars`, `_OldFenceCaps`, `_OldNeighbors`, `_OldLamps`; Lobby `_Candidates`, `_OldBaseplateTexture`, `_OldSky`.

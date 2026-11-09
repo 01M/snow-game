@@ -385,6 +385,26 @@ return {
 	},
 	["Lobby.Hud.Shop"] = { en = "Shop", ru = "Магазин" },
 	["Lobby.Hud.Invite"] = { en = "Invite", ru = "Пригласить" },
+	["Lobby.Hud.Daily"] = { en = "Daily", ru = "Награды" },
+
+	-- Окно ежедневной награды (Lobby.DailyGui)
+	["Daily.Title"] = { en = "Daily rewards", ru = "Ежедневные награды" },
+	["Daily.Day"] = { en = "Day {n}", ru = "День {n}" },
+	["Daily.Claim"] = { en = "Claim +{n}", ru = "Забрать +{n}" },
+	["Daily.Claimed"] = { en = "Claimed today", ru = "Сегодня получено" },
+	["Daily.NextIn"] = { en = "Next reward in {time}", ru = "Следующая награда через {time}" },
+	["Daily.Ready"] = { en = "Today's reward is ready!", ru = "Награда за сегодня ждёт!" },
+	["Daily.Got"] = { en = "Crystals +{n}!", ru = "Кристаллы +{n}!" },
+	["Daily.Already"] = { en = "Come back tomorrow!", ru = "Возвращайся завтра!" },
+	["Daily.Busy"] = { en = "Try again in a moment", ru = "Попробуй ещё раз через минутку" },
+	["Daily.Unavailable"] = {
+		en = "Something went wrong, try again later",
+		ru = "Не получилось, попробуй позже",
+	},
+	["Daily.Hint"] = {
+		en = "Every 7th day gives a big reward. A missed day is only skipped.",
+		ru = "Каждый 7-й день — большая награда. Пропущенный день просто пропадает.",
+	},
 	["Lobby.Hud.InviteUnavailable"] = {
 		en = "Invites unavailable right now",
 		ru = "Приглашения сейчас недоступны",

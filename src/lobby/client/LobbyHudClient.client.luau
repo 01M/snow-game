@@ -1,4 +1,4 @@
--- HUD лобби: баланс Cash справа сверху, кнопки «Магазин» и «Пригласить» слева, музыка справа внизу,
+-- HUD лобби: баланс Cash и Crystals справа сверху, кнопки «Магазин», «Пригласить» и «Награды» (окно Lobby.DailyGui) слева, музыка справа внизу,
 -- внизу по центру «ИГРАТЬ» (быстрый вход, QueueAction "quickPlay"). Вид — общий Ui (ReplicatedStorage.Shared.Ui).
 -- Кнопок без работающей функции здесь нет: новую кнопку добавлять вместе с её окном.
 local CollectionService = game:GetService("CollectionService")
@@ -11,6 +11,7 @@ local TweenService = game:GetService("TweenService")
 local L = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Locale")).t
 local ShopGui = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Shop"):WaitForChild("Gui"))
 local Ui = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Ui"))
+local DailyGui = require(ReplicatedStorage:WaitForChild("Lobby"):WaitForChild("DailyGui"))
 local LobbyRemotes = ReplicatedStorage:WaitForChild("Lobby"):WaitForChild("Remotes")
 local QueueAction = LobbyRemotes:WaitForChild("QueueAction")
 local QueueState = LobbyRemotes:WaitForChild("QueueState")
@@ -105,12 +106,47 @@ local function showToast(str)
 	end)
 end
 
--- Слева: Магазин / Пригласить
-local left = group("Left", Vector2.new(0, 0.5), UDim2.new(0, 16, 0.55, 0), Vector2.new(104, 240))
+-- Слева: Магазин / Пригласить / Награды
+local left = group("Left", Vector2.new(0, 0.5), UDim2.new(0, 16, 0.55, 0), Vector2.new(104, 364))
 new("UIListLayout", { Padding = UDim.new(0, 26), SortOrder = Enum.SortOrder.LayoutOrder, Parent = left })
 local shopBtn = squareButton(left, 1, "green", "Shop", "Shop", L("Lobby.Hud.Shop"))
 local inviteBtn = squareButton(left, 2, "blue", "Invite", "Invite", L("Lobby.Hud.Invite"))
+local dailyBtn = squareButton(left, 3, "amber", "Gift", "Daily", L("Lobby.Hud.Daily"))
 shopBtn.Activated:Connect(ShopGui.toggle)
+dailyBtn.Activated:Connect(DailyGui.toggle)
+
+-- Красная точка на «Наградах», пока награда за сегодня не получена (атрибут DailyReady ставит DailyServer)
+local dailyDot = new("Frame", {
+	Name = "Dot",
+	AnchorPoint = Vector2.new(0.5, 0.5),
+	Position = UDim2.new(1, -6, 0, 6),
+	Size = UDim2.fromOffset(26, 26),
+	BackgroundColor3 = Ui.Color.red,
+	ZIndex = 5,
+	Visible = false,
+	Parent = dailyBtn,
+}, { Ui.corner("full"), Ui.border(3) })
+local function refreshDailyDot()
+	dailyDot.Visible = player:GetAttribute("DailyReady") == true
+end
+player:GetAttributeChangedSignal("DailyReady"):Connect(refreshDailyDot)
+refreshDailyDot()
+
+-- Награды в беседке: ProximityPrompt с тегом DailyPrompt (лежит в месте, не в Rojo) открывает окно наград
+local DAILY_PROMPT_TAG = "DailyPrompt"
+local function hookDailyPrompt(prompt: Instance)
+	if prompt:IsA("ProximityPrompt") then
+		prompt.Triggered:Connect(function(who)
+			if who == player then
+				DailyGui.open()
+			end
+		end)
+	end
+end
+CollectionService:GetInstanceAddedSignal(DAILY_PROMPT_TAG):Connect(hookDailyPrompt)
+for _, prompt in CollectionService:GetTagged(DAILY_PROMPT_TAG) do
+	hookDailyPrompt(prompt)
+end
 
 -- Прилавок «Магазин» в мире: ProximityPrompt с тегом ShopPrompt (лежит в месте, не в Rojo) открывает то же окно
 local SHOP_PROMPT_TAG = "ShopPrompt"
@@ -138,7 +174,7 @@ inviteBtn.Activated:Connect(function()
 end)
 
 -- Справа сверху: баланс
-local right = group("Right", Vector2.new(1, 0), UDim2.new(1, -20, 0, 10), Vector2.new(300, 70))
+local right = group("Right", Vector2.new(1, 0), UDim2.new(1, -20, 0, 10), Vector2.new(300, 140))
 local cashPill = Ui.pill({
 	Name = "Cash",
 	AnchorPoint = Vector2.new(1, 0),
@@ -172,6 +208,40 @@ local function refreshCash()
 end
 player:GetAttributeChangedSignal("Cash"):Connect(refreshCash)
 refreshCash()
+
+-- Под Cash: Crystals (атрибут ставят LobbyCashServer и DailyServer)
+local crystalPill = Ui.pill({
+	Name = "Crystals",
+	AnchorPoint = Vector2.new(1, 0),
+	Position = UDim2.new(1, 0, 0, 70),
+	Size = UDim2.fromOffset(0, 60),
+	AutomaticSize = Enum.AutomaticSize.X,
+	Parent = right,
+})
+new("UIListLayout", {
+	FillDirection = Enum.FillDirection.Horizontal,
+	VerticalAlignment = Enum.VerticalAlignment.Center,
+	Padding = UDim.new(0, 8),
+	SortOrder = Enum.SortOrder.LayoutOrder,
+	Parent = crystalPill,
+})
+new("UIPadding", { PaddingLeft = UDim.new(0, 7), PaddingRight = UDim.new(0, 18), Parent = crystalPill })
+Ui.icon("Gem", { Size = UDim2.fromOffset(44, 44), LayoutOrder = 1, Parent = crystalPill })
+local crystalAmount = Ui.label({
+	Name = "Amount",
+	Size = UDim2.fromOffset(0, 60),
+	AutomaticSize = Enum.AutomaticSize.X,
+	Text = "...",
+	TextSize = 30,
+	LayoutOrder = 2,
+	Parent = crystalPill,
+})
+local function refreshCrystals()
+	local crystals = player:GetAttribute("Crystals")
+	crystalAmount.Text = crystals ~= nil and Ui.number(crystals) or "..."
+end
+player:GetAttributeChangedSignal("Crystals"):Connect(refreshCrystals)
+refreshCrystals()
 
 -- Справа внизу: музыка. Звук SoundService.LobbyMusic, выключение только у этого игрока.
 -- Пока SoundId пустой, музыки и кнопки нет. Новый трек: вписать rbxassetid://<id> в SoundId этого звука в Studio.

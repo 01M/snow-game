@@ -44,8 +44,8 @@ What lives where:
 
 | Where | server | replicated | client |
 |---|---|---|---|
-| **shared** | Analytics, SaveSchema, SaveStore | Daily (daily reward config and day math), Locale (+Strings), Shop (+Gui), Ui (interface look, icons) | ChatTagClient, LocaleClient, SnowfallClient |
-| **lobby** | LobbyServer, LobbyCashServer, LobbyRecordsServer, DailyServer, ShopServer, SlideRagdollServer, SnowballServer | Lobby/Maps, Lobby/Snowball, Lobby/DailyGui, Lobby/Remotes | LobbyHudClient, LobbyMenuClient, LobbyRecordsClient, LobbyTruckClient, SlideRagdollClient, SnowballClient |
+| **shared** | Analytics, SaveSchema, SaveStore | Crystals (permanent stats config), Daily (daily reward config and day math), Locale (+Strings), Shop (+Gui), Ui (interface look, icons) | ChatTagClient, LocaleClient, SnowfallClient |
+| **lobby** | LobbyServer, LobbyCashServer, LobbyRecordsServer, DailyServer, StatServer, ShopServer, SlideRagdollServer, SnowballServer | Lobby/Maps, Lobby/Snowball, Lobby/DailyGui, Lobby/StatsGui, Lobby/Remotes | LobbyHudClient, LobbyMenuClient, LobbyRecordsClient, LobbyTruckClient, SlideRagdollClient, SnowballClient |
 | **house** | SnowGame/: BlowServer, SnowField, PileServer, ToolServer, ToolShopServer, MelterServer, UpgradeShopServer, LeaderstatsServer, PlayerData, MatchServer, ShopServer, AnalyticsHooks, OnboardingServer, FindServer | SnowGame/: Config, ZoneConfig, Finds, Remotes, ShovelSwing, ToolUse, PileMound (pile mesh template) | FindClient, GameHudClient, GateSignClient, HideCoreGui, MatchEndClient, PassShowcaseClient, PileClient, RewardLightsClient, SellPointerClient, ShovelChunksClient, SnowMeshClient, SnowParticles, ToolClient, ToolSfxClient, ToolShopClient, UpgradeShopClient |
 
 **Robux shop** — two different server scripts and shared modules; this is not a duplicate:
@@ -74,7 +74,7 @@ Oleg creates a new product in the Creator Dashboard and sends the id; `Id = 0` m
 
 ## Saves and TestSave
 
-`ServerScriptService.Shared.SaveStore` is the only place where the store and key are defined. It is used by `PlayerData` (match, with a session lock), `LobbyCashServer` (read only), the lobby `ShopServer` (writes purchases) and `DailyServer` (writes Crystals and Daily). Who writes which field: `docs/systems.md`, "Save and lock".
+`ServerScriptService.Shared.SaveStore` is the only place where the store and key are defined. It is used by `PlayerData` (match, with a session lock), `LobbyCashServer` (read only), the lobby `ShopServer` (writes purchases), `DailyServer` (writes Crystals and Daily) and `StatServer` (writes Crystals and Stats). Who writes which field: `docs/systems.md`, "Save and lock".
 
 | Run | Store | Key |
 |---|---|---|
@@ -97,6 +97,7 @@ Oleg creates a new product in the Creator Dashboard and sends the id; `Id = 0` m
 ## How to test purchases
 
 - **For Cash** (tools, upgrades, backpack): TestSave in House Map, Play, buy in the shed, in the journal or at the stall. Check `leaderstats.Cash` and the player attributes `OwnedTools`, `ToolUpgrades`, `BackpackUpgradeLevel`.
+- **For Crystals** (permanent stats): TestSave in the Lobby (2000 Crystals), Play, the Upgrades button or the Upgrades stall, or `ReplicatedStorage.Lobby.Remotes.BuyStat:InvokeServer(id, level)` from the Client. Check the attributes `Crystals` and `Stat_<Id>`. Testing the match effects needs `Stats` in the key before loading (docs/systems.md, "Permanent upgrades").
 - **For Robux:** TestSave in one place, Play, the shop window: the "Shop" button in the lobby, the shop button in the HUD or the B key in the match. The Roblox confirmation dialog is CoreGui and cannot be clicked through MCP; Oleg confirms the purchase. `[unverified]` Whether Robux are charged for a purchase in Studio: there are recent DevForum reports of real charges. So buy only the cheapest product and compare the balance before and after.
 - `[unverified]` As the game owner, Oleg counts as owning all passes, so a pass purchase cannot be tested on his account. Without a purchase, bonuses are tested with the player attributes `Pass_<Key>` (keys in `Shop.Passes`) and `BoostUntil`, and the workspace attribute `BlizzardUntil`.
 - `Blizzard` (`MatchOnly`) is sold only in the match. Other products in the lobby answer `NotProcessedYet` while a match server holds the data.

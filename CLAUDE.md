@@ -109,7 +109,7 @@ Versions are pinned in `rokit.toml`: Rojo 7.7.1, StyLua 2.6.0, Selene 0.32.0, lu
 - `scripts/analyze.ps1` checks each place together with `src/shared` against a fresh sourcemap. Exit code 0 only with 0 errors. Generated files are in `.luau-lsp/` (not in git). Roblox types are pinned: `$typesVersion` in the script changes together with the luau-lsp version. Files without `--!strict` are checked in non-strict mode.
 
 **Before committing:**
-1. The change is tested in play mode.
+1. The change is tested in play mode. Exception: a commit that changes only `.md` files does not need a play-mode test; every other commit does.
 2. `stylua src`, then `stylua --check src`; if the check fails, repeat.
 3. `selene src` shows 0 warnings.
 4. `scripts/analyze.ps1` shows 0 errors.

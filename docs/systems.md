@@ -124,8 +124,18 @@ Numbers and lists are deliberately not repeated here: the source of truth is `Co
 
 ## Save and lock (`PlayerData`)
 
-- Data: `SchemaVersion`, `Cash`, `UpgradeLevel`, `OwnedTools`, `ToolUpgrades`, `Purchases` (last 50 receipts), `BoostUntil`, `OnboardingStep`, `Collection` (find ids), `Session = {Job, Time}`.
-- Schema version (`Shared.SaveSchema`, currently 1; no field means 0): loading in the match, saving, and a purchase in the lobby bring the save to the current version inside `UpdateAsync`. A save newer than this game or a failed step → the write is cancelled (the function returns `nil`); warn and kick come after `UpdateAsync`, because the function may run several times. The match kicks with `Kick.SaveTooNew`, the lobby answers the receipt with `NotProcessedYet`. `LobbyCashServer` only reads and does not check the version.
+- Data: `SchemaVersion`, `Cash`, `UpgradeLevel`, `OwnedTools`, `ToolUpgrades`, `Purchases` (last 50 receipts), `BoostUntil`, `OnboardingStep`, `Collection` (find ids), `Crystals`, `Daily = {First, Claimed, Total}`, `Session = {Job, Time}`.
+- Who writes which field (one save key, `Shared.SaveStore`). The match save writes only the fields it knows onto the stored table, so fields of the lobby survive it (tested 2026-11-09: an autosave kept `Crystals` and `Daily`).
+
+| Field | Written by | When |
+|---|---|---|
+| `Cash`, `UpgradeLevel`, `OwnedTools`, `ToolUpgrades`, `OnboardingStep`, `Collection` | House `PlayerData` | autosave, leaving, teleport |
+| `Session` | House `PlayerData` | load and autosave; cleared on release |
+| `Purchases`, `BoostUntil` (and `Cash` from packs) | House `PlayerData.grantReceipt` or Lobby `ShopServer` | the lobby only without a fresh `Session` |
+| `Crystals`, `Daily` | Lobby `DailyServer` only | only without a fresh `Session`; House never writes them |
+| `SchemaVersion` | everyone, through `SaveSchema.upgrade` | every write |
+
+- Schema version (`Shared.SaveSchema`, currently 2; no field means 0; step 2 added `Crystals` and `Daily` with its own frozen sanitizing code): loading in the match, saving, and a purchase in the lobby bring the save to the current version inside `UpdateAsync`. A save newer than this game or a failed step → the write is cancelled (the function returns `nil`); warn and kick come after `UpdateAsync`, because the function may run several times. The match kicks with `Kick.SaveTooNew`, the lobby answers the receipt with `NotProcessedYet`. `LobbyCashServer` only reads and does not check the version.
 - Only the server that loaded the player may write. Someone else's fresh lock (younger than 120 s) → wait; the 6th attempt, roughly after 15 s, takes it by force. If loading fails — Kick. In Studio without API access the game runs without saving.
 - Autosave every 60 s. `BindToClose` also waits for saves started from `PlayerRemoving` (`waitForSaves(25)`).
 - `MatchServer` saves the player with the lock released once, right before their teleport: on "Lobby" (in the match or in the choice window) immediately, the others at the end of the 20-second choice window. This way the save also gets what was bought or found during the window, the next server loads the player on the first attempt, and `PlayerRemoving` does not save a second time (`isLoaded` = false). After the lock is released, changes are no longer saved (important if the teleport fails). The Blizzard (`MatchOnly`) is not granted after the match ends: the receipt waits for the next match.
@@ -150,10 +160,11 @@ Numbers and lists are deliberately not repeated here: the source of truth is `Co
 
 ## Analytics
 
-- `Analytics` sends to AnalyticsService only from the published game; in Studio it prints `[Analytics] ...` to Output. Functions: `onboarding`, `cash`, `custom`.
+- `Analytics` sends to AnalyticsService only from the published game; in Studio it prints `[Analytics] ...` to Output. Functions: `onboarding`, `economy` (any currency), `cash` and `crystals` (wrappers over `economy`), `custom`.
 - Funnel (`Analytics.ONBOARDING`): in the lobby steps 1–3 are set by `LobbyServer`, in the match 4–9 by `AnalyticsHooks`.
 - `AnalyticsHooks` watches `leaderstats.Cash` and attributes and determines the source. Income: `CashPack`, `Manhole`, `MatchEndSale`, `SnowMelter`. Spending: `Tool:<Id>`, `ToolUpgrade:<Tool>.<Upgrade>`, `Backpack`. **A new source or spend of Cash must be added there.**
-- Custom events: `QuickPlay`, `MatchDuration`, `BuyPass_<Key>`, `BuyProduct_<Key>`.
+- Custom events: `QuickPlay`, `MatchDuration`, `BuyPass_<Key>`, `BuyProduct_<Key>`, `DailyClaim` (value = the personal day).
+- Crystals: source `TimedReward` with sku `DailyBase` or `DailyMilestone` (lobby `DailyServer`).
 
 ## Interface look (`Ui`)
 
@@ -176,13 +187,23 @@ Numbers and lists are deliberately not repeated here: the source of truth is `Co
 - "Friends only": `IsFriendsWith` in the background with a cache; strangers are pushed out.
 - `quickPlay` (the PLAY button, 1 s cooldown): puts the player on the pad of a group that is filling up — `starting` first, then `setup`, among equals the one with more players, then the one with the earlier start. If there is none, takes an empty one and starts the countdown at once. Not on a pad within 2 s → toast `Lobby.Hud.NoFreePads`.
 - Signs: `Sign.BoardGui.Board.Strip.Top` and `.Main`, above the pad `Pad.PadGui.Count` and `.Status`. The texts are set by `LobbyServer`; **do not rename these objects or the `QueuePads` folder.**
-- `LobbyHudClient`: balance, PLAY, shop, invite, music (`SoundService.LobbyMusic`, muted locally; with an empty `SoundId` there is no button). The placeholder buttons (Clans, Classes, Stats, Feedback, Updates) were removed on 2026-11-02: add a new button together with its window.
+- `LobbyHudClient`: Cash and Crystals, PLAY, shop, invite, daily rewards (red dot while `DailyReady`), music (`SoundService.LobbyMusic`, muted locally; with an empty `SoundId` there is no button). The placeholder buttons (Clans, Classes, Stats, Feedback, Updates) were removed on 2026-11-02: add a new button together with its window.
 - `LobbyMenuClient`: the "Game settings" and "Map choice" panels for the host; jump = leave the pad. The map card takes `Image` and `Icon` from `Maps` if they are set.
 - The map name is the key `Map.<Id>`.
 - `LobbyTruckClient`: on `QueueState` the truck's beacons blink (`setup` slower, `starting` and `teleporting` faster), during the countdown the meshes shake and there is smoke. Display only.
 - `LobbyRecordsServer`: on entering the lobby and when the `Cash` attribute changes, writes the player's Cash to the OrderedDataStore `TopCash_v1` (in Studio `TopCash_Studio`, does not write with TestSave), and once per 60 s reads the top 8 into the `TopPlayers` attribute on `ReplicatedStorage.Lobby`. `PlayerData` is not changed. The table shows the current Cash, not the all-time earnings: there is no other counter in the save. A player gets into it only by entering the lobby.
 - Ragdoll on the slide: `SlideRagdollServer` starts it when the character's root is inside a part with the `SlideStart` tag, and ends it when the character has rolled to a stop (slower than 5 studs/s for half a second, but not earlier than 1 s), and in any case after 6 s. It turns off the animation joints (`AnimationConstraint` of the new rig, `Motor6D` of the old one) and turns on limb collision. The character attribute `Ragdoll` is read by `SlideRagdollClient`: the Humanoid state and the tumble are controlled by the character's owner.
 - Snowballs: `SnowballClient` (LMB on the world, a button on touch screens) sends only the direction to `ThrowSnowball`. `SnowballServer` checks its type and rate, computes the flight and the hit with a ray itself, `SnowballFx` shows them to everyone. No damage and no knockback, so nobody can knock a player off a pad. Numbers in `Lobby/Snowball.luau`.
+
+## Daily reward (`DailyServer`, `Lobby.DailyGui`, 2026-11-09)
+
+- **Crystals** are the persistent currency (Cash will later become per-match). For now the only source is the daily reward in the lobby; nothing spends them yet.
+- **Model** (`Shared.Daily`, all numbers in `Daily.Config`): a personal day counter. Day 1 is the UTC day of the first claim (`Daily.First` = `os.time() // 86400`), day n = today − `First` + 1. One claim per UTC day, by server `os.time()` only. Days 1, 8, 15… (every 7th) give `MilestoneReward` 100, other days `BaseReward` 25. There is no streak reset: a missed day only stays unclaimed. `Daily.Claimed` keeps the claimed personal days of the last 14 days, enough for the window.
+- **Claim:** the client calls the RemoteFunction `Lobby.Remotes.ClaimDaily` without arguments (one at a time per player, 1 s cooldown). `DailyServer` writes like the lobby `ShopServer`: `SaveStore.prepare`, `UpdateAsync` with `SaveSchema.upgrade` inside, no yields in the function. A fresh `Session` (a match server holds the data) → `Busy`; today already in `Claimed` → `Already`, so a double click or a second server never pays twice. Answers: `Ok` (with `day` and `reward`), `Already`, `Busy`, `Unavailable`, `NotYet` (only with a negative day shift).
+- **Attributes:** `LobbyCashServer` reads `Crystals`, `DailyFirst` (0 = never claimed) and `DailyClaimed` (`"1,2,4"`) on entry; `DailyServer` sets the same after a claim and computes `DailyDay` and `DailyReady` from them (no DataStore read) on entry, after a claim, at every UTC midnight and when `DebugDayOffset` changes.
+- **Window** (`ReplicatedStorage.Lobby.DailyGui`, opened by the HUD button and the gazebo prompt): 8 cards 2×4 from the latest milestone to the next one; a check on claimed days, a cross and faded paper on missed days, today green and pulsing, milestones amber with a gift. The countdown to the next UTC midnight uses `workspace:GetServerTimeNow()`. With a gamepad the Claim (or Close) button is selected on open, ButtonB closes. `[unverified]` the look and the gamepad, not seen in Studio yet.
+- **Gazebo spot:** `Blockout.World.Gazebo.Floor.DailySpot` holds the `DailyPrompt` prompt and the `DailyMarker` billboard (details in `docs/studio-world.md`); the gift icon rocks while a reward is ready. `[unverified]` that the prompt opens the window (not triggered by hand yet).
+- **Test in Studio:** `DebugDayOffset` shifts "today" (CLAUDE.md, "Daily reward test").
 
 ## Other
 

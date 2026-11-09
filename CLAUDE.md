@@ -44,8 +44,8 @@ What lives where:
 
 | Where | server | replicated | client |
 |---|---|---|---|
-| **shared** | Analytics, SaveSchema, SaveStore | Locale (+Strings), Shop (+Gui), Ui (interface look, icons) | ChatTagClient, LocaleClient, SnowfallClient |
-| **lobby** | LobbyServer, LobbyCashServer, LobbyRecordsServer, ShopServer, SlideRagdollServer, SnowballServer | Lobby/Maps, Lobby/Snowball, Lobby/Remotes | LobbyHudClient, LobbyMenuClient, LobbyRecordsClient, LobbyTruckClient, SlideRagdollClient, SnowballClient |
+| **shared** | Analytics, SaveSchema, SaveStore | Daily (daily reward config and day math), Locale (+Strings), Shop (+Gui), Ui (interface look, icons) | ChatTagClient, LocaleClient, SnowfallClient |
+| **lobby** | LobbyServer, LobbyCashServer, LobbyRecordsServer, DailyServer, ShopServer, SlideRagdollServer, SnowballServer | Lobby/Maps, Lobby/Snowball, Lobby/DailyGui, Lobby/Remotes | LobbyHudClient, LobbyMenuClient, LobbyRecordsClient, LobbyTruckClient, SlideRagdollClient, SnowballClient |
 | **house** | SnowGame/: BlowServer, SnowField, PileServer, ToolServer, ToolShopServer, MelterServer, UpgradeShopServer, LeaderstatsServer, PlayerData, MatchServer, ShopServer, AnalyticsHooks, OnboardingServer, FindServer | SnowGame/: Config, ZoneConfig, Finds, Remotes, ShovelSwing, ToolUse, PileMound (pile mesh template) | FindClient, GameHudClient, GateSignClient, HideCoreGui, MatchEndClient, PassShowcaseClient, PileClient, RewardLightsClient, SellPointerClient, ShovelChunksClient, SnowMeshClient, SnowParticles, ToolClient, ToolSfxClient, ToolShopClient, UpgradeShopClient |
 
 **Robux shop** — two different server scripts and shared modules; this is not a duplicate:
@@ -74,7 +74,7 @@ Oleg creates a new product in the Creator Dashboard and sends the id; `Id = 0` m
 
 ## Saves and TestSave
 
-`ServerScriptService.Shared.SaveStore` is the only place where the store and key are defined. It is used by `PlayerData` (match, with a session lock), `LobbyCashServer` (read only) and the lobby `ShopServer` (writes purchases).
+`ServerScriptService.Shared.SaveStore` is the only place where the store and key are defined. It is used by `PlayerData` (match, with a session lock), `LobbyCashServer` (read only), the lobby `ShopServer` (writes purchases) and `DailyServer` (writes Crystals and Daily). Who writes which field: `docs/systems.md`, "Save and lock".
 
 | Run | Store | Key |
 |---|---|---|

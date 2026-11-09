@@ -1,5 +1,6 @@
 -- Показ баланса Cash, буста, Crystals и ежедневной награды в лобби: только читаем сохранение (без блокировки сессии).
--- Пишут в сохранение в лобби только ShopServer (покупки за Robux) и DailyServer (Crystals и Daily).
+-- Пишут в сохранение в лобби только ShopServer (покупки за Robux), DailyServer (Crystals и Daily) и StatServer (Stats).
+-- Атрибуты Stat_<Id> — уровни постоянных статов (Shared.Crystals).
 -- Атрибуты Crystals, DailyFirst (0 — ещё не получал), DailyClaimed ("1,2,4"); DailyDay и DailyReady считает DailyServer.
 -- Хранилище и ключ общие с ServerScriptService.SnowGame.PlayerData в House Map (Shared.SaveStore).
 local Players = game:GetService("Players")
@@ -8,6 +9,7 @@ local RunService = game:GetService("RunService")
 
 local SaveStore = require(script.Parent:WaitForChild("Shared"):WaitForChild("SaveStore"))
 local Daily = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Daily"))
+local Crystals = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Crystals"))
 
 local ATTEMPTS = 3
 local RETRY_WAIT = 3
@@ -32,6 +34,10 @@ local function loadCash(player)
 			player:SetAttribute("Crystals", Daily.count(data.Crystals))
 			player:SetAttribute("DailyFirst", daily.First or 0)
 			player:SetAttribute("DailyClaimed", Daily.encodeClaimed(daily.Claimed))
+			local stats = Crystals.cleanStats(data.Stats)
+			for _, stat in Crystals.Stats do
+				player:SetAttribute("Stat_" .. stat.Id, stats[stat.Id] or 0)
+			end
 			return
 		end
 		if RunService:IsStudio() and string.find(tostring(result), "403") then

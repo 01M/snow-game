@@ -71,11 +71,11 @@ findEvent.OnClientEvent:Connect(function(kind: string, id: string?, value: numbe
 	elseif kind == "Gold" then
 		show(L("Find.Gold", { cash = value }), jackpotSound)
 	elseif kind == "New" then
-		show(L("Find.New", { name = name }), pingSound)
+		show(L("Find.New", { name = name, n = value }), pingSound)
 	elseif kind == "Duplicate" then
 		show(L("Find.Duplicate", { name = name, cash = value }), pingSound)
 	elseif kind == "SetDone" then
-		show(L("Find.SetDone", { cash = value }), jackpotSound)
+		show(L("Find.SetDone", { n = value }), jackpotSound)
 	end
 	if id == "Gnome" then
 		local folder = workspace:WaitForChild("SnowYard"):FindFirstChild("Finds")

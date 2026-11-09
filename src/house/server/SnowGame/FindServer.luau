@@ -5,6 +5,8 @@
 -- потерянная вещь показывается и подбирается промптом. Снеговик-гном стоит открыто, его находит каждый игрок сам.
 -- В Studio атрибут workspace DebugFinds = true до запуска кладёт золотую снежинку и вещи в первую зону: её не надо открывать.
 -- Коллекция — атрибут игрока Collection ("Id,Id"), её сохраняет PlayerData. FindCash — Cash от находок, для AnalyticsHooks.
+-- Первая находка вещи даёт Crystals по редкости (Finds.Rarity), вся коллекция — Finds.SetCrystals; потерянные вещи
+-- выбираются по весам редкости (Finds.pickLost).
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
@@ -96,11 +98,14 @@ local function collect(player: Player, item: any): boolean
 	end
 	table.insert(list, item.Id)
 	player:SetAttribute("Collection", table.concat(list, ","))
-	findEvent:FireClient(player, "New", item.Id, #list)
+	-- Первая находка: Crystals по редкости; вся коллекция — ещё SetCrystals. Сохраняем сразу (коллекция и Crystals)
+	local got = PlayerData.addCrystals(player, finds.crystalsFor(item), "FirstFind:" .. item.Id)
+	findEvent:FireClient(player, "New", item.Id, got)
 	if #list >= #finds.Items then
-		addCash(player, finds.SetCash)
-		findEvent:FireClient(player, "SetDone", item.Id, finds.SetCash)
+		local bonus = PlayerData.addCrystals(player, finds.SetCrystals, "CollectionSet")
+		findEvent:FireClient(player, "SetDone", item.Id, bonus)
 	end
+	PlayerData.checkpoint(player)
 	return true
 end
 
@@ -277,16 +282,11 @@ function FindServer.start(zones: { any })
 		spawnGold(debugFinds and zones[1] or zones[math.random(#zones)])
 	end
 
-	local lost = {}
-	for _, item in finds.Items do
-		if not item.Hidden then
-			table.insert(lost, item)
-		end
-	end
 	local pool = table.clone(zones)
 	for _ = 1, math.min(finds.LostPerMatch, #pool) do
 		local zone = table.remove(pool, math.random(#pool))
-		spawnLost(debugFinds and zones[1] or zone, lost[math.random(#lost)])
+		-- вещь — по весам редкости (Finds.Rarity), повторы возможны
+		spawnLost(debugFinds and zones[1] or zone, finds.pickLost(math.random()))
 	end
 	spawnGnome()
 end
@@ -321,5 +321,23 @@ end
 Players.PlayerRemoving:Connect(function(player)
 	gnomeFound[player] = nil
 end)
+
+-- Studio: атрибут игрока DebugCollect = "<Id вещи>" кладёт её в коллекцию тем же путём, что подбор промптом
+-- (награды и сохранение как в игре); атрибут сам сбрасывается. Для проверки наград за находки без поиска под снегом
+if RunService:IsStudio() then
+	local function watch(player: Player)
+		player:GetAttributeChangedSignal("DebugCollect"):Connect(function()
+			local item = itemById(player:GetAttribute("DebugCollect"))
+			if item then
+				player:SetAttribute("DebugCollect", nil)
+				collect(player, item)
+			end
+		end)
+	end
+	Players.PlayerAdded:Connect(watch)
+	for _, player in Players:GetPlayers() do
+		watch(player)
+	end
+end
 
 return FindServer

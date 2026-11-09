@@ -1273,7 +1273,7 @@ label({
 label({
 	Position = UDim2.fromOffset(400, 64),
 	Size = UDim2.fromOffset(345, 230),
-	Text = L("Collection.Text", { cash = finds.SetCash }),
+	Text = L("Collection.Text", { n = finds.SetCrystals }),
 	TextSize = 19,
 	TextWrapped = true,
 	TextYAlignment = Enum.TextYAlignment.Top,

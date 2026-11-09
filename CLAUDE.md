@@ -90,6 +90,7 @@ Oleg creates a new product in the Creator Dashboard and sends the id; `Id = 0` m
 - The filled key has no `SchemaVersion`, so every TestSave run checks the migration from the old format: Output shows `[SaveSchema] <name>: 0 → 3`.
 - `TestSaveFutureSchema = true` (together with TestSave) fills the key with `SchemaVersion = 999`: a check that a save from a newer version is not overwritten (in the match: kick `Kick.SaveTooNew`).
 - `StartCash` (a workspace attribute, House Map, Studio only, set in edit mode): Cash on the first join into the match; without it every join starts with 0. A rejoin restored from `MatchCache` ignores it. Remove the attribute after the test.
+- `DebugCollect = "<item Id>"` (a player attribute, House Map, Studio only, during Play from the Server context): puts that find into the player's collection through the same `collect()` as picking it up, with the same Crystals, notice and save. The attribute clears itself.
 - `DebugRejoin = true` (a player attribute, House Map, Studio only, during Play from the Server context): puts the match progress into `MatchCache`, resets it and restores it, the same path as a leave and rejoin on one server (a real rejoin cannot be done in a Studio Play). The attribute clears itself.
 - `DebugGiveCrystals` (a player attribute, House Map, Studio only): set it to N during Play from the Server context and the match gives N Crystals through `PlayerData.addCrystals` and saves at once; the attribute clears itself. Code run from the Command Bar or MCP gets its own copy of the modules, so `addCrystals` cannot be called from there directly.
 - `TestSaveStats` (together with TestSave, Studio only) also fills the key with permanent Crystal stats: a number is the level of all four stats (clamped to 0..5, e.g. `TestSaveStats = 5`), `true` means the max level. It lets the match effects be tried by feel in a House Map Play (Snow Boots 5 = WalkSpeed 21, Deep Pockets 5 = backpack base 55). Output shows `Stats <value>` in the `[SaveStore] TestSave включён` line. Remove the attribute after the test.
@@ -120,7 +121,7 @@ Versions are pinned in `rokit.toml`: Rojo 7.7.1, StyLua 2.6.0, Selene 0.32.0, lu
 2. `stylua src`, then `stylua --check src`; if the check fails, repeat.
 3. `selene src` shows 0 warnings.
 4. `scripts/analyze.ps1` shows 0 errors.
-5. Debug attributes removed: `TestSave`, `TestSaveFutureSchema`, `TestSaveStats`, `StartCash`, `DebugDayOffset`, `DebugGiveCrystals` and `DebugRejoin` (player), `ForceLanguage`, `DebugSnowBlocks`, `DebugSnowDepth`, `DebugTouchButton`, `DebugFinds`, `DebugShovelFxOld`, `DebugShovelShake`, `DebugShovelLite`.
+5. Debug attributes removed: `TestSave`, `TestSaveFutureSchema`, `TestSaveStats`, `StartCash`, `DebugDayOffset`, `DebugGiveCrystals`, `DebugRejoin` and `DebugCollect` (player), `ForceLanguage`, `DebugSnowBlocks`, `DebugSnowDepth`, `DebugTouchButton`, `DebugFinds`, `DebugShovelFxOld`, `DebugShovelShake`, `DebugShovelLite`.
 
 ## Working rules
 

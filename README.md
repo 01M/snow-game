@@ -1,52 +1,47 @@
 # Snow Cleaning Simulator
 
-Личная карта репозитория. Цифры и правила здесь не дублируются: они живут в коде и в `CLAUDE.md`.
+A cooperative Roblox game for up to four players. Team up in the lobby, head to a snowy house, clear its grounds, earn Cash, and upgrade your tools during the match. Permanent Crystals unlock lasting stat upgrades between matches.
 
-Кооп до 4 игроков. В лобби собираетесь на площадке и уходите на карту дома. В матче чистите снег, носите его в рюкзаке (или толкаете кучу движком), продаёте за Cash и покупаете инструмент, апгрейды и рюкзак. Cash, инструменты и рюкзак живут один матч. Кристаллы остаются: ежедневка в лобби, находки, очищенные зоны, конец матча. На них покупаются постоянные статы. Матч кончается, когда очищены все зоны; дальше «Ещё раз» вместе или назад в лобби.
+## The game
 
-## Два плейса
+Clear snow with shovels and machines, collect it in your backpack or push it into piles, then sell it for Cash. Work through the house's zones together; when the lot is clear, choose to play another round as a group or return to the lobby.
 
-| | Лобби | Дом |
-|---|---|---|
-| Зачем | очередь, меню, магазин, ежедневка, статы | матч на карте House |
-| Rojo | `lobby.project.json`, порт 34872 | `house.project.json`, порт 34873 |
-| placeId | `91608833946402` | `77433112786408` |
+The project contains two Roblox places:
 
-Плейс открывать из облака, не из `.rbxl`. `servePlaceIds` не даст подключить проект не к тому месту.
+| Place | Purpose | Rojo project |
+| --- | --- | --- |
+| Lobby | Queues, shops, daily rewards, permanent upgrades | `lobby.project.json` |
+| House Map | Cooperative snow-clearing matches | `house.project.json` |
 
-## Где что лежит
+## Project layout
 
+```text
+src/lobby/   Lobby gameplay and interface
+src/house/   Match gameplay, snow, tools, and interface
+src/shared/  Saves, shop, localization, analytics, and shared UI
+docs/        System notes, Studio world, plans, and audits
+blender/     Source models and exports
 ```
-src/lobby/     очередь и лобби
-src/house/     матч
-src/shared/    сохранения, магазин, кристаллы, ежедневка, локализация, аналитика
-docs/          как устроены системы и что живёт в Studio, не в git
-blender/       модели
-```
 
-Код только в `src/`. Rojo затирает скрипты, правленные в Studio. Карта, свет, террейн и модели в плейсе: их Rojo не везёт, в git их тоже нет.
+Snow is simulated as server-owned height fields and rendered on clients with EditableMesh, with a block-based fallback.
 
-Снег на сервере — карта высот, на клиенте — EditableMesh. Если меш не собрался, остаются блоки.
+## Run locally
 
-## Поднять
+You need Roblox Studio, [Rokit](https://github.com/rojo-rbx/rokit), and the Rojo Studio plugin. Install the pinned project tools, then start each place in its own terminal:
 
-```
+```powershell
 rokit install
 rojo serve lobby.project.json
 rojo serve house.project.json
 ```
 
-В Studio: Plugins → Rojo → localhost и порт этого плейса → Connect. Два `serve` — в двух терминалах.
+In Studio, connect the Rojo plugin to `localhost` using the port shown by the server. Open the matching place from Roblox so Rojo can verify the place ID.
 
-Публикует плейсы только Олег, оба вместе. Если менялась схема сохранения, сначала House Map, потом лобби. Для B1 (Cash на один матч) наоборот: сначала лобби.
+## Project notes
 
-## Куда смотреть
+- [Development guide](CLAUDE.md) — repository conventions, save testing, and release checks.
+- [Game systems](docs/systems.md) — how the main systems fit together.
+- [Studio world](docs/studio-world.md) — map and assets stored in the Roblox place.
+- [Plans and audit](docs/) — design plans and technical review notes.
 
-| Файл | Зачем |
-|---|---|
-| `CLAUDE.md` | как работать с репозиторием, сохранения, TestSave, чеклист перед коммитом |
-| `docs/systems.md` | как собраны системы |
-| `docs/studio-world.md` | карта, графика, модели |
-| `Config.luau`, `ZoneConfig.luau`, `Shop/init.luau`, `Maps.luau` | числа |
-
-Перед коммитом: `stylua`, `selene` без предупреждений, `scripts/analyze.ps1` без ошибок, отладочные атрибуты сняты. Список атрибутов в `CLAUDE.md`.
+Code synced by Rojo lives in `src/`. The map, lighting, and other Studio-managed content are stored in the Roblox place and are not represented by the Rojo projects.

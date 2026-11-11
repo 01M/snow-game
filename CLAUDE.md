@@ -123,7 +123,7 @@ Versions are pinned in `rokit.toml`: Rojo 7.7.1, StyLua 2.6.0, Selene 0.32.0, lu
 2. `stylua src`, then `stylua --check src`; if the check fails, repeat.
 3. `selene src` shows 0 warnings.
 4. `scripts/analyze.ps1` shows 0 errors.
-5. Debug attributes removed: `TestSave`, `TestSaveFutureSchema`, `TestSaveStats`, `StartCash`, `DebugDayOffset`, `DebugFinishZone`, `DebugGiveCrystals`, `DebugRejoin` and `DebugCollect` (player), `ForceLanguage`, `DebugSnowBlocks`, `DebugSnowDepth`, `DebugTouchButton`, `DebugFinds`, `DebugShovelFxOld`, `DebugShovelShake`, `DebugShovelLite`.
+5. Debug attributes removed: `TestSave`, `TestSaveFutureSchema`, `TestSaveStats`, `StartCash`, `DebugDayOffset`, `DebugFinishZone`, `DebugGiveCrystals`, `DebugRejoin` and `DebugCollect` (player), `ForceLanguage`, `DebugSnowBlocks`, `DebugSnowDepth`, `DebugTouchButton`, `DebugFinds`, `DebugShovelFxOld`, `DebugShovelShake`, `DebugShovelLite`, `DebugUiSounds`.
 
 ## Working rules
 

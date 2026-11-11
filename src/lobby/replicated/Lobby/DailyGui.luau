@@ -171,7 +171,7 @@ local function refresh()
 		local ownCheck = milestone and isClaimed
 		card.icon.ImageTransparency = if ownCheck then 0.5 elseif isClaimed or missed then ICON_DIM else 0
 		card.icon.ImageColor3 = if missed then MISSED_TINT else Color3.new(1, 1, 1)
-		card.frame.BackgroundColor3 = if milestone then Ui.Color.amber else Ui.Color.paper
+		card.frame.BackgroundColor3 = if milestone then Ui.Color.amber else Ui.Color.card
 		card.frame.BackgroundTransparency = if missed then 0.45 else 0
 		card.mark.Visible = (isClaimed or missed) and not ownCheck
 		Ui.setIcon(card.mark, if isClaimed then "Check" else "Close")

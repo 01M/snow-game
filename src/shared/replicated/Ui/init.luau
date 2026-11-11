@@ -1,8 +1,8 @@
 --!strict
--- Ui: общий вид интерфейса обоих мест (стиль «Тёплый вечер» / «Снежная служба», холст 2026-11-02).
--- Тёмные плашки HUD поверх снега, кнопки с тёмным контуром, нижней «губой» и снежной шапкой, иконки из атласа.
+-- Ui: общий вид интерфейса обоих мест (стиль «Снежная служба»; палитра — из набора иконок, план 2026-11-11).
+-- Тёмно-синие плашки HUD поверх снега, кнопки с синим контуром, нижней «губой» и снежной шапкой, иконки из атласа.
 -- Иконки — один PNG 1024x1024 (assets/ui/icons.svg → icons.png), клетка 128 px, номер клетки — Ui.Icons.
--- Шрифты с кириллицей: Nunito (основной), Amatic SC (подписи «от руки»).
+-- Шрифт с кириллицей: Nunito.
 -- Общий модуль Lobby и House Map (src/shared/replicated/Ui → ReplicatedStorage.Shared.Ui).
 -- Design system parts (plan 2026-11-11): Ui.Motion (standard animations), Ui.Sound (UI sounds, silent while
 -- the ids are 0), button kinds (Ui.button Kind, Ui.setKind), Ui.toasts (toast stack), Ui.currencyPill.
@@ -13,38 +13,57 @@ local TweenService = game:GetService("TweenService")
 
 local Ui = {}
 
+-- Theme tokens (design system plan 2026-11-11, approved by Oleg). Colours are the palette of the icon set
+-- (art/icons/svg): navy outline #1B2A5C, blue, gold, green, red, steel, wood. blueDark and the night shades are
+-- own steps. Old names stay (amber = gold, paper = window body, ice = light blue) so screens keep working.
 Ui.Color = {
-	night = Color3.fromRGB(30, 38, 64), -- плашки HUD
-	nightDeep = Color3.fromRGB(20, 26, 43),
-	nightRaised = Color3.fromRGB(40, 50, 79),
-	paper = Color3.fromRGB(255, 243, 222),
-	paperShade = Color3.fromRGB(227, 205, 168),
-	paperLine = Color3.fromRGB(233, 213, 179),
-	ink = Color3.fromRGB(42, 28, 16),
-	inkSoft = Color3.fromRGB(122, 100, 80),
-	outline = Color3.fromRGB(11, 15, 28),
-	text = Color3.fromRGB(244, 235, 221),
-	textSoft = Color3.fromRGB(185, 174, 156),
-	amber = Color3.fromRGB(255, 180, 67),
-	amberDark = Color3.fromRGB(217, 131, 28),
-	green = Color3.fromRGB(61, 170, 107),
-	greenDark = Color3.fromRGB(35, 116, 74),
-	red = Color3.fromRGB(226, 83, 74),
-	redDark = Color3.fromRGB(158, 47, 40),
-	blue = Color3.fromRGB(60, 141, 214),
-	blueDark = Color3.fromRGB(39, 95, 153),
-	ice = Color3.fromRGB(143, 211, 255),
-	iceDark = Color3.fromRGB(60, 141, 214),
-	gray = Color3.fromRGB(150, 158, 172),
-	grayDark = Color3.fromRGB(105, 112, 128),
+	outline = Color3.fromRGB(27, 42, 92), -- #1B2A5C: every stroke and text outline
+	night = Color3.fromRGB(27, 42, 92), -- window headers
+	nightRaised = Color3.fromRGB(38, 57, 122), -- HUD pill fill: lighter than the outline, so the outline shows
+	nightDeep = Color3.fromRGB(18, 29, 66), -- bar background, lip of dark buttons
+	surface = Color3.fromRGB(227, 234, 242), -- window body (cool tint)
+	card = Color3.new(1, 1, 1), -- cards on a window
+	surfaceLine = Color3.fromRGB(169, 184, 204), -- dividers, empty level dots
+	paper = Color3.fromRGB(227, 234, 242), -- = surface
+	paperShade = Color3.fromRGB(169, 184, 204),
+	paperLine = Color3.fromRGB(169, 184, 204),
+	ink = Color3.fromRGB(27, 42, 92), -- text on light surfaces
+	inkSoft = Color3.fromRGB(107, 124, 150),
+	text = Color3.new(1, 1, 1), -- text on dark surfaces
+	textSoft = Color3.fromRGB(169, 184, 204),
+	gold = Color3.fromRGB(255, 200, 61),
+	goldDark = Color3.fromRGB(224, 138, 0),
+	goldLight = Color3.fromRGB(255, 242, 168),
+	amber = Color3.fromRGB(255, 200, 61), -- = gold
+	amberDark = Color3.fromRGB(224, 138, 0),
+	green = Color3.fromRGB(95, 211, 95),
+	greenDark = Color3.fromRGB(46, 158, 68),
+	greenLight = Color3.fromRGB(201, 247, 165),
+	red = Color3.fromRGB(255, 107, 92),
+	redDark = Color3.fromRGB(201, 59, 59),
+	redLight = Color3.fromRGB(255, 179, 168),
+	blue = Color3.fromRGB(42, 127, 214),
+	blueDark = Color3.fromRGB(31, 95, 168),
+	blueLight = Color3.fromRGB(92, 200, 255),
+	ice = Color3.fromRGB(92, 200, 255), -- = blueLight
+	iceDark = Color3.fromRGB(42, 127, 214),
+	gray = Color3.fromRGB(169, 184, 204),
+	grayDark = Color3.fromRGB(107, 124, 150),
+	wood = Color3.fromRGB(185, 122, 74), -- journal clipboard only
+	woodDark = Color3.fromRGB(122, 74, 42),
+	woodLight = Color3.fromRGB(232, 185, 138),
 	white = Color3.new(1, 1, 1),
 }
 
+-- Sizes are design pixels, before scaling (scale rule: text is at least 12 px on screen at the 0.75 floor)
+Ui.Radius = { window = 24, card = 16, button = 14, tag = 8 }
+Ui.Stroke = { window = 4, card = 3, button = 3, chip = 2, text = 2 }
+Ui.TextSize = { title = 32, heading = 24, body = 20, caption = 16 }
+
 local NUNITO = "rbxasset://fonts/families/Nunito.json"
 Ui.Font = {
-	heavy = Font.new(NUNITO, Enum.FontWeight.Heavy),
-	bold = Font.new(NUNITO, Enum.FontWeight.ExtraBold),
-	hand = Font.new("rbxasset://fonts/families/AmaticSC.json", Enum.FontWeight.Bold),
+	heavy = Font.new(NUNITO, Enum.FontWeight.Heavy), -- titles and numbers
+	bold = Font.new(NUNITO, Enum.FontWeight.ExtraBold), -- body
 }
 
 Ui.ATLAS = "rbxassetid://101963241650337"
@@ -127,10 +146,10 @@ local SNOW_CAP_SHORT = { Vector2.new(512, 768), Vector2.new(256, 128) }
 -- Цвета кнопок: лицо и «губа»
 local BUTTON_COLORS = {
 	green = { Ui.Color.green, Ui.Color.greenDark, Ui.Color.white },
-	amber = { Ui.Color.amber, Ui.Color.amberDark, Ui.Color.ink },
+	amber = { Ui.Color.amber, Ui.Color.amberDark, Ui.Color.white },
 	red = { Ui.Color.red, Ui.Color.redDark, Ui.Color.white },
 	blue = { Ui.Color.blue, Ui.Color.blueDark, Ui.Color.white },
-	paper = { Ui.Color.paper, Ui.Color.paperShade, Ui.Color.ink },
+	paper = { Ui.Color.card, Ui.Color.surfaceLine, Ui.Color.ink },
 	gray = { Ui.Color.gray, Ui.Color.grayDark, Ui.Color.white },
 	night = { Ui.Color.nightRaised, Ui.Color.nightDeep, Ui.Color.text },
 }
@@ -448,7 +467,7 @@ function Ui.button(p: ButtonProps): TextButton
 		AutoButtonColor = false,
 		Text = "",
 		Parent = p.Parent,
-	}, { Ui.corner(p.Radius or 16), Ui.border(3) })
+	}, { Ui.corner(p.Radius or Ui.Radius.button), Ui.border(Ui.Stroke.button) })
 	local gradient = lip(c[1], c[2], 0.12)
 	gradient.Name = "Lip"
 	gradient:SetAttribute("Share", 0.12)
@@ -534,7 +553,7 @@ end
 
 -- Тёмная плашка HUD (полупрозрачная, со скруглением «таблеткой»)
 function Ui.pill(props: { [string]: any }, children: { any }?): Frame
-	props.BackgroundColor3 = props.BackgroundColor3 or Ui.Color.night
+	props.BackgroundColor3 = props.BackgroundColor3 or Ui.Color.nightRaised
 	props.BackgroundTransparency = props.BackgroundTransparency or 0.1
 	local frame = Ui.new("Frame", props, children)
 	Ui.corner("full").Parent = frame
@@ -686,8 +705,8 @@ local TOAST_TIME = 2.2
 local TOAST_VISIBLE = 2
 local TOAST_QUEUE_MAX = 4 -- older waiting toasts are dropped: late news is worse than no news
 local TOAST_STYLE: { [string]: { Color3 } } = {
-	info = { Ui.Color.night, Ui.Color.text },
-	reward = { Ui.Color.amber, Ui.Color.ink },
+	info = { Ui.Color.nightRaised, Ui.Color.text },
+	reward = { Ui.Color.amber, Ui.Color.white },
 	error = { Ui.Color.red, Ui.Color.white },
 }
 

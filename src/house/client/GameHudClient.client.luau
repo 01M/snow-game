@@ -1437,7 +1437,7 @@ local function refreshHud()
 
 	-- рюкзак: полный — янтарный и подсказка «продай»
 	local full = snow >= capacity
-	bagCount.Text = string.format('%d<font color="#B9AE9C"> / %d</font>', snow, capacity)
+	bagCount.Text = string.format('%d<font color="#A9B8CC"> / %d</font>', snow, capacity)
 	bagTitle.Text = full and L("Hud.BackpackFull") or L("Hud.Backpack")
 	bagTitle.TextColor3 = full and Ui.Color.amber or Ui.Color.textSoft
 	setBagBar(capacity > 0 and snow / capacity or 0, full and Ui.Color.amber or nil)

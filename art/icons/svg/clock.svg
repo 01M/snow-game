@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="none">
+  <defs>
+    <style>
+      .c-outline{stop-color:#1B2A5C}.c-light{stop-color:#BFEFFF}.c-mid{stop-color:#5CC8FF}.c-dark{stop-color:#2A7FD6}.c-hi{stop-color:#FFFFFF}
+      .c-gold-l{stop-color:#FFF2A8}.c-gold-m{stop-color:#FFC83D}.c-gold-d{stop-color:#E08A00}
+      .c-green-l{stop-color:#C9F7A5}.c-green-m{stop-color:#5FD35F}.c-green-d{stop-color:#2E9E44}
+      .c-red-l{stop-color:#FFB3A8}.c-red-m{stop-color:#FF6B5C}.c-red-d{stop-color:#C93B3B}
+      .c-wood-l{stop-color:#E8B98A}.c-wood-m{stop-color:#B97A4A}.c-wood-d{stop-color:#7A4A2A}
+      .c-steel-l{stop-color:#E3EAF2}.c-steel-m{stop-color:#A9B8CC}.c-steel-d{stop-color:#6B7C96}
+    </style>
+    <linearGradient id="clock-g1" gradientUnits="userSpaceOnUse" x1="220" y1="40" x2="292" y2="120"><stop class="c-gold-l"/><stop offset="0.5" class="c-gold-m"/><stop offset="1" class="c-gold-d"/></linearGradient>
+    <linearGradient id="clock-s-outline" gradientUnits="userSpaceOnUse"><stop class="c-outline"/></linearGradient>
+    <linearGradient id="clock-s-gold-m" gradientUnits="userSpaceOnUse"><stop class="c-gold-m"/></linearGradient>
+    <linearGradient id="clock-g2" gradientUnits="userSpaceOnUse" x1="130" y1="150" x2="380" y2="440"><stop class="c-mid"/><stop offset="1" class="c-dark"/></linearGradient>
+    <linearGradient id="clock-s-dark" gradientUnits="userSpaceOnUse"><stop class="c-dark"/></linearGradient>
+    <linearGradient id="clock-g3" gradientUnits="userSpaceOnUse" x1="170" y1="190" x2="340" y2="400"><stop class="c-hi"/><stop offset="1" class="c-steel-l"/></linearGradient>
+    <linearGradient id="clock-s-steel-d" gradientUnits="userSpaceOnUse"><stop class="c-steel-d"/></linearGradient>
+    <linearGradient id="clock-s-red-m" gradientUnits="userSpaceOnUse"><stop class="c-red-m"/></linearGradient>
+    <linearGradient id="clock-s-hi" gradientUnits="userSpaceOnUse"><stop class="c-hi"/></linearGradient>
+  </defs>
+  <!-- crown and side button -->
+  <path fill="url(#clock-g1)" d="M240 40H272Q292 40 292 60V100Q292 120 272 120H240Q220 120 220 100V60Q220 40 240 40Z"/>
+  <path stroke="url(#clock-s-outline)" stroke-width="18" stroke-linejoin="round" stroke-linecap="round" d="M240 40H272Q292 40 292 60V100Q292 120 272 120H240Q220 120 220 100V60Q220 40 240 40Z"/>
+  <path stroke="url(#clock-s-outline)" stroke-width="58" stroke-linejoin="round" stroke-linecap="round" d="M388 150L412 126"/>
+  <path stroke="url(#clock-s-gold-m)" stroke-width="22" stroke-linejoin="round" stroke-linecap="round" d="M388 150L412 126"/>
+  <!-- case -->
+  <path fill="url(#clock-g2)" d="M84 292a172 172 0 1 0 344 0a172 172 0 1 0 -344 0Z"/>
+  <path stroke="url(#clock-s-outline)" stroke-width="18" stroke-linejoin="round" stroke-linecap="round" d="M84 292a172 172 0 1 0 344 0a172 172 0 1 0 -344 0Z"/>
+  <path fill="url(#clock-s-dark)" opacity=".6" d="M418 234A172 172 0 0 1 198 454A232 232 0 0 0 418 234Z"/>
+  <!-- face -->
+  <path fill="url(#clock-g3)" d="M134 292a122 122 0 1 0 244 0a122 122 0 1 0 -244 0Z"/>
+  <path stroke="url(#clock-s-outline)" stroke-width="14" stroke-linejoin="round" stroke-linecap="round" d="M134 292a122 122 0 1 0 244 0a122 122 0 1 0 -244 0Z"/>
+  <path stroke="url(#clock-s-steel-d)" stroke-width="14" stroke-linejoin="round" stroke-linecap="round" d="M256 190V212M256 372V394M154 292H176M336 292H358"/>
+  <!-- hand -->
+  <path stroke="url(#clock-s-outline)" stroke-width="44" stroke-linejoin="round" stroke-linecap="round" d="M256 292L318 222"/>
+  <path stroke="url(#clock-s-red-m)" stroke-width="20" stroke-linejoin="round" stroke-linecap="round" d="M256 292L318 222"/>
+  <path fill="url(#clock-s-outline)" d="M236 292a20 20 0 1 0 40 0a20 20 0 1 0 -40 0Z"/>
+  <path stroke="url(#clock-s-hi)" stroke-width="12" stroke-linejoin="round" stroke-linecap="round" opacity=".9" d="M124 250A140 140 0 0 1 190 168"/>
+</svg>

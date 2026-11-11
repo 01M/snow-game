@@ -4,6 +4,13 @@
 -- Иконки — один PNG 1024x1024 (assets/ui/icons.svg → icons.png), клетка 128 px, номер клетки — Ui.Icons.
 -- Шрифты с кириллицей: Nunito (основной), Amatic SC (подписи «от руки»).
 -- Общий модуль Lobby и House Map (src/shared/replicated/Ui → ReplicatedStorage.Shared.Ui).
+-- Design system parts (plan 2026-11-11): Ui.Motion (standard animations), Ui.Sound (UI sounds, silent while
+-- the ids are 0), button kinds (Ui.button Kind, Ui.setKind), Ui.toasts (toast stack), Ui.currencyPill.
+local GuiService = game:GetService("GuiService")
+local RunService = game:GetService("RunService")
+local SoundService = game:GetService("SoundService")
+local TweenService = game:GetService("TweenService")
+
 local Ui = {}
 
 Ui.Color = {
@@ -128,6 +135,148 @@ local BUTTON_COLORS = {
 	night = { Ui.Color.nightRaised, Ui.Color.nightDeep, Ui.Color.text },
 }
 export type ButtonColor = "green" | "amber" | "red" | "blue" | "paper" | "gray" | "night"
+-- Button kinds by meaning; "disabled" does not press and answers with the error sound
+export type ButtonKind = "primary" | "secondary" | "danger" | "reward" | "neutral" | "disabled"
+local KIND_COLORS: { [string]: ButtonColor } = {
+	primary = "green",
+	secondary = "blue",
+	danger = "red",
+	reward = "amber",
+	neutral = "paper",
+	disabled = "gray",
+}
+
+-- ============================================================
+-- Motion: standard animations. With the Roblox "Reduce Motion" setting on, they finish at once
+-- ============================================================
+local Motion = {}
+Ui.Motion = Motion
+
+function Motion.reduced(): boolean
+	local ok, value = pcall(function()
+		return GuiService.ReducedMotionEnabled
+	end)
+	return ok and value == true
+end
+
+function Motion.tween(
+	inst: Instance,
+	time: number,
+	goal: { [string]: any },
+	style: Enum.EasingStyle?,
+	direction: Enum.EasingDirection?
+): Tween
+	local info = TweenInfo.new(
+		if Motion.reduced() then 0 else time,
+		style or Enum.EasingStyle.Quad,
+		direction or Enum.EasingDirection.Out
+	)
+	local tween = TweenService:Create(inst, info, goal)
+	tween:Play()
+	return tween
+end
+
+-- Press: down to 0.94 in 0.06 s; release back to `rest` in 0.12 s with a small overshoot
+function Motion.press(scale: UIScale, down: boolean, rest: number?)
+	if down then
+		Motion.tween(scale, 0.06, { Scale = 0.94 })
+	else
+		Motion.tween(scale, 0.12, { Scale = rest or 1 }, Enum.EasingStyle.Back)
+	end
+end
+
+-- Reward pop: from 0.6 of the size up past it and back, 0.3 s
+function Motion.pop(scale: UIScale, target: number?)
+	local to = target or 1
+	scale.Scale = if Motion.reduced() then to else to * 0.6
+	Motion.tween(scale, 0.3, { Scale = to }, Enum.EasingStyle.Back)
+end
+
+-- Window open: 0.9 → 1 of `target` in 0.18 s
+function Motion.open(scale: UIScale, target: number?)
+	local to = target or 1
+	scale.Scale = if Motion.reduced() then to else to * 0.9
+	Motion.tween(scale, 0.18, { Scale = to }, Enum.EasingStyle.Back)
+end
+
+-- Window close: down to 0.95 in 0.12 s, then `done` (hide the window there); the scale is put back
+function Motion.close(scale: UIScale, target: number?, done: () -> ())
+	local to = target or 1
+	local tween = Motion.tween(scale, 0.12, { Scale = to * 0.95 }, Enum.EasingStyle.Quad, Enum.EasingDirection.In)
+	tween.Completed:Once(function()
+		done()
+		scale.Scale = to
+	end)
+end
+
+-- Number in a label counts from one value to another (0.4 s); a newer count on the same label wins
+function Motion.countUp(label: TextLabel, from: number, to: number, duration: number?, format: ((number) -> string)?)
+	local text = format or function(n: number): string
+		return tostring(math.floor(n + 0.5))
+	end
+	local token = ((label:GetAttribute("CountToken") :: number?) or 0) + 1
+	label:SetAttribute("CountToken", token)
+	local total = duration or 0.4
+	if Motion.reduced() or total <= 0 then
+		label.Text = text(to)
+		return
+	end
+	task.spawn(function()
+		local started = os.clock()
+		while label.Parent and label:GetAttribute("CountToken") == token do
+			local share = math.min((os.clock() - started) / total, 1)
+			label.Text = text(from + (to - from) * share)
+			if share >= 1 then
+				break
+			end
+			RunService.Heartbeat:Wait()
+		end
+	end)
+end
+
+-- ============================================================
+-- Sound: UI sounds, local, in one SoundGroup "UI". An id of 0 means "not chosen yet": nothing plays
+-- ============================================================
+local Sound = {}
+Ui.Sound = Sound
+
+Sound.Ids = {
+	click = 0,
+	purchase = 0,
+	error = 0,
+	reward = 0,
+} :: { [string]: number }
+Sound.Volume = 0.5
+
+local uiSounds: { [string]: Sound } = {}
+local uiSoundGroup: SoundGroup? = nil
+
+function Sound.play(name: string)
+	local id = Sound.Ids[name]
+	if not id or id == 0 or not RunService:IsClient() then
+		return
+	end
+	local group = uiSoundGroup
+	if not group then
+		local made = Instance.new("SoundGroup")
+		made.Name = "UI"
+		made.Parent = SoundService
+		uiSoundGroup = made
+		group = made
+	end
+	local sound: Sound = uiSounds[name]
+	if not sound then
+		local made = Instance.new("Sound")
+		made.Name = name
+		made.SoundGroup = group
+		made.Parent = group
+		uiSounds[name] = made
+		sound = made
+	end
+	sound.SoundId = "rbxassetid://" .. id
+	sound.Volume = Sound.Volume
+	sound:Play()
+end
 
 -- ============================================================
 -- Базовые помощники
@@ -261,8 +410,15 @@ function Ui.paint(button: GuiObject, color: ButtonColor)
 	end
 end
 
+-- Сменить вид кнопки по смыслу (например, «Купить» → недоступно): цвет и состояние disabled
+function Ui.setKind(button: GuiObject, kind: ButtonKind)
+	Ui.paint(button, KIND_COLORS[kind])
+	button:SetAttribute("Disabled", if kind == "disabled" then true else nil)
+end
+
 export type ButtonProps = {
 	Name: string?,
+	Kind: ButtonKind?,
 	Color: ButtonColor?,
 	Text: string?,
 	TextSize: number?,
@@ -277,9 +433,10 @@ export type ButtonProps = {
 	Parent: Instance?,
 }
 
--- Кнопка: лицо + губа + контур, иконка слева или по центру, текст; при нажатии слегка «проседает»
+-- Кнопка: лицо + губа + контур, иконка слева или по центру, текст; при нажатии слегка «проседает» (Motion.press),
+-- под мышью чуть растёт, на нажатие — звук click (у disabled — error). Вид: Kind (по смыслу) или Color (старый способ)
 function Ui.button(p: ButtonProps): TextButton
-	local color = p.Color or "green"
+	local color: ButtonColor = p.Color or (if p.Kind then KIND_COLORS[p.Kind] else "green")
 	local c = BUTTON_COLORS[color]
 	local button = Ui.new("TextButton", {
 		Name = p.Name or "Button",
@@ -338,14 +495,40 @@ function Ui.button(p: ButtonProps): TextButton
 		Ui.snowCap(button, true)
 	end
 
+	if p.Kind == "disabled" then
+		button:SetAttribute("Disabled", true)
+	end
+
+	local hover = false
+	local function rest(): number
+		return if hover and not button:GetAttribute("Disabled") then 1.03 else 1
+	end
 	button.MouseButton1Down:Connect(function()
-		scale.Scale = 0.94
+		if not button:GetAttribute("Disabled") then
+			Motion.press(scale, true)
+		end
 	end)
 	local function release()
-		scale.Scale = 1
+		Motion.press(scale, false, rest())
 	end
 	button.MouseButton1Up:Connect(release)
 	button.MouseLeave:Connect(release)
+	-- hover only for a real mouse pointer (touch sends no MouseMovement)
+	button.InputBegan:Connect(function(input)
+		if input.UserInputType == Enum.UserInputType.MouseMovement then
+			hover = true
+			Motion.tween(scale, 0.1, { Scale = rest() })
+		end
+	end)
+	button.InputEnded:Connect(function(input)
+		if input.UserInputType == Enum.UserInputType.MouseMovement then
+			hover = false
+			Motion.tween(scale, 0.1, { Scale = 1 })
+		end
+	end)
+	button.Activated:Connect(function()
+		Sound.play(if button:GetAttribute("Disabled") then "error" else "click")
+	end)
 	return button
 end
 
@@ -415,6 +598,220 @@ function Ui.number(n: number): string
 	end
 	local out = string.reverse((string.gsub(string.reverse(s), "(%d%d%d)", "%1 ")))
 	return sign .. (string.gsub(out, "^ ", ""))
+end
+
+-- ============================================================
+-- Currency pill: icon + number (thousands with spaces) + optional tag (multiplier). One part for Cash and Crystals
+-- ============================================================
+export type CurrencyPill = {
+	frame: Frame,
+	-- nil shows "..." (not loaded yet); animate counts up from the shown value
+	set: (value: number?, animate: boolean?) -> (),
+	setTag: (text: string?) -> (),
+}
+
+function Ui.currencyPill(icon: string, props: { [string]: any }): CurrencyPill
+	local size: UDim2 = props.Size or UDim2.fromOffset(0, 60)
+	local height = size.Y.Offset
+	props.Size = size
+	props.AutomaticSize = Enum.AutomaticSize.X
+	local frame = Ui.pill(props)
+	Ui.new("UIListLayout", {
+		FillDirection = Enum.FillDirection.Horizontal,
+		VerticalAlignment = Enum.VerticalAlignment.Center,
+		Padding = UDim.new(0, 8),
+		SortOrder = Enum.SortOrder.LayoutOrder,
+		Parent = frame,
+	})
+	Ui.new("UIPadding", { PaddingLeft = UDim.new(0, 7), PaddingRight = UDim.new(0, 16), Parent = frame })
+	local iconSize = math.floor(height * 0.74)
+	Ui.icon(icon, { Name = "Icon", Size = UDim2.fromOffset(iconSize, iconSize), LayoutOrder = 1, Parent = frame })
+	local amount = Ui.label({
+		Name = "Amount",
+		Size = UDim2.fromOffset(0, height),
+		AutomaticSize = Enum.AutomaticSize.X,
+		Text = "...",
+		TextSize = math.floor(height * 0.5),
+		LayoutOrder = 2,
+		Parent = frame,
+	})
+	local tag = Ui.label({
+		Name = "Tag",
+		Size = UDim2.fromOffset(0, math.floor(height * 0.4)),
+		AutomaticSize = Enum.AutomaticSize.X,
+		BackgroundTransparency = 0,
+		BackgroundColor3 = Ui.Color.amber,
+		Text = "",
+		TextSize = math.floor(height * 0.25),
+		TextColor3 = Ui.Color.ink,
+		LayoutOrder = 3,
+		Visible = false,
+		Parent = frame,
+	}, {
+		Ui.corner(8),
+		Ui.new("UIPadding", { PaddingLeft = UDim.new(0, 7), PaddingRight = UDim.new(0, 7) }),
+	})
+
+	local shown: number? = nil
+	local function set(value: number?, animate: boolean?)
+		if value == nil then
+			amount:SetAttribute("CountToken", ((amount:GetAttribute("CountToken") :: number?) or 0) + 1)
+			amount.Text = "..."
+		elseif animate and shown ~= nil and value ~= shown then
+			Motion.countUp(amount, shown, value, nil, Ui.number)
+		else
+			Motion.countUp(amount, value, value, 0, Ui.number)
+		end
+		shown = value
+	end
+	local function setTag(text: string?)
+		tag.Visible = text ~= nil and text ~= ""
+		tag.Text = text or ""
+	end
+	return { frame = frame, set = set, setTag = setTag }
+end
+
+-- ============================================================
+-- Toasts: one stack per screen. Cash "+N" is a single toast with a running sum (never queued);
+-- other toasts queue, at most TOAST_VISIBLE on screen. Callers pass ready (localized) text
+-- ============================================================
+export type ToastKind = "info" | "reward" | "error"
+export type Toasts = {
+	holder: Frame,
+	show: (text: string, kind: ToastKind?, icon: string?) -> (),
+	cash: (amount: number) -> (),
+}
+
+local TOAST_TIME = 2.2
+local TOAST_VISIBLE = 2
+local TOAST_QUEUE_MAX = 4 -- older waiting toasts are dropped: late news is worse than no news
+local TOAST_STYLE: { [string]: { Color3 } } = {
+	info = { Ui.Color.night, Ui.Color.text },
+	reward = { Ui.Color.amber, Ui.Color.ink },
+	error = { Ui.Color.red, Ui.Color.white },
+}
+
+function Ui.toasts(parent: Instance, position: UDim2?): Toasts
+	local holder: Frame = Ui.new("Frame", {
+		Name = "Toasts",
+		AnchorPoint = Vector2.new(0.5, 0),
+		Position = position or UDim2.new(0.5, 0, 0, 70),
+		Size = UDim2.fromOffset(700, 0),
+		AutomaticSize = Enum.AutomaticSize.Y,
+		BackgroundTransparency = 1,
+		Parent = parent,
+	})
+	Ui.new("UIListLayout", {
+		HorizontalAlignment = Enum.HorizontalAlignment.Center,
+		Padding = UDim.new(0, 8),
+		SortOrder = Enum.SortOrder.LayoutOrder,
+		Parent = holder,
+	})
+	Ui.autoScale(holder)
+
+	local function make(text: string, kind: ToastKind, icon: string?, order: number): (Frame, TextLabel, UIScale)
+		local style = TOAST_STYLE[kind]
+		local frame = Ui.pill({
+			Name = "Toast",
+			LayoutOrder = order,
+			Size = UDim2.fromOffset(0, 50),
+			AutomaticSize = Enum.AutomaticSize.X,
+			BackgroundColor3 = style[1],
+			BackgroundTransparency = if kind == "info" then 0.1 else 0,
+			Parent = holder,
+		})
+		Ui.new("UIListLayout", {
+			FillDirection = Enum.FillDirection.Horizontal,
+			VerticalAlignment = Enum.VerticalAlignment.Center,
+			Padding = UDim.new(0, 6),
+			SortOrder = Enum.SortOrder.LayoutOrder,
+			Parent = frame,
+		})
+		Ui.new("UIPadding", {
+			PaddingLeft = UDim.new(0, if icon then 8 else 20),
+			PaddingRight = UDim.new(0, 20),
+			Parent = frame,
+		})
+		if icon then
+			Ui.icon(icon, { Name = "Icon", Size = UDim2.fromOffset(36, 36), LayoutOrder = 1, Parent = frame })
+		end
+		local label = Ui.label({
+			Name = "Text",
+			Size = UDim2.fromOffset(0, 50),
+			AutomaticSize = Enum.AutomaticSize.X,
+			Text = text,
+			TextSize = 24,
+			TextColor3 = style[2],
+			LayoutOrder = 2,
+			Parent = frame,
+		})
+		if style[2] == Ui.Color.white then
+			Ui.textStroke(2).Parent = label
+		end
+		local scale: UIScale = Ui.new("UIScale", { Parent = frame })
+		Motion.pop(scale)
+		return frame, label, scale
+	end
+
+	type Waiting = { text: string, kind: ToastKind, icon: string? }
+	local queue: { Waiting } = {}
+	local visible = 0
+	local order = 0
+
+	local function pump()
+		while visible < TOAST_VISIBLE and #queue > 0 do
+			local item = table.remove(queue, 1) :: Waiting
+			visible += 1
+			order += 1
+			local frame = make(item.text, item.kind, item.icon, order)
+			if item.kind ~= "info" then
+				Sound.play(item.kind)
+			end
+			task.delay(TOAST_TIME, function()
+				frame:Destroy()
+				visible -= 1
+				pump()
+			end)
+		end
+	end
+
+	local function show(text: string, kind: ToastKind?, icon: string?)
+		table.insert(queue, { text = text, kind = kind or "info", icon = icon })
+		while #queue > TOAST_QUEUE_MAX do
+			table.remove(queue, 1)
+		end
+		pump()
+	end
+
+	-- Cash: always above the other toasts; a new amount adds to the sum on screen and restarts its time
+	local cashFrame: Frame? = nil
+	local cashLabel: TextLabel? = nil
+	local cashScale: UIScale? = nil
+	local cashSum = 0
+	local cashToken = 0
+	local function cash(amount: number)
+		if amount <= 0 then
+			return
+		end
+		cashToken += 1
+		local my = cashToken
+		if cashFrame and cashFrame.Parent and cashLabel and cashScale then
+			cashSum += amount
+			cashLabel.Text = "+" .. Ui.number(cashSum)
+			Motion.pop(cashScale)
+		else
+			cashSum = amount
+			cashFrame, cashLabel, cashScale = make("+" .. Ui.number(cashSum), "reward", "Cash", -1)
+		end
+		task.delay(TOAST_TIME, function()
+			if my == cashToken and cashFrame then
+				cashFrame:Destroy()
+				cashFrame = nil
+			end
+		end)
+	end
+
+	return { holder = holder, show = show, cash = cash }
 end
 
 return Ui

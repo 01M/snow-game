@@ -92,6 +92,27 @@ Ui.Icons = {
 	Gift = 44, -- ежедневная награда
 	Boots = 45, -- стат Snow Boots
 }
+-- Отдельные картинки (исходники в art/icons): имя иконки → id Image. Если id есть и не 0, Ui.setIcon берёт её
+-- вместо клетки атласа; 0 или нет записи — остаётся клетка атласа.
+Ui.Images = {
+	Gem = 133085172126638, -- crystal
+	Cash = 89224857977728, -- cash
+	Gift = 139885889368215, -- daily
+	Backpack = 73639742592665, -- backpack
+	DeepPockets = 100805625057757,
+	SnowBoots = 112649169607706,
+	StrongArms = 70728310571525,
+	TipJar = 134781808339154,
+	CrystalSense = 97715242593931,
+} :: { [string]: number }
+-- Имена без своей клетки в атласе: какую клетку показать, если картинки нет
+local ATLAS_FALLBACK: { [string]: string } = {
+	DeepPockets = "Backpack",
+	SnowBoots = "Boots",
+	StrongArms = "Hand",
+	TipJar = "Cash",
+	CrystalSense = "Gem",
+}
 -- Снежные шапки в строке 6 атласа: широкая и короткая
 local SNOW_CAP_WIDE = { Vector2.new(0, 768), Vector2.new(512, 128) }
 local SNOW_CAP_SHORT = { Vector2.new(512, 768), Vector2.new(256, 128) }
@@ -158,9 +179,17 @@ function Ui.label(props: { [string]: any }, children: { any }?): TextLabel
 	return Ui.new("TextLabel", props, children)
 end
 
--- Иконка из атласа
+-- Иконка: отдельная картинка из Ui.Images, иначе клетка атласа
 function Ui.setIcon(image: any, name: string)
-	local index = Ui.Icons[name]
+	local id = Ui.Images[name]
+	if id and id ~= 0 then
+		image.Image = "rbxassetid://" .. id
+		image.ImageRectOffset = Vector2.zero
+		image.ImageRectSize = Vector2.zero
+		image.ScaleType = Enum.ScaleType.Fit
+		return
+	end
+	local index = Ui.Icons[ATLAS_FALLBACK[name] or name]
 	if index == nil then
 		warn("[Ui] нет иконки " .. name)
 		index = Ui.Icons.Question

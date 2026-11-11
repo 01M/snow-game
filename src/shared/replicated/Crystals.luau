@@ -18,12 +18,12 @@ Crystals.Match = {
 
 -- PerLevel — прибавка за уровень; Prices[L] — цена уровня L (уровней столько, сколько цен)
 Crystals.Stats = {
-	{ Id = "DeepPockets", Icon = "Backpack", PerLevel = 5, Prices = { 10, 25, 45, 70, 100 } }, -- +вместимость рюкзака
-	{ Id = "SnowBoots", Icon = "Boots", PerLevel = 1, Prices = { 10, 25, 45, 70, 100 } }, -- +WalkSpeed
-	{ Id = "StrongArms", Icon = "Hand", PerLevel = 0.05, Prices = { 10, 25, 45, 70, 100 } }, -- +доля скорости уборки
-	{ Id = "TipJar", Icon = "Cash", PerLevel = 0.1, Prices = { 20, 45, 75, 110, 150 } }, -- +доля Cash
+	{ Id = "DeepPockets", Icon = "DeepPockets", PerLevel = 5, Prices = { 10, 25, 45, 70, 100 } }, -- +вместимость рюкзака
+	{ Id = "SnowBoots", Icon = "SnowBoots", PerLevel = 1, Prices = { 10, 25, 45, 70, 100 } }, -- +WalkSpeed
+	{ Id = "StrongArms", Icon = "StrongArms", PerLevel = 0.05, Prices = { 10, 25, 45, 70, 100 } }, -- +доля скорости уборки
+	{ Id = "TipJar", Icon = "TipJar", PerLevel = 0.1, Prices = { 20, 45, 75, 110, 150 } }, -- +доля Cash
 	-- +доля Crystals в матче (находки, зоны, конец матча), не ежедневная награда; дробный остаток копится (CrystalCarry)
-	{ Id = "CrystalSense", Icon = "Gem", PerLevel = 0.1, Prices = { 20, 45, 75, 110, 150 } },
+	{ Id = "CrystalSense", Icon = "CrystalSense", PerLevel = 0.1, Prices = { 20, 45, 75, 110, 150 } },
 }
 
 export type Stat = { Id: string, Icon: string, PerLevel: number, Prices: { number } }

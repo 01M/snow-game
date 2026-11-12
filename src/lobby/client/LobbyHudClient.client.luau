@@ -1,5 +1,7 @@
--- HUD лобби: баланс Crystals справа сверху (Cash есть только в матче), кнопки «Магазин», «Пригласить» и «Награды» (окно Lobby.DailyGui) слева, музыка справа внизу,
--- внизу по центру «ИГРАТЬ» (быстрый вход, QueueAction "quickPlay"). Вид — общий Ui (ReplicatedStorage.Shared.Ui).
+-- HUD лобби: баланс Crystals справа сверху (Cash есть только в матче), слева компактные белые кнопки «Магазин», «Пригласить»,
+-- «Награды» (окно Lobby.DailyGui) и «Улучшения» (Lobby.StatsGui), музыка справа внизу, внизу по центру «ИГРАТЬ» — единственная
+-- яркая кнопка (быстрый вход, QueueAction "quickPlay"). Вид — общий Ui (ReplicatedStorage.Shared.Ui): Ui.currencyPill,
+-- Ui.toasts, Ui.badge. Группы масштабируются по правилу масштаба (не меньше 0.75).
 -- Кнопок без работающей функции здесь нет: новую кнопку добавлять вместе с её окном.
 local CollectionService = game:GetService("CollectionService")
 local Players = game:GetService("Players")
@@ -40,96 +42,62 @@ local function group(name, anchor, position, size)
 		BackgroundTransparency = 1,
 		Parent = gui,
 	})
-	Ui.autoScale(frame)
+	Ui.autoScale(frame, 0.75, 1.2)
 	return frame
 end
 
--- Квадратная кнопка: иконка сверху, подпись снизу
-local function squareButton(parent, order, color, icon, name, label)
+-- Боковая кнопка: белая, иконка сверху, подпись снизу. 108×88: при масштабе 0.75 это 81×66 px
+local SIDE_W, SIDE_H, SIDE_GAP = 108, 88, 12
+local function sideButton(parent, order, icon, name, label)
 	local b = Ui.button({
 		Name = name,
-		Color = color,
-		Snow = true,
-		Radius = 22,
-		Size = UDim2.fromOffset(104, 104),
+		Kind = "neutral",
+		Radius = Ui.Radius.card,
+		Size = UDim2.fromOffset(SIDE_W, SIDE_H),
 		LayoutOrder = order,
 		Parent = parent,
 	})
 	Ui.icon(icon, {
 		Name = "Icon",
 		AnchorPoint = Vector2.new(0.5, 0),
-		Position = UDim2.new(0.5, 0, 0, 8),
-		Size = UDim2.fromOffset(56, 56),
+		Position = UDim2.new(0.5, 0, 0, 6),
+		Size = UDim2.fromOffset(46, 46),
 		Parent = b,
 	})
 	Ui.label({
 		Name = "Label",
 		AnchorPoint = Vector2.new(0.5, 1),
-		Position = UDim2.new(0.5, 0, 1, -14),
-		Size = UDim2.new(1, -10, 0, 24),
+		Position = UDim2.new(0.5, 0, 1, -12),
+		Size = UDim2.new(1, -8, 0, 20),
 		Text = label,
-		TextScaled = true,
-		TextColor3 = Ui.Color.white,
+		TextScaled = true, -- длинная подпись (другой язык) мельчает, а не обрезается
+		TextColor3 = Ui.Color.ink,
 		TextXAlignment = Enum.TextXAlignment.Center,
 		Parent = b,
-	}, { Ui.textStroke(2), new("UITextSizeConstraint", { MaxTextSize = 20 }) })
+	}, { new("UITextSizeConstraint", { MaxTextSize = Ui.TextSize.caption, MinTextSize = 12 }) })
 	return b
 end
 
--- Всплывающее сообщение по центру сверху
-local toast = Ui.pill({
-	Name = "Toast",
-	AnchorPoint = Vector2.new(0.5, 0),
-	Position = UDim2.new(0.5, 0, 0, 70),
-	Size = UDim2.fromOffset(0, 54),
-	AutomaticSize = Enum.AutomaticSize.X,
-	Visible = false,
-	Parent = gui,
-})
-new("UIPadding", { PaddingLeft = UDim.new(0, 22), PaddingRight = UDim.new(0, 22), Parent = toast })
-local toastText = Ui.label({
-	Size = UDim2.fromOffset(0, 54),
-	AutomaticSize = Enum.AutomaticSize.X, -- длинный текст (другой язык) растягивает плашку вширь
-	Text = "",
-	TextSize = 24,
-	Parent = toast,
-})
-Ui.autoScale(toast)
-local toastToken = 0
+-- Всплывающие сообщения по центру сверху (общая стопка Ui.toasts)
+local toasts = Ui.toasts(gui, UDim2.new(0.5, 0, 0, 70))
 local function showToast(str)
-	toastToken += 1
-	local my = toastToken
-	toastText.Text = str
-	toast.Visible = true
-	task.delay(2, function()
-		if toastToken == my then
-			toast.Visible = false
-		end
-	end)
+	toasts.show(str, "info")
 end
 
 -- Слева: Магазин / Пригласить / Награды / Улучшения (постоянные статы за Crystals, окно Lobby.StatsGui)
-local left = group("Left", Vector2.new(0, 0.5), UDim2.new(0, 16, 0.55, 0), Vector2.new(104, 494))
-new("UIListLayout", { Padding = UDim.new(0, 26), SortOrder = Enum.SortOrder.LayoutOrder, Parent = left })
-local shopBtn = squareButton(left, 1, "green", "Shop", "Shop", L("Lobby.Hud.Shop"))
-local inviteBtn = squareButton(left, 2, "blue", "Invite", "Invite", L("Lobby.Hud.Invite"))
-local dailyBtn = squareButton(left, 3, "amber", "Gift", "Daily", L("Lobby.Hud.Daily"))
+local left =
+	group("Left", Vector2.new(0, 0.5), UDim2.new(0, 16, 0.55, 0), Vector2.new(SIDE_W, SIDE_H * 4 + SIDE_GAP * 3))
+new("UIListLayout", { Padding = UDim.new(0, SIDE_GAP), SortOrder = Enum.SortOrder.LayoutOrder, Parent = left })
+local shopBtn = sideButton(left, 1, "Shop", "Shop", L("Lobby.Hud.Shop"))
+local inviteBtn = sideButton(left, 2, "Invite", "Invite", L("Lobby.Hud.Invite"))
+local dailyBtn = sideButton(left, 3, "Gift", "Daily", L("Lobby.Hud.Daily"))
+local upgradesBtn = sideButton(left, 4, "Upgrade", "Upgrades", L("Lobby.Hud.Upgrades"))
 shopBtn.Activated:Connect(ShopGui.toggle)
 dailyBtn.Activated:Connect(DailyGui.toggle)
-local upgradesBtn = squareButton(left, 4, "blue", "Upgrade", "Upgrades", L("Lobby.Hud.Upgrades"))
 upgradesBtn.Activated:Connect(StatsGui.toggle)
 
--- Красная точка на «Наградах», пока награда за сегодня не получена (атрибут DailyReady ставит DailyServer)
-local dailyDot = new("Frame", {
-	Name = "Dot",
-	AnchorPoint = Vector2.new(0.5, 0.5),
-	Position = UDim2.new(1, -6, 0, 6),
-	Size = UDim2.fromOffset(26, 26),
-	BackgroundColor3 = Ui.Color.red,
-	ZIndex = 5,
-	Visible = false,
-	Parent = dailyBtn,
-}, { Ui.corner("full"), Ui.border(3) })
+-- Красная метка на «Наградах», пока награда за сегодня не получена (атрибут DailyReady ставит DailyServer)
+local dailyDot = Ui.badge(dailyBtn, "!")
 local function refreshDailyDot()
 	dailyDot.Visible = player:GetAttribute("DailyReady") == true
 end
@@ -226,35 +194,19 @@ end)
 -- Справа сверху: Crystals (атрибут ставят LobbyCashServer, DailyServer, StatServer).
 -- Cash в лобби не показываем: он живёт только внутри матча
 local right = group("Right", Vector2.new(1, 0), UDim2.new(1, -20, 0, 10), Vector2.new(300, 70))
-local crystalPill = Ui.pill({
+local crystalPill = Ui.currencyPill("Gem", {
 	Name = "Crystals",
 	AnchorPoint = Vector2.new(1, 0),
 	Position = UDim2.fromScale(1, 0),
 	Size = UDim2.fromOffset(0, 60),
-	AutomaticSize = Enum.AutomaticSize.X,
 	Parent = right,
 })
-new("UIListLayout", {
-	FillDirection = Enum.FillDirection.Horizontal,
-	VerticalAlignment = Enum.VerticalAlignment.Center,
-	Padding = UDim.new(0, 8),
-	SortOrder = Enum.SortOrder.LayoutOrder,
-	Parent = crystalPill,
-})
-new("UIPadding", { PaddingLeft = UDim.new(0, 7), PaddingRight = UDim.new(0, 18), Parent = crystalPill })
-Ui.icon("Gem", { Size = UDim2.fromOffset(44, 44), LayoutOrder = 1, Parent = crystalPill })
-local crystalAmount = Ui.label({
-	Name = "Amount",
-	Size = UDim2.fromOffset(0, 60),
-	AutomaticSize = Enum.AutomaticSize.X,
-	Text = "...",
-	TextSize = 30,
-	LayoutOrder = 2,
-	Parent = crystalPill,
-})
+local crystalsShown = false
 local function refreshCrystals()
 	local crystals = player:GetAttribute("Crystals")
-	crystalAmount.Text = crystals ~= nil and Ui.number(crystals) or "..."
+	-- первое значение ставим сразу, дальше число досчитывается (награда, покупка)
+	crystalPill.set(if typeof(crystals) == "number" then crystals else nil, crystalsShown)
+	crystalsShown = typeof(crystals) == "number"
 end
 player:GetAttributeChangedSignal("Crystals"):Connect(refreshCrystals)
 refreshCrystals()
@@ -266,15 +218,15 @@ if music and music.SoundId ~= "" then
 	local bottom = group("BottomRight", Vector2.new(1, 1), UDim2.new(1, -20, 1, -20), Vector2.new(64, 64))
 	local musicBtn = Ui.button({
 		Name = "Music",
-		Color = "amber",
+		Kind = "neutral",
 		Icon = "Music",
-		Radius = 18,
+		Radius = Ui.Radius.card,
 		Size = UDim2.fromOffset(64, 64),
 		Parent = bottom,
 	})
 	local musicOn = true
 	local function applyMusic()
-		Ui.paint(musicBtn, if musicOn then "amber" else "gray")
+		Ui.paint(musicBtn, if musicOn then "paper" else "gray")
 		music.Volume = musicOn and (music:GetAttribute("BaseVolume") or 0.4) or 0
 		if musicOn and not music.IsPlaying then
 			music:Play()
@@ -302,9 +254,7 @@ TweenService
 	:Play()
 local playBtn = Ui.button({
 	Name = "Play",
-	Color = "green",
-	Icon = "Play",
-	IconSize = 44,
+	Kind = "primary",
 	Text = L("Lobby.Hud.Play"),
 	TextSize = 44,
 	Snow = true,
@@ -312,6 +262,28 @@ local playBtn = Ui.button({
 	Size = UDim2.fromOffset(330, 92),
 	Parent = playWrap,
 })
+-- Зелёная иконка на зелёной кнопке не читается: кладём её на белый кружок слева
+new("Frame", {
+	Name = "IconBack",
+	AnchorPoint = Vector2.new(0, 0.5),
+	Position = UDim2.new(0, 14, 0.5, -3),
+	Size = UDim2.fromOffset(62, 62),
+	BackgroundColor3 = Ui.Color.card,
+	Parent = playBtn,
+}, {
+	Ui.corner("full"),
+	Ui.border(Ui.Stroke.button),
+	Ui.icon("Play", {
+		AnchorPoint = Vector2.new(0.5, 0.5),
+		Position = UDim2.new(0.5, 2, 0.5, 0),
+		Size = UDim2.fromOffset(40, 40),
+	}),
+})
+local playText = playBtn:FindFirstChild("Text")
+if playText then
+	playText.Position = UDim2.new(0, 84, 0, -2)
+	playText.Size = UDim2.new(1, -100, 1, 0)
+end
 
 local myPadIndex = nil
 QueueState.OnClientEvent:Connect(function(padIndex, state)

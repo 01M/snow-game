@@ -5,7 +5,7 @@
 -- Шрифт с кириллицей: Nunito.
 -- Общий модуль Lobby и House Map (src/shared/replicated/Ui → ReplicatedStorage.Shared.Ui).
 -- Design system parts (plan 2026-11-11): Ui.Motion (standard animations), Ui.Sound (UI sounds, silent while
--- the ids are 0), button kinds (Ui.button Kind, Ui.setKind), Ui.toasts (toast stack), Ui.currencyPill.
+-- the ids are 0), button kinds (Ui.button Kind, Ui.setKind), Ui.toasts (toast stack), Ui.currencyPill, Ui.badge.
 local GuiService = game:GetService("GuiService")
 local RunService = game:GetService("RunService")
 local SoundService = game:GetService("SoundService")
@@ -614,6 +614,25 @@ function Ui.pill(props: { [string]: any }, children: { any }?): Frame
 	Ui.corner("full").Parent = frame
 	Ui.border(3).Parent = frame
 	return frame
+end
+
+-- Красная метка в углу кнопки: точка или «!» (награда ждёт, хватает денег). Создаётся скрытой
+function Ui.badge(parent: GuiObject, text: string?): TextLabel
+	return Ui.label({
+		Name = "Badge",
+		AnchorPoint = Vector2.new(0.5, 0.5),
+		Position = UDim2.new(1, -6, 0, 6),
+		Size = UDim2.fromOffset(28, 28),
+		BackgroundTransparency = 0,
+		BackgroundColor3 = Ui.Color.red,
+		Text = text or "",
+		TextSize = 18,
+		TextColor3 = Ui.Color.white,
+		TextXAlignment = Enum.TextXAlignment.Center,
+		Visible = false,
+		ZIndex = parent.ZIndex + 3,
+		Parent = parent,
+	}, { Ui.corner("full"), Ui.border(Ui.Stroke.chip) })
 end
 
 -- Полоса прогресса: возвращает рамку и функцию set(доля, цвет?)

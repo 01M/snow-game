@@ -264,7 +264,7 @@ hint.Visible = false
 hint.Parent = gui
 corner(hint, 32)
 stroke(hint, 3, INK, true)
-Ui.icon("Upgrade", { Size = UDim2.fromOffset(50, 50), Position = UDim2.fromOffset(10, 7), Parent = hint })
+Ui.icon("Leave", { Size = UDim2.fromOffset(50, 50), Position = UDim2.fromOffset(10, 7), Parent = hint })
 local hintText = text(hint, "", UDim2.new(1, -90, 0, 40), UDim2.fromOffset(72, 12), Ui.Color.text, true)
 
 local myState = nil -- состояние площадки, на которой я стою

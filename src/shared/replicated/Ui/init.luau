@@ -118,18 +118,68 @@ Ui.Icons = {
 	Gift = 44, -- ежедневная награда
 	Boots = 45, -- стат Snow Boots
 }
--- Отдельные картинки (исходники в art/icons): имя иконки → id Image. Если id есть и не 0, Ui.setIcon берёт её
--- вместо клетки атласа; 0 или нет записи — остаётся клетка атласа.
+-- Отдельные картинки (исходники в art/icons/svg, имя файла — в комментарии): имя иконки → id Image.
+-- Одна строка на иконку: чтобы заменить картинку, достаточно поменять id здесь. Если id есть и не 0,
+-- Ui.setIcon берёт картинку вместо клетки атласа; 0 или нет записи — остаётся клетка атласа.
 Ui.Images = {
+	-- first set
 	Gem = 133085172126638, -- crystal
 	Cash = 89224857977728, -- cash
 	Gift = 139885889368215, -- daily
 	Backpack = 73639742592665, -- backpack
-	DeepPockets = 100805625057757,
-	SnowBoots = 112649169607706,
-	StrongArms = 70728310571525,
-	TipJar = 134781808339154,
-	CrystalSense = 97715242593931,
+	DeepPockets = 100805625057757, -- deep_pockets
+	SnowBoots = 112649169607706, -- snow_boots
+	StrongArms = 70728310571525, -- strong_arms
+	TipJar = 134781808339154, -- tip_jar
+	CrystalSense = 97715242593931, -- crystal_sense
+	-- batch A
+	Shop = 128856039730417, -- shop
+	Invite = 120219122516478, -- invite
+	Upgrade = 107819005320627, -- upgrade
+	Play = 97270969432897, -- play
+	Music = 137571123021384, -- music
+	Snow = 124619842699078, -- snow
+	Clock = 125899334483523, -- clock
+	Journal = 136273357432131, -- journal
+	-- tools: the same pictures are the Tool.TextureId of ServerStorage.SnowTools (set in the place)
+	ToolHand = 85622768936366, -- tool_hand
+	ToolShovel = 113066390364847, -- tool_shovel
+	ToolSnowPusher = 127940828598038, -- tool_snow_pusher
+	ToolSnowblower = 137875515445373, -- tool_snowblower
+	-- batch B
+	Close = 92528026371752, -- close
+	Check = 102665838410405, -- check
+	Lock = 134352986867647, -- lock
+	Star = 90156336012630, -- star
+	Question = 95690663402675, -- question
+	Robux = 99547705389475, -- robux
+	Gear = 123936024696812, -- gear
+	Map = 86931973463384, -- map
+	Tasks = 106248842224458, -- tasks
+	Tips = 97611403467419, -- tips
+	Leave = 114141762248645, -- leave
+	-- batch C
+	Melter = 102860499795535, -- melter
+	Hand = 123482546549324, -- fx_hand
+	Boost = 127060219315314, -- fx_boost
+	Range = 83224713363587, -- fx_range
+	Width = 108544705029189, -- fx_width
+	AutoSell = 95680279618339, -- autosell
+	Vip = 74223169432799, -- vip
+	CashS = 98735016004724, -- cash_s
+	CashM = 104227861145323, -- cash_m
+	CashL = 84685803721342, -- cash_l
+	Blizzard = 119403939666803, -- blizzard
+	-- batch D (finds)
+	Mitten = 76071270061526, -- mitten
+	Keys = 90986366489562, -- keys
+	Teddy = 87767022113638, -- teddy
+	Scarf = 128516955739312, -- scarf
+	Hat = 134668001588529, -- hat
+	Glasses = 130212617009032, -- glasses
+	AlarmClock = 136473064683504, -- alarm_clock
+	Trumpet = 104035019236525, -- trumpet
+	Snowman = 96390519370066, -- snowman
 } :: { [string]: number }
 -- Имена без своей клетки в атласе: какую клетку показать, если картинки нет
 local ATLAS_FALLBACK: { [string]: string } = {
@@ -138,6 +188,11 @@ local ATLAS_FALLBACK: { [string]: string } = {
 	StrongArms = "Hand",
 	TipJar = "Cash",
 	CrystalSense = "Gem",
+	Leave = "Upgrade",
+	ToolHand = "Hand",
+	ToolShovel = "Shovel",
+	ToolSnowPusher = "Shovel",
+	ToolSnowblower = "Shovel",
 }
 -- Снежные шапки в строке 6 атласа: широкая и короткая
 local SNOW_CAP_WIDE = { Vector2.new(0, 768), Vector2.new(512, 128) }

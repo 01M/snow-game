@@ -13,10 +13,10 @@
     <linearGradient id="snow-s-hi" gradientUnits="userSpaceOnUse"><stop class="c-hi"/></linearGradient>
   </defs>
   <!-- outline -->
-  <path stroke="url(#snow-s-outline)" stroke-width="74" stroke-linejoin="round" stroke-linecap="round" d="M256 452L256 60M86.3 354L425.7 158M86.3 158L425.7 354"/>
-  <path stroke="url(#snow-s-outline)" stroke-width="66" stroke-linejoin="round" stroke-linecap="round" d="M256 138.4L207 97.3M256 138.4L305 97.3M357.8 197.2L369 134.2M357.8 197.2L418 219.1M357.8 314.8L418 292.9M357.8 314.8L369 377.8M256 373.6L305 414.7M256 373.6L207 414.7M154.2 314.8L143 377.8M154.2 314.8L94 292.9M154.2 197.2L94 219.1M154.2 197.2L143 134.2"/>
+  <path stroke="url(#snow-s-outline)" stroke-width="90" stroke-linejoin="round" stroke-linecap="round" d="M256 446L256 66M91.5 351L420.5 161M91.5 161L420.5 351"/>
+  <path stroke="url(#snow-s-outline)" stroke-width="78" stroke-linejoin="round" stroke-linecap="round" d="M256 142L210 103.4M256 142L302 103.4M354.7 199L365.1 139.9M354.7 199L411.1 219.5M354.7 313L411.1 292.5M354.7 313L365.1 372.1M256 370L302 408.6M256 370L210 408.6M157.3 313L146.9 372.1M157.3 313L100.9 292.5M157.3 199L100.9 219.5M157.3 199L146.9 139.9"/>
   <!-- ice -->
-  <path stroke="url(#snow-g1)" stroke-width="40" stroke-linejoin="round" stroke-linecap="round" d="M256 452L256 60M86.3 354L425.7 158M86.3 158L425.7 354"/>
-  <path stroke="url(#snow-g1)" stroke-width="32" stroke-linejoin="round" stroke-linecap="round" d="M256 138.4L207 97.3M256 138.4L305 97.3M357.8 197.2L369 134.2M357.8 197.2L418 219.1M357.8 314.8L418 292.9M357.8 314.8L369 377.8M256 373.6L305 414.7M256 373.6L207 414.7M154.2 314.8L143 377.8M154.2 314.8L94 292.9M154.2 197.2L94 219.1M154.2 197.2L143 134.2"/>
+  <path stroke="url(#snow-g1)" stroke-width="56" stroke-linejoin="round" stroke-linecap="round" d="M256 446L256 66M91.5 351L420.5 161M91.5 161L420.5 351"/>
+  <path stroke="url(#snow-g1)" stroke-width="44" stroke-linejoin="round" stroke-linecap="round" d="M256 142L210 103.4M256 142L302 103.4M354.7 199L365.1 139.9M354.7 199L411.1 219.5M354.7 313L411.1 292.5M354.7 313L365.1 372.1M256 370L302 408.6M256 370L210 408.6M157.3 313L146.9 372.1M157.3 313L100.9 292.5M157.3 199L100.9 219.5M157.3 199L146.9 139.9"/>
   <path fill="url(#snow-s-hi)" d="M236 256a20 20 0 1 0 40 0a20 20 0 1 0 -40 0Z"/>
 </svg>

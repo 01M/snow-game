@@ -800,7 +800,7 @@ function Ui.toasts(parent: Instance, position: UDim2?): Toasts
 		SortOrder = Enum.SortOrder.LayoutOrder,
 		Parent = holder,
 	})
-	Ui.autoScale(holder)
+	Ui.autoScale(holder, 0.75, 1.2)
 
 	local function make(text: string, kind: ToastKind, icon: string?, order: number): (Frame, TextLabel, UIScale)
 		local style = TOAST_STYLE[kind]

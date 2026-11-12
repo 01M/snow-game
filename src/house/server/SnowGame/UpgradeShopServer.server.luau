@@ -9,6 +9,8 @@ local config = require(snowGame:WaitForChild("Config"))
 local Shop = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Shop"))
 local Crystals = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Crystals"))
 local buyRemote = snowGame:WaitForChild("Remotes"):WaitForChild("BuyUpgrade") :: RemoteEvent
+-- Короткий ответ игроку на покупку (тост у клиента, NoticeClient): "NotEnough", "BoughtBackpack"
+local notice = snowGame:WaitForChild("Remotes"):WaitForChild("Notice") :: RemoteEvent
 
 local yard = workspace:WaitForChild("SnowYard")
 local shopPart = yard:WaitForChild("UpgradeShop") :: BasePart
@@ -46,6 +48,9 @@ local function buyBackpackUpgrade(player: Player)
 		player:SetAttribute("BackpackUpgradeLevel", level + 1)
 		-- покупки за матч (для задачи «Улучши рюкзак» в журнале)
 		player:SetAttribute("UpgradesBought", ((player:GetAttribute("UpgradesBought") or 0) :: number) + 1)
+		notice:FireClient(player, "BoughtBackpack", player:GetAttribute("BackpackCapacity"))
+	else
+		notice:FireClient(player, "NotEnough", price)
 	end
 end
 

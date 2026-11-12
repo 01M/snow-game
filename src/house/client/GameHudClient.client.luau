@@ -2,7 +2,7 @@
 -- HUD: текущая задача (цепочка Config.Onboarding, считает OnboardingServer); когда цепочка пройдена, карточка показывает
 -- следующую цель (nextGoal: активная зона → самый дешёвый некупленный инструмент → апгрейд рюкзака), без награды,
 -- рюкзак, зона и таймер матча по центру (workspace.MatchStartTime/MatchEndTime ставит MatchServer),
--- Cash с множителем магазина (Shop.cashMultiplier) и всплывающим «+N», кнопки журнала и магазина. Низ экрана свободен для управления на телефоне.
+-- Cash с множителем магазина (Shop.cashMultiplier), кнопки журнала и магазина; «+N» за Cash — в общей стопке SnowGame.Toasts. Низ экрана свободен для управления на телефоне.
 -- Журнал: «Журнал» (задачи + игроки), «Апгрейды» (инструменты из Config.Tools — Remotes.BuyToolUpgrade, рюкзак — Remotes.BuyUpgrade),
 -- «Коллекция» (находки ReplicatedStorage.SnowGame.Finds, атрибут игрока Collection), «Подсказки».
 -- Тексты — через Locale (ReplicatedStorage.Shared.Locale): Hud.*, Task.*, Journal.*, Upgrade.*, Tool.*, Zone.*, Collection.*, Tip.*
@@ -373,50 +373,10 @@ local zoneLabel = chip("Zone", "Snow", 1)
 local timerLabel = chip("Timer", "Clock", 2)
 local barZone = mainZone -- зона, в которой стоит игрок; вне зон остаётся прежняя
 
--- Всплывающее «+N» под рюкзаком, когда растёт Cash (продажа, награда)
-local cashToast = Ui.pill({
-	Name = "CashToast",
-	AnchorPoint = Vector2.new(0.5, 0),
-	Position = UDim2.new(0.5, 0, 0, 116),
-	Size = UDim2.fromOffset(0, 50),
-	AutomaticSize = Enum.AutomaticSize.X,
-	BackgroundColor3 = Ui.Color.amber,
-	BackgroundTransparency = 0,
-	Visible = false,
-	Parent = centerGroup,
-})
-new("UIListLayout", {
-	SortOrder = Enum.SortOrder.LayoutOrder,
-	FillDirection = Enum.FillDirection.Horizontal,
-	VerticalAlignment = Enum.VerticalAlignment.Center,
-	Padding = UDim.new(0, 6),
-	Parent = cashToast,
-})
-new("UIPadding", { PaddingLeft = UDim.new(0, 8), PaddingRight = UDim.new(0, 18), Parent = cashToast })
-local cashToastScale = new("UIScale", { Parent = cashToast })
-Ui.icon("Cash", { Size = UDim2.fromOffset(36, 36), LayoutOrder = 1, Parent = cashToast })
-local cashToastText = Ui.label({
-	Size = UDim2.fromOffset(0, 50),
-	AutomaticSize = Enum.AutomaticSize.X,
-	Text = "",
-	TextSize = 28,
-	TextColor3 = Ui.Color.ink,
-	LayoutOrder = 2,
-	Parent = cashToast,
-})
-local cashToastId = 0
+-- Всплывающее «+N», когда растёт Cash (продажа, награда): общая стопка SnowGame.Toasts, суммы подряд складываются
+local Toasts = require(snowGame:WaitForChild("Toasts"))
 local function showCashToast(amount: number)
-	cashToastId += 1
-	local id = cashToastId
-	cashToastText.Text = "+" .. Ui.number(amount)
-	cashToast.Visible = true
-	cashToastScale.Scale = 0.6
-	TweenService:Create(cashToastScale, TweenInfo.new(0.25, Enum.EasingStyle.Back), { Scale = 1 }):Play()
-	task.delay(1.6, function()
-		if id == cashToastId then
-			cashToast.Visible = false
-		end
-	end)
+	Toasts.get().cash(amount)
 end
 
 -- Справа сверху: Cash с множителем, кнопки журнала и магазина

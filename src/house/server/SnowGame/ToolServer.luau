@@ -11,6 +11,8 @@ local HttpService = game:GetService("HttpService")
 local snowGame = ReplicatedStorage:WaitForChild("SnowGame")
 local config = require(snowGame:WaitForChild("Config"))
 local buyToolUpgrade = snowGame:WaitForChild("Remotes"):WaitForChild("BuyToolUpgrade")
+-- Короткий ответ игроку на покупку (тост у клиента, NoticeClient): "NotEnough", "BoughtTool", "BoughtUpgrade"
+local notice = snowGame:WaitForChild("Remotes"):WaitForChild("Notice")
 local toolFolder = ServerStorage:WaitForChild("SnowTools")
 
 local ToolServer = {}
@@ -205,12 +207,17 @@ function ToolServer.buyTool(player: Player, toolId: any): boolean
 	end
 	local ls = player:FindFirstChild("leaderstats")
 	local cash = ls and ls:FindFirstChild("Cash")
-	if not cash or cash.Value < tool.Price then
+	if not cash then
 		return false
 	end
 	lastBuy[player] = now
+	if cash.Value < tool.Price then
+		notice:FireClient(player, "NotEnough", tool.Price)
+		return false
+	end
 	cash.Value -= tool.Price
 	ToolServer.grant(player, tool.Id)
+	notice:FireClient(player, "BoughtTool", tool.Id)
 	return true
 end
 
@@ -232,14 +239,19 @@ function ToolServer.buyUpgrade(player: Player, toolId: any, upgradeId: any): boo
 	local byTool = upgrades[player][toolId] or {}
 	local level = byTool[upgradeId] or 0
 	local price = config.getToolUpgradePrice(u, level)
-	if not price or cash.Value < price then
+	if not price then
 		return false
 	end
 	lastBuy[player] = now
+	if cash.Value < price then
+		notice:FireClient(player, "NotEnough", price)
+		return false
+	end
 	cash.Value -= price
 	byTool[upgradeId] = level + 1
 	upgrades[player][toolId] = byTool
 	updateAttribute(player)
+	notice:FireClient(player, "BoughtUpgrade", toolId, upgradeId)
 	return true
 end
 

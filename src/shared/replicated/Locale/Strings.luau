@@ -16,6 +16,13 @@ return {
 	["Hud.NextGoal"] = { en = "GOAL", ru = "ЦЕЛЬ" },
 	["Hud.Goal.Zone"] = { en = "Clear: {zone}", ru = "Очисти: {zone}" },
 	["Hud.Goal.Tool"] = { en = "Save up for: {tool}", ru = "Накопи на: {tool}" },
+	["Notice.NotEnoughCash"] = {
+		en = "Not enough Cash: need {price}",
+		ru = "Не хватает Cash: нужно {price}",
+	},
+	["Notice.BoughtTool"] = { en = "Bought: {tool}", ru = "Куплено: {tool}" },
+	["Notice.BoughtUpgrade"] = { en = "Upgrade bought: {name}", ru = "Улучшение куплено: {name}" },
+	["Notice.BoughtBackpack"] = { en = "Backpack now holds {n}", ru = "Рюкзак теперь вмещает {n}" },
 	["Hud.Use.Hold"] = { en = "HOLD", ru = "ДЕРЖИ" },
 	["Hud.Use.Tap"] = { en = "TAP", ru = "ЖМИ" },
 

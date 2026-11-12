@@ -21,9 +21,9 @@ end
 local pingSound = makeSound("rbxasset://sounds/electronicpingshort.wav", 0.5)
 local jackpotSound = makeSound("rbxasset://sounds/victory.wav", 0.6)
 
--- Toast with the icon of what was found; the sound plays at once even if the toast waits in the queue
+-- A large gold toast with the icon of what was found; the sound plays at once even if the toast waits in the queue
 local function show(text: string, sound: Sound, icon: string)
-	Toasts.get().show(text, "reward", icon)
+	Toasts.get().show(text, "reward", icon, true)
 	sound:Play()
 end
 

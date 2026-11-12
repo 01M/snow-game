@@ -6,7 +6,9 @@
 -- Общий модуль Lobby и House Map (src/shared/replicated/Ui → ReplicatedStorage.Shared.Ui).
 -- Design system parts (plan 2026-11-11): Ui.Motion (standard animations), Ui.Sound (UI sounds, silent while
 -- the ids are 0), button kinds (Ui.button Kind, Ui.setKind), Ui.toasts (toast stack), Ui.currencyPill, Ui.badge,
--- Ui.tabs, Ui.window (dim, scale rule with layouts, open/close animation, one window at a time, gamepad).
+-- Ui.tabs, Ui.window (dim, scale rule with layouts, open/close animation, one window at a time, gamepad),
+-- Ui.card (card with states), Ui.priceButton (buy button with states), Ui.preloadIcons.
+-- Text rule: on gold, text below 24 is navy without an outline (white with an outline blurs at small sizes).
 local ContextActionService = game:GetService("ContextActionService")
 local GuiService = game:GetService("GuiService")
 local Players = game:GetService("Players")
@@ -469,6 +471,14 @@ local function lip(face: Color3, dark: Color3, share: number): UIGradient
 	return Ui.new("UIGradient", { Rotation = 90, Color = lipColors(face, dark, share) })
 end
 
+-- Цвет текста кнопки: на золотой мелкий текст (меньше 24) — тёмно-синий без обводки, иначе цвет из таблицы
+local function buttonTextColor(color: ButtonColor, textSize: number): Color3
+	if color == "amber" and textSize < 24 then
+		return Ui.Color.ink
+	end
+	return BUTTON_COLORS[color][3]
+end
+
 -- Перекрасить кнопку (например, «Купить» → «Куплено»)
 function Ui.paint(button: GuiObject, color: ButtonColor)
 	local c = BUTTON_COLORS[color]
@@ -480,10 +490,11 @@ function Ui.paint(button: GuiObject, color: ButtonColor)
 	end
 	local text = button:FindFirstChild("Text") :: TextLabel?
 	if text then
-		text.TextColor3 = c[3]
+		local textColor = buttonTextColor(color, text.TextSize)
+		text.TextColor3 = textColor
 		local s = text:FindFirstChildOfClass("UIStroke")
 		if s then
-			s.Enabled = c[3] == Ui.Color.white
+			s.Enabled = textColor == Ui.Color.white
 		end
 	end
 end
@@ -553,14 +564,14 @@ function Ui.button(p: ButtonProps): TextButton
 			Size = UDim2.new(1, -left - 10, 1, 0),
 			Text = p.Text,
 			TextSize = p.TextSize or 22,
-			TextColor3 = c[3],
+			TextColor3 = buttonTextColor(color, p.TextSize or 22),
 			TextXAlignment = Enum.TextXAlignment.Center,
 			TextWrapped = true,
 			Parent = button,
 		}, { Ui.textStroke(2) })
 		local s = text:FindFirstChildOfClass("UIStroke")
 		if s then
-			s.Enabled = c[3] == Ui.Color.white
+			s.Enabled = text.TextColor3 == Ui.Color.white
 		end
 		-- Иконка без заданного размера: квадрат по высоте, текст справа от неё
 		if p.Icon and iconSize == 0 then
@@ -775,7 +786,8 @@ end
 export type ToastKind = "info" | "reward" | "error"
 export type Toasts = {
 	holder: Frame,
-	show: (text: string, kind: ToastKind?, icon: string?) -> (),
+	-- big = a larger toast for a find or a reward
+	show: (text: string, kind: ToastKind?, icon: string?, big: boolean?) -> (),
 	cash: (amount: number) -> (),
 }
 
@@ -784,7 +796,7 @@ local TOAST_VISIBLE = 2
 local TOAST_QUEUE_MAX = 4 -- older waiting toasts are dropped: late news is worse than no news
 local TOAST_STYLE: { [string]: { Color3 } } = {
 	info = { Ui.Color.nightRaised, Ui.Color.text },
-	reward = { Ui.Color.amber, Ui.Color.white },
+	reward = { Ui.Color.amber, Ui.Color.ink },
 	error = { Ui.Color.red, Ui.Color.white },
 }
 
@@ -806,12 +818,20 @@ function Ui.toasts(parent: Instance, position: UDim2?): Toasts
 	})
 	Ui.autoScale(holder, 0.75, 1.2)
 
-	local function make(text: string, kind: ToastKind, icon: string?, order: number): (Frame, TextLabel, UIScale)
+	local function make(
+		text: string,
+		kind: ToastKind,
+		icon: string?,
+		order: number,
+		big: boolean?
+	): (Frame, TextLabel, UIScale)
 		local style = TOAST_STYLE[kind]
+		local height = if big then 66 else 50
+		local iconSize = if big then 54 else 36
 		local frame = Ui.pill({
 			Name = "Toast",
 			LayoutOrder = order,
-			Size = UDim2.fromOffset(0, 50),
+			Size = UDim2.fromOffset(0, height),
 			AutomaticSize = Enum.AutomaticSize.X,
 			BackgroundColor3 = style[1],
 			BackgroundTransparency = if kind == "info" then 0.1 else 0,
@@ -830,14 +850,19 @@ function Ui.toasts(parent: Instance, position: UDim2?): Toasts
 			Parent = frame,
 		})
 		if icon then
-			Ui.icon(icon, { Name = "Icon", Size = UDim2.fromOffset(36, 36), LayoutOrder = 1, Parent = frame })
+			Ui.icon(icon, {
+				Name = "Icon",
+				Size = UDim2.fromOffset(iconSize, iconSize),
+				LayoutOrder = 1,
+				Parent = frame,
+			})
 		end
 		local label = Ui.label({
 			Name = "Text",
-			Size = UDim2.fromOffset(0, 50),
+			Size = UDim2.fromOffset(0, height),
 			AutomaticSize = Enum.AutomaticSize.X,
 			Text = text,
-			TextSize = 24,
+			TextSize = if big then 28 else 24,
 			TextColor3 = style[2],
 			LayoutOrder = 2,
 			Parent = frame,
@@ -850,7 +875,7 @@ function Ui.toasts(parent: Instance, position: UDim2?): Toasts
 		return frame, label, scale
 	end
 
-	type Waiting = { text: string, kind: ToastKind, icon: string? }
+	type Waiting = { text: string, kind: ToastKind, icon: string?, big: boolean? }
 	local queue: { Waiting } = {}
 	local visible = 0
 	local order = 0
@@ -860,7 +885,7 @@ function Ui.toasts(parent: Instance, position: UDim2?): Toasts
 			local item = table.remove(queue, 1) :: Waiting
 			visible += 1
 			order += 1
-			local frame = make(item.text, item.kind, item.icon, order)
+			local frame = make(item.text, item.kind, item.icon, order, item.big)
 			if item.kind ~= "info" then
 				Sound.play(item.kind)
 			end
@@ -872,8 +897,8 @@ function Ui.toasts(parent: Instance, position: UDim2?): Toasts
 		end
 	end
 
-	local function show(text: string, kind: ToastKind?, icon: string?)
-		table.insert(queue, { text = text, kind = kind or "info", icon = icon })
+	local function show(text: string, kind: ToastKind?, icon: string?, big: boolean?)
+		table.insert(queue, { text = text, kind = kind or "info", icon = icon, big = big })
 		while #queue > TOAST_QUEUE_MAX do
 			table.remove(queue, 1)
 		end
@@ -913,7 +938,8 @@ end
 
 -- ============================================================
 -- Tabs: a row or a column of tab buttons. The selected tab differs by shape and colour:
--- gold and longer (column) or taller (row, icons). Modes: "column" (side bookmarks), "row" (on top), "icons" (narrow)
+-- gold and longer (column, it grows to the left: the frame is right-aligned) or taller (row, icons).
+-- The label is navy without an outline in both states. Modes: "column" (side bookmarks), "row", "icons" (narrow)
 -- ============================================================
 export type TabItem = { Id: string, Text: string, Icon: string? }
 export type TabMode = "column" | "row" | "icons"
@@ -943,6 +969,7 @@ function Ui.tabs(parent: Instance, items: { TabItem }, onSelect: ((id: string) -
 		local column = mode == "column"
 		list.FillDirection = if column then Enum.FillDirection.Vertical else Enum.FillDirection.Horizontal
 		list.VerticalAlignment = if column then Enum.VerticalAlignment.Top else Enum.VerticalAlignment.Bottom
+		list.HorizontalAlignment = if column then Enum.HorizontalAlignment.Right else Enum.HorizontalAlignment.Left
 		list.Padding = UDim.new(0, size.gap)
 		local n = #items
 		frame.Size = if column
@@ -960,11 +987,6 @@ function Ui.tabs(parent: Instance, items: { TabItem }, onSelect: ((id: string) -
 			end
 			if label then
 				label.Visible = mode ~= "icons"
-				label.TextColor3 = if sel then Ui.Color.white else Ui.Color.ink
-				local stroke = label:FindFirstChildOfClass("UIStroke")
-				if stroke then
-					stroke.Enabled = sel
-				end
 			end
 		end
 	end
@@ -994,10 +1016,7 @@ function Ui.tabs(parent: Instance, items: { TabItem }, onSelect: ((id: string) -
 			TextScaled = true,
 			TextColor3 = Ui.Color.ink,
 			Parent = button,
-		}, {
-			Ui.new("UITextSizeConstraint", { MaxTextSize = 22, MinTextSize = Ui.TextSize.caption }),
-			Ui.textStroke(Ui.Stroke.text),
-		})
+		}, { Ui.new("UITextSizeConstraint", { MaxTextSize = 22, MinTextSize = Ui.TextSize.caption }) })
 		buttons[item.Id] = button
 		button.Activated:Connect(function()
 			selectTab(item.Id)
@@ -1020,6 +1039,106 @@ function Ui.tabs(parent: Instance, items: { TabItem }, onSelect: ((id: string) -
 			apply()
 		end,
 	}
+end
+
+-- ============================================================
+-- Card: a rounded card with a border and four states
+-- ============================================================
+export type CardState = "normal" | "selected" | "locked" | "done"
+
+function Ui.setCardState(card: GuiObject, state: CardState)
+	local stroke = card:FindFirstChild("Border") :: UIStroke?
+	card.BackgroundColor3 = if state == "selected"
+		then Ui.Color.greenLight
+		elseif state == "locked" then Ui.Color.surface
+		else Ui.Color.card
+	if stroke then
+		stroke.Color = if state == "selected" or state == "done" then Ui.Color.greenDark else Ui.Color.surfaceLine
+	end
+end
+
+-- clickable = true makes it a button (Activated)
+function Ui.card(props: { [string]: any }, clickable: boolean?, radius: number?): GuiObject
+	if clickable then
+		props.Text = ""
+		props.AutoButtonColor = false
+	end
+	local card: GuiObject = Ui.new(if clickable then "TextButton" else "Frame", props)
+	Ui.corner(radius or Ui.Radius.card).Parent = card
+	local stroke = Ui.border(Ui.Stroke.card, Ui.Color.surfaceLine)
+	stroke.Name = "Border"
+	stroke.Parent = card
+	Ui.setCardState(card, "normal")
+	return card
+end
+
+-- ============================================================
+-- Price button: a buy button with states. buy — green with the currency icon; need — grey (not enough);
+-- owned — white with a check; max — gold with a star; locked — grey with a lock. The caller gives the text.
+-- ============================================================
+export type PriceState = "buy" | "need" | "owned" | "max" | "locked"
+export type PriceButton = { button: TextButton, set: (state: PriceState, text: string) -> () }
+
+local PRICE_KIND: { [string]: ButtonKind } = {
+	buy = "primary",
+	need = "disabled",
+	owned = "neutral",
+	max = "reward",
+	locked = "disabled",
+}
+
+function Ui.priceButton(currencyIcon: string, props: ButtonProps): PriceButton
+	props.Icon = currencyIcon
+	props.IconSize = props.IconSize or 30
+	props.Text = props.Text or ""
+	local button = Ui.button(props)
+	local icon = button:FindFirstChild("Icon") :: ImageLabel
+	local label = button:FindFirstChild("Text") :: TextLabel
+	local function set(state: PriceState, text: string)
+		Ui.setIcon(
+			icon,
+			if state == "owned"
+				then "Check"
+				elseif state == "max" then "Star"
+				elseif state == "locked" then "Lock"
+				else currencyIcon
+		)
+		label.Text = text
+		Ui.setKind(button, PRICE_KIND[state])
+	end
+	return { button = button, set = set }
+end
+
+-- Keep every icon picture loaded, so that the first toast or card does not show an empty icon (a first use
+-- took about 0.4 s to load). The pictures sit as 2-pixel, almost transparent labels in the screen corner in
+-- their own ScreenGui: the engine loads and keeps only pictures that are drawn (off screen or fully
+-- transparent ones stay unloaded, and ContentProvider:PreloadAsync alone did not help). Measured 2026-11-12:
+-- with the cache a new icon is loaded in one frame.
+local iconCache: ScreenGui? = nil
+function Ui.preloadIcons()
+	if iconCache or not RunService:IsClient() then
+		return
+	end
+	local gui: ScreenGui = Ui.new("ScreenGui", {
+		Name = "UiIconCache",
+		ResetOnSpawn = false,
+		IgnoreGuiInset = true,
+		DisplayOrder = -100,
+		Parent = Players.LocalPlayer:WaitForChild("PlayerGui"),
+	})
+	iconCache = gui
+	for name, id in Ui.Images do
+		if id ~= 0 then
+			Ui.new("ImageLabel", {
+				Name = name,
+				Size = UDim2.fromOffset(2, 2),
+				BackgroundTransparency = 1,
+				Image = "rbxassetid://" .. id,
+				ImageTransparency = 0.98,
+				Parent = gui,
+			})
+		end
+	end
 end
 
 -- ============================================================

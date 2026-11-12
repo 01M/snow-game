@@ -9,6 +9,7 @@
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local UserInputService = game:GetService("UserInputService")
+local ContextActionService = game:GetService("ContextActionService")
 local TextChatService = game:GetService("TextChatService")
 local TweenService = game:GetService("TweenService")
 
@@ -27,6 +28,7 @@ local Ui = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Ui"))
 
 local player = Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui")
+Ui.preloadIcons()
 
 local MAX_PLAYERS = 4
 
@@ -476,6 +478,7 @@ local PAGE_W, PAGE_H = 784, 508 -- страницы «Апгрейды», «Ко
 local TAB_ROW_H = 66
 
 local applyJournalLayout -- задаётся ниже, когда собраны доска и вкладки
+local upgradeArt -- большая картинка инструмента в блоке описания «Апгрейдов»: видна только в высокой раскладке
 local onJournalOpen, onJournalClose
 
 local journalWindow = Ui.window({
@@ -544,8 +547,8 @@ local screen = new("Frame", {
 local clip = new("Frame", {
 	Name = "Clip",
 	AnchorPoint = Vector2.new(0.5, 0),
-	Position = UDim2.new(0.5, 0, 0, 18),
-	Size = UDim2.fromOffset(230, 62),
+	Position = UDim2.new(0.5, 0, 0, 34),
+	Size = UDim2.fromOffset(230, 58),
 	BackgroundColor3 = Ui.Color.surfaceLine,
 	ZIndex = 4,
 	Parent = board,
@@ -561,7 +564,7 @@ new("Frame", {
 new("Frame", {
 	AnchorPoint = Vector2.new(0.5, 1),
 	Position = UDim2.new(0.5, 0, 0, 4),
-	Size = UDim2.fromOffset(96, 34),
+	Size = UDim2.fromOffset(96, 24),
 	BackgroundTransparency = 1,
 	ZIndex = 3,
 	Parent = clip,
@@ -569,8 +572,8 @@ new("Frame", {
 
 local closeButton = journalWindow.closeButton
 
--- Вкладки и страницы. Страница «Журнал» тянется по листу; остальные три пока свёрстаны под лист PAGE_W×PAGE_H
--- и лежат в прокрутке: в низких раскладках их листают
+-- Вкладки и страницы. Страницы «Задачи» и «Апгрейды» тянутся по листу; «Коллекция» и «Подсказки» пока свёрстаны
+-- под лист PAGE_W×PAGE_H и лежат в прокрутке: в низких раскладках их листают
 local pages = {}
 local pageHolders = {}
 local currentPage = nil
@@ -595,15 +598,15 @@ tabs = Ui.tabs(root, TABS, showPage)
 journalWindow.setDefaultSelection(tabs.buttons.Journal)
 
 for _, tab in ipairs(TABS) do
-	if tab.Id == "Journal" then
-		pages.Journal = new("Frame", {
-			Name = "JournalPage",
+	if tab.Id == "Journal" or tab.Id == "Upgrades" then
+		pages[tab.Id] = new("Frame", {
+			Name = tab.Id .. "Page",
 			Size = UDim2.fromScale(1, 1),
 			BackgroundTransparency = 1,
 			Visible = false,
 			Parent = screen,
 		})
-		pageHolders.Journal = pages.Journal
+		pageHolders[tab.Id] = pages[tab.Id]
 	else
 		local holder = new("ScrollingFrame", {
 			Name = tab.Id .. "Holder",
@@ -626,19 +629,24 @@ for _, tab in ipairs(TABS) do
 	end
 end
 
--- «Выйти в лобби»: первое нажатие просит подтвердить (3 с), второе — уходит (MatchServer, remote MatchAction).
--- Высота 60–68: при масштабе 0.75 кнопка остаётся не ниже 45 px
+-- «Выйти в лобби»: небольшая белая кнопка в правом нижнем углу страницы «Задачи», под списком игроков,
+-- в стороне от вкладок и крестика. Первое нажатие просит подтвердить (3 с), второе — уходит (MatchServer, MatchAction).
+-- Высота 60: при масштабе 0.75 кнопка остаётся 45 px
 local MatchAction = ReplicatedStorage:WaitForChild("SnowGame"):WaitForChild("Remotes"):WaitForChild("MatchAction")
 local LEAVE_CONFIRM_TIME = 3
+local LEAVE_H = 60
 local leaveButton = Ui.button({
 	Name = "LeaveMatch",
-	Kind = "danger",
+	Kind = "neutral",
+	Icon = "Leave",
+	IconSize = 36,
 	Text = L("Hud.LeaveMatch"),
-	TextSize = 20,
-	Radius = Ui.Radius.card,
-	Position = UDim2.fromOffset(64, 560),
-	Size = UDim2.fromOffset(246, 68),
-	Parent = root,
+	TextSize = 18,
+	Radius = Ui.Radius.button,
+	AnchorPoint = Vector2.new(1, 1),
+	Position = UDim2.new(1, -16, 1, -12),
+	Size = UDim2.fromOffset(230, LEAVE_H),
+	Parent = pages.Journal,
 })
 local leaveText = leaveButton:FindFirstChild("Text") :: TextLabel
 local leaveArmedUntil = 0
@@ -671,10 +679,10 @@ applyJournalLayout = function(layout)
 		screen.Position = UDim2.fromOffset(28, 82)
 		screen.Size = UDim2.new(1, -56, 1, -112)
 		tabs.setMode("column")
-		tabs.frame.Position = UDim2.fromOffset(64, 110)
-		leaveButton.Position = UDim2.fromOffset(64, 560)
-		leaveButton.Size = UDim2.fromOffset(246, 68)
-		closeButton.Position = UDim2.fromOffset(300 + 840 - 14, 40)
+		-- закладки кончаются у края доски (зазор 4 px), выбранная длиннее влево и доску не закрывает
+		tabs.frame.Position = UDim2.fromOffset(296 - tabs.frame.Size.X.Offset, 110)
+		-- крестик целиком на доске, в её правом верхнем углу (над листом)
+		closeButton.Position = UDim2.fromOffset(300 + 840 - 46, 34 + 44)
 	else
 		boardH = h - TAB_ROW_H
 		board.Position = UDim2.fromOffset(0, TAB_ROW_H)
@@ -683,19 +691,20 @@ applyJournalLayout = function(layout)
 		screen.Size = UDim2.new(1, -40, 1, -46)
 		tabs.setMode(if layout == "narrow" then "icons" else "row")
 		tabs.frame.Position = UDim2.fromOffset(0, 0)
-		local leaveW = if layout == "narrow" then 190 else 150
-		leaveButton.Position = UDim2.fromOffset(tabs.frame.Size.X.Offset + 12, 4)
-		leaveButton.Size = UDim2.fromOffset(leaveW, 60)
-		closeButton.Position = UDim2.fromOffset(w - 12, TAB_ROW_H + 36) -- ниже кнопки «Выйти»
+		-- крестик в конце ряда вкладок, справа
+		closeButton.Position = UDim2.fromOffset(w - 32, 32)
 	end
 	clip.Visible = side
+	if upgradeArt then
+		upgradeArt.Visible = side
+	end
 	for i, line in ipairs(grain) do
 		line.Visible = 40 + i * 74 < boardH - 24
 	end
 	-- старые страницы: по центру листа, если лист шире страницы; иначе от левого края, и их листают
 	local screenW = (if side then 840 else w) - (if side then 56 else 40)
 	for id, page in pairs(pages) do
-		if id ~= "Journal" then
+		if id ~= "Journal" and id ~= "Upgrades" then
 			page.Position = UDim2.fromOffset(math.max(0, math.floor((screenW - PAGE_W) / 2)), 0)
 		end
 	end
@@ -716,7 +725,7 @@ end
 -- ---------- Журнал: задачи + игроки ----------
 -- Две колонки по половине листа, каждая со своей прокруткой: в низкой раскладке списки листаются
 local journalPage = pages.Journal
-local function journalColumn(xScale, xOffset, title)
+local function journalColumn(xScale, xOffset, title, bottomPad)
 	local col = new("Frame", {
 		Position = UDim2.new(xScale, xOffset, 0, 0),
 		Size = UDim2.new(0.5, -28, 1, 0),
@@ -734,7 +743,7 @@ local function journalColumn(xScale, xOffset, title)
 	})
 	return new("ScrollingFrame", {
 		Position = UDim2.fromOffset(0, 54),
-		Size = UDim2.new(1, 0, 1, -62),
+		Size = UDim2.new(1, 0, 1, -62 - (bottomPad or 0)),
 		BackgroundTransparency = 1,
 		BorderSizePixel = 0,
 		ScrollBarThickness = 6,
@@ -745,7 +754,7 @@ local function journalColumn(xScale, xOffset, title)
 	}, { new("UIListLayout", { Padding = UDim.new(0, 6), SortOrder = Enum.SortOrder.LayoutOrder }) })
 end
 local taskList = journalColumn(0, 20, L("Journal.Tasks"))
-local playerList = journalColumn(0.5, 8, L("Journal.Players"))
+local playerList = journalColumn(0.5, 8, L("Journal.Players"), LEAVE_H + 16) -- под списком — кнопка «Выйти в лобби»
 
 local taskRows = {}
 for i, t in ipairs(tasks) do
@@ -878,6 +887,8 @@ local function getThumb(userId)
 	return ""
 end
 
+getThumb(player.UserId) -- свой портрет запрашиваем заранее: к открытию журнала он уже загружен
+
 -- ---------- Апгрейды ----------
 -- Строки: инструменты из Config.Tools (по 3 апгрейда, у некупленных — замки ???) и рюкзак (Вместимость).
 -- Покупка: рюкзак — Remotes.BuyUpgrade, инструменты — Remotes.BuyToolUpgrade; цены и проверки на сервере.
@@ -961,131 +972,15 @@ table.insert(UPGRADE_ROWS, {
 	},
 })
 
+-- Страница тянется по листу: слева список строк (инструмент — подпись и три карточки), он листается;
+-- справа на всю высоту — блок описания с ценой и кнопкой покупки (Ui.priceButton). Карточки — Ui.card.
 local selectedUpgrade = nil
-local upgradeCards = {}
+local upgradeCards = {} -- [карточка] = её апгрейд
 
-local descTitle, descTag, descText, buyButton, walletLabel
+local descTitle, descTag, descText, descIcon, levelText, levelPips, walletLabel, buyPrice
 
-local function selectUpgrade(item, card)
+local function selectUpgrade(item)
 	selectedUpgrade = item
-	for c, _ in pairs(upgradeCards) do
-		local s = c:FindFirstChildOfClass("UIStroke")
-		local isSel = c == card
-		c.BackgroundColor3 = isSel and C.greenSoft or C.white
-		s.Color = isSel and C.green or C.gray
-	end
-end
-
-local upgradeList = new("ScrollingFrame", {
-	Position = UDim2.fromOffset(16, 14),
-	Size = UDim2.new(1, -24, 0, 280),
-	BackgroundTransparency = 1,
-	BorderSizePixel = 0,
-	ScrollBarThickness = 6,
-	ScrollBarImageColor3 = C.ice,
-	AutomaticCanvasSize = Enum.AutomaticSize.Y,
-	CanvasSize = UDim2.new(),
-	Parent = upgradesPage,
-}, { new("UIListLayout", { Padding = UDim.new(0, 8), SortOrder = Enum.SortOrder.LayoutOrder }) })
-
-for r, rowData in ipairs(UPGRADE_ROWS) do
-	local row = new("Frame", {
-		LayoutOrder = r,
-		Size = UDim2.new(1, -14, 0, 88),
-		BackgroundColor3 = C.row,
-		Parent = upgradeList,
-	}, { corner(12), border(C.gray, 2) })
-	label({
-		Position = UDim2.fromOffset(14, 0),
-		Size = UDim2.new(0, 110, 1, 0),
-		Text = rowData.category,
-		FontFace = Ui.Font.heavy,
-		TextSize = 16,
-		TextColor3 = C.inkSoft,
-		TextWrapped = true,
-		Parent = row,
-	})
-
-	for j = 1, 3 do
-		local item = rowData.items[j] or false
-		local card = new("TextButton", {
-			Name = item
-					and (item.kind == "tool" and ("Card_" .. item.toolId .. "_" .. item.upgrade.Id) or ("Card_" .. item.id))
-				or ("Card_Locked" .. r .. "_" .. j),
-			Position = UDim2.fromOffset(128 + (j - 1) * 196, 8),
-			Size = UDim2.fromOffset(188, 72),
-			BackgroundColor3 = C.white,
-			AutoButtonColor = false,
-			Text = "",
-			Parent = row,
-		}, { corner(10), border(C.gray, 2.5) })
-		upgradeCards[card] = item
-
-		local nameLabel = label({
-			Position = UDim2.fromOffset(10, 4),
-			Size = UDim2.new(1, -20, 0, 20),
-			Text = item and item.name or "???",
-			FontFace = Ui.Font.heavy,
-			TextSize = 15,
-			Parent = card,
-		})
-		local iconBox = new("Frame", {
-			Position = UDim2.fromOffset(10, 26),
-			Size = UDim2.fromOffset(56, 40),
-			BackgroundColor3 = C.lock,
-			BackgroundTransparency = item and 1 or 0,
-			Parent = card,
-		}, { corner(8) })
-		local iconLabel = Ui.icon(item and item.icon or "Lock", {
-			AnchorPoint = Vector2.new(0.5, 0.5),
-			Position = UDim2.fromScale(0.5, 0.5),
-			Size = UDim2.fromOffset(38, 38),
-			Parent = iconBox,
-		})
-		local price = label({
-			AnchorPoint = Vector2.new(1, 1),
-			Position = UDim2.new(1, -10, 1, -14),
-			Size = UDim2.fromOffset(110, 20),
-			Text = "?",
-			TextSize = 15,
-			TextXAlignment = Enum.TextXAlignment.Right,
-			Parent = card,
-		})
-		if item then
-			item.priceLabel = price
-			item.nameLabel = nameLabel
-			item.iconBox = iconBox
-			item.iconLabel = iconLabel
-			item.levelLabel = label({
-				AnchorPoint = Vector2.new(1, 0),
-				Position = UDim2.new(1, -10, 0, 26),
-				Size = UDim2.fromOffset(110, 18),
-				Text = "",
-				TextSize = 13,
-				TextColor3 = C.inkSoft,
-				TextXAlignment = Enum.TextXAlignment.Right,
-				Parent = card,
-			})
-			-- Полоска уровней во всю ширину внизу карточки, как в референсе
-			-- (у разового «Удержания» — одно короткое деление, у остальных 5)
-			if item.kind == "tool" then
-				item.pips = {}
-				local n = item.upgrade.MaxLevel
-				local segW = n > 1 and math.floor((188 - 20 - (n - 1) * 6) / n) or 32
-				for k = 1, n do
-					item.pips[k] = new("Frame", {
-						Position = UDim2.new(0, 10 + (k - 1) * (segW + 6), 1, -9),
-						Size = UDim2.fromOffset(segW, 5),
-						BackgroundColor3 = C.lock,
-						Parent = card,
-					}, { corner(3) })
-				end
-			end
-		end
-		card.Activated:Connect(function()
-			selectUpgrade(item, card)
-		end)
-	end
 end
 
 -- Состояние карточки инструмента: уровень, цена следующего, открыт ли (инструмент куплен)
@@ -1096,75 +991,247 @@ local function toolUpgradeState(item, levels)
 	return lv, nextPrice, ownsTool(item.toolId)
 end
 
-local descBox = new("Frame", {
-	Position = UDim2.fromOffset(16, 304),
-	Size = UDim2.fromOffset(460, 136),
-	BackgroundColor3 = C.white,
-	Parent = upgradesPage,
-}, { corner(12), border(C.gray, 2) })
+local DETAIL_W = 268
+local ROW_LABEL_H = 20
+local CARD_H = 66
 
+local upgradeList = new("ScrollingFrame", {
+	Name = "Rows",
+	Position = UDim2.fromOffset(14, 12),
+	Size = UDim2.new(1, -(DETAIL_W + 14 + 12 + 14), 1, -24),
+	BackgroundTransparency = 1,
+	BorderSizePixel = 0,
+	ScrollBarThickness = 6,
+	ScrollBarImageColor3 = C.ice,
+	AutomaticCanvasSize = Enum.AutomaticSize.Y,
+	CanvasSize = UDim2.new(),
+	Parent = upgradesPage,
+}, { new("UIListLayout", { Padding = UDim.new(0, 6), SortOrder = Enum.SortOrder.LayoutOrder }) })
+
+for r, rowData in ipairs(UPGRADE_ROWS) do
+	local row = new("Frame", {
+		Name = "Row" .. r,
+		LayoutOrder = r,
+		Size = UDim2.new(1, -12, 0, ROW_LABEL_H + CARD_H + 4),
+		BackgroundTransparency = 1,
+		Parent = upgradeList,
+	})
+	label({
+		Position = UDim2.fromOffset(4, 0),
+		Size = UDim2.new(1, -8, 0, ROW_LABEL_H),
+		Text = rowData.category,
+		FontFace = Ui.Font.heavy,
+		TextSize = Ui.TextSize.caption,
+		TextColor3 = C.inkSoft,
+		TextTruncate = Enum.TextTruncate.AtEnd,
+		Parent = row,
+	})
+	local cardsRow = new("Frame", {
+		Position = UDim2.fromOffset(2, ROW_LABEL_H + 2),
+		Size = UDim2.new(1, -4, 0, CARD_H),
+		BackgroundTransparency = 1,
+		Parent = row,
+	}, {
+		new("UIListLayout", {
+			FillDirection = Enum.FillDirection.Horizontal,
+			Padding = UDim.new(0, 8),
+			SortOrder = Enum.SortOrder.LayoutOrder,
+		}),
+	})
+
+	for j, item in ipairs(rowData.items) do
+		local card = Ui.card({
+			Name = item.kind == "tool" and ("Card_" .. item.toolId .. "_" .. item.upgrade.Id) or ("Card_" .. item.id),
+			LayoutOrder = j,
+			Size = UDim2.new(1 / 3, -6, 1, 0),
+			Parent = cardsRow,
+		}, true, 12)
+		upgradeCards[card] = item
+		item.card = card
+		item.iconLabel = Ui.icon(item.icon, {
+			AnchorPoint = Vector2.new(0, 0.5),
+			Position = UDim2.new(0, 8, 0.5, -3),
+			Size = UDim2.fromOffset(40, 40),
+			Parent = card,
+		})
+		item.nameLabel = label({
+			Position = UDim2.fromOffset(54, 5),
+			Size = UDim2.new(1, -60, 0, 22),
+			Text = item.name,
+			FontFace = Ui.Font.heavy,
+			TextScaled = true,
+			Parent = card,
+		}, { new("UITextSizeConstraint", { MaxTextSize = 17, MinTextSize = 12 }) })
+		-- цена следующего уровня, «МАКС» или «КУПЛЕНО»; у рюкзака ещё уровень
+		item.priceLabel = label({
+			Position = UDim2.fromOffset(54, 28),
+			Size = UDim2.new(1, -60, 0, 20),
+			Text = "",
+			TextScaled = true,
+			TextColor3 = C.inkSoft,
+			Parent = card,
+		}, { new("UITextSizeConstraint", { MaxTextSize = 16, MinTextSize = 12 }) })
+		-- Полоска уровней внизу карточки (у разового «Удержания» — одно деление)
+		item.pips = {}
+		if item.kind == "tool" then
+			local n = item.upgrade.MaxLevel
+			local strip = new("Frame", {
+				Position = UDim2.new(0, 54, 1, -13),
+				Size = UDim2.new(1, -64, 0, 6),
+				BackgroundTransparency = 1,
+				Parent = card,
+			}, {
+				new("UIListLayout", {
+					FillDirection = Enum.FillDirection.Horizontal,
+					Padding = UDim.new(0, 4),
+					SortOrder = Enum.SortOrder.LayoutOrder,
+				}),
+			})
+			for k = 1, n do
+				item.pips[k] = new("Frame", {
+					LayoutOrder = k,
+					Size = UDim2.new(1 / math.max(n, 3), -4, 1, 0),
+					BackgroundColor3 = Ui.Color.surfaceLine,
+					Parent = strip,
+				}, { corner(3) })
+			end
+		end
+		card.Activated:Connect(function()
+			selectUpgrade(item)
+		end)
+	end
+end
+
+-- Блок описания справа: название, эффект, текст, деньги игрока, кнопка покупки
+local detail = Ui.card({
+	Name = "Detail",
+	AnchorPoint = Vector2.new(1, 0),
+	Position = UDim2.new(1, -14, 0, 12),
+	Size = UDim2.new(0, DETAIL_W, 1, -24),
+	Parent = upgradesPage,
+}, false, 14)
+
+-- сверху: крупная иконка, справа от неё название и эффект
+descIcon = Ui.icon("Upgrade", {
+	Name = "Icon",
+	Position = UDim2.fromOffset(12, 12),
+	Size = UDim2.fromOffset(64, 64),
+	Parent = detail,
+})
 descTitle = label({
-	Position = UDim2.fromOffset(14, 10),
-	Size = UDim2.fromOffset(200, 28),
+	Position = UDim2.fromOffset(86, 12),
+	Size = UDim2.new(1, -98, 0, 30),
 	Text = "",
 	FontFace = Ui.Font.heavy,
-	TextSize = 22,
-	Parent = descBox,
-})
+	TextScaled = true,
+	Parent = detail,
+}, { new("UITextSizeConstraint", { MaxTextSize = 24, MinTextSize = Ui.TextSize.caption }) })
 descTag = label({
-	AnchorPoint = Vector2.new(1, 0),
-	Position = UDim2.new(1, -12, 0, 10),
-	Size = UDim2.fromOffset(210, 28),
+	Position = UDim2.fromOffset(86, 46),
+	Size = UDim2.new(1, -98, 0, 28),
 	BackgroundColor3 = C.greenSoft,
 	BackgroundTransparency = 0,
 	Text = "",
-	TextSize = 15,
+	TextScaled = true,
 	TextColor3 = C.green,
 	TextXAlignment = Enum.TextXAlignment.Center,
-	Parent = descBox,
-}, { corner(8) })
+	Parent = detail,
+}, {
+	corner(8),
+	new("UITextSizeConstraint", { MaxTextSize = Ui.TextSize.caption, MinTextSize = 12 }),
+	new("UIPadding", { PaddingLeft = UDim.new(0, 6), PaddingRight = UDim.new(0, 6) }),
+})
 descText = label({
-	Position = UDim2.fromOffset(14, 50),
-	Size = UDim2.new(1, -28, 0, 76),
+	Position = UDim2.fromOffset(14, 88),
+	Size = UDim2.new(1, -28, 1, -88 - 158),
 	Text = "",
-	TextSize = 17,
+	TextSize = 18,
 	TextColor3 = C.inkSoft,
 	TextWrapped = true,
 	TextYAlignment = Enum.TextYAlignment.Top,
-	Parent = descBox,
+	Parent = detail,
+}, { new("UITextSizeConstraint", { MaxTextSize = 18, MinTextSize = 14 }) })
+descText.TextScaled = true -- в низкой раскладке длинное описание мельчает, а не обрезается
+-- в высокой раскладке между описанием и уровнем остаётся место: там картинка инструмента, к которому относится апгрейд
+upgradeArt = Ui.icon("Backpack", {
+	Name = "Art",
+	AnchorPoint = Vector2.new(0.5, 1),
+	Position = UDim2.new(0.5, 0, 1, -166),
+	Size = UDim2.fromOffset(132, 132),
+	Parent = detail,
 })
-
-buyButton = new("TextButton", {
-	Name = "BuyButton",
-	Position = UDim2.fromOffset(492, 304),
-	Size = UDim2.fromOffset(256, 62),
-	BackgroundColor3 = C.gray,
+local TOOL_ART = { Hand = "ToolHand", Shovel = "ToolShovel", Blower = "ToolSnowPusher", Vacuum = "ToolSnowblower" }
+-- уровень: подпись и крупные деления
+levelText = label({
+	AnchorPoint = Vector2.new(0, 1),
+	Position = UDim2.new(0, 14, 1, -128),
+	Size = UDim2.new(1, -28, 0, 22),
 	Text = "",
 	FontFace = Ui.Font.heavy,
-	TextSize = 22,
-	TextColor3 = C.white,
-	Parent = upgradesPage,
-}, { corner(12), border(C.outline, 3) })
-
+	TextSize = Ui.TextSize.caption,
+	Parent = detail,
+})
+local levelStrip = new("Frame", {
+	AnchorPoint = Vector2.new(0, 1),
+	Position = UDim2.new(0, 14, 1, -110),
+	Size = UDim2.new(1, -28, 0, 12),
+	BackgroundTransparency = 1,
+	Parent = detail,
+}, {
+	new("UIListLayout", {
+		FillDirection = Enum.FillDirection.Horizontal,
+		Padding = UDim.new(0, 6),
+		SortOrder = Enum.SortOrder.LayoutOrder,
+	}),
+})
+levelPips = {}
+for k = 1, 5 do
+	levelPips[k] = new("Frame", {
+		LayoutOrder = k,
+		Size = UDim2.new(1 / 5, -5, 1, 0),
+		BackgroundColor3 = Ui.Color.surfaceLine,
+		Parent = levelStrip,
+	}, { corner(6) })
+end
+-- уровень lv из max делений; max = 0 прячет деления (рюкзак — уровней сколько угодно)
+local function setDetailLevel(text, lv, max)
+	levelText.Text = text
+	for k, pip in ipairs(levelPips) do
+		pip.Visible = k <= max
+		pip.BackgroundColor3 = k <= lv and C.green or Ui.Color.surfaceLine
+	end
+end
 label({
-	Position = UDim2.fromOffset(492, 384),
-	Size = UDim2.fromOffset(130, 40),
+	AnchorPoint = Vector2.new(0, 1),
+	Position = UDim2.new(0, 14, 1, -80),
+	Size = UDim2.new(0.5, -14, 0, 24),
 	Text = L("Upgrade.YourCash"),
-	TextSize = 17,
+	TextSize = Ui.TextSize.caption,
 	TextColor3 = C.inkSoft,
-	Parent = upgradesPage,
+	Parent = detail,
 })
 walletLabel = label({
-	Position = UDim2.fromOffset(622, 384),
-	Size = UDim2.fromOffset(126, 40),
+	AnchorPoint = Vector2.new(1, 1),
+	Position = UDim2.new(1, -14, 1, -80),
+	Size = UDim2.new(0.5, -14, 0, 24),
 	Text = "",
 	FontFace = Ui.Font.heavy,
-	TextSize = 22,
+	TextSize = Ui.TextSize.body,
 	TextXAlignment = Enum.TextXAlignment.Right,
-	Parent = upgradesPage,
+	Parent = detail,
+})
+buyPrice = Ui.priceButton("Cash", {
+	Name = "BuyButton",
+	TextSize = 18,
+	IconSize = 30,
+	Radius = Ui.Radius.button,
+	AnchorPoint = Vector2.new(0.5, 1),
+	Position = UDim2.new(0.5, 0, 1, -12),
+	Size = UDim2.new(1, -24, 0, 60),
+	Parent = detail,
 })
 
-buyButton.Activated:Connect(function()
+buyPrice.button.Activated:Connect(function()
 	local item = selectedUpgrade
 	if not item then
 		return
@@ -1396,6 +1463,21 @@ UserInputService.InputBegan:Connect(function(input, gameProcessed)
 	end
 end)
 
+-- Геймпад: Y — журнал, L2 — магазин. X занят: это кнопка ProximityPrompt (сарай, прилавок, пропуска),
+-- A — прыжок, B — закрыть окно (Ui.window), R2 — инструмент, L1/R1 — слоты хотбара
+ContextActionService:BindAction("OpenJournal", function(_, state)
+	if state == Enum.UserInputState.Begin then
+		setJournalOpen(not journalWindow.isOpen())
+	end
+	return Enum.ContextActionResult.Sink
+end, false, Enum.KeyCode.ButtonY)
+ContextActionService:BindAction("OpenShop", function(_, state)
+	if state == Enum.UserInputState.Begin then
+		ShopGui.toggle()
+	end
+	return Enum.ContextActionResult.Sink
+end, false, Enum.KeyCode.ButtonL2)
+
 workspace:GetAttributeChangedSignal("MatchState"):Connect(function()
 	if workspace:GetAttribute("MatchState") == "finished" then
 		setJournalOpen(false)
@@ -1593,88 +1675,97 @@ local function refreshJournal()
 
 	for _, rowData in ipairs(UPGRADE_ROWS) do
 		for _, item in ipairs(rowData.items) do
+			local state = "normal"
 			if item.kind == "backpack" then
 				item.priceLabel.Text = L("Shop.CashPrice", { price = price })
-				item.levelLabel.Text = L("Upgrade.Level", { n = level })
+					.. " · "
+					.. L("Upgrade.Level", { n = level })
 			else
 				local lv, nextPrice, open = toolUpgradeState(item, levels)
-				-- Некупленный инструмент: карточки закрыты (??? и замок), как в референсе
+				-- Некупленный инструмент: карточки закрыты (??? и замок)
 				item.nameLabel.Text = open and item.name or "???"
 				Ui.setIcon(item.iconLabel, open and item.icon or "Lock")
-				item.iconBox.BackgroundTransparency = open and 1 or 0
-				-- разовый купленный — только «КУПЛЕНО», многоуровневый на максимуме — «МАКС»
+				-- разовый купленный — «КУПЛЕНО», многоуровневый на максимуме — «МАКС»
 				item.priceLabel.Text = not open and ""
 					or nextPrice and L("Shop.CashPrice", { price = nextPrice })
-					or (item.upgrade.MaxLevel > 1 and L("Upgrade.Max") or "")
-				item.levelLabel.Text = open and item.upgrade.MaxLevel == 1 and lv >= 1 and L("Upgrade.Bought") or ""
+					or (item.upgrade.MaxLevel > 1 and L("Upgrade.Max") or L("Upgrade.Bought"))
 				for k, pip in ipairs(item.pips) do
 					pip.Visible = open
-					pip.BackgroundColor3 = k <= lv and C.green or C.lock
+					pip.BackgroundColor3 = k <= lv and C.green or Ui.Color.surfaceLine
 				end
+				state = not open and "locked" or (not nextPrice and "done" or "normal")
 			end
+			Ui.setCardState(item.card, item == selectedUpgrade and "selected" or state)
 		end
 	end
 
 	local item = selectedUpgrade
 	if item and item.kind == "backpack" then
 		descTitle.Text = item.name
+		Ui.setIcon(descIcon, item.icon)
+		Ui.setIcon(upgradeArt, "Backpack")
 		descTag.Visible = true
 		descTag.Text = item.tag
 		descText.Text = item.desc
 			.. "\n"
 			.. L("Upgrade.Backpack.Now", { n = player:GetAttribute("BackpackCapacity") or config.BackpackCapacity })
-		local canBuy = cash >= price
-		buyButton.Text = canBuy and L("Upgrade.Buy", { price = price }) or L("Upgrade.Need", { price = price })
-		buyButton.BackgroundColor3 = canBuy and C.green or C.gray
+		upgradeArt.ImageTransparency = 0
+		setDetailLevel(L("Upgrade.Level", { n = level }), 0, 0)
+		if cash >= price then
+			buyPrice.set("buy", L("Upgrade.Buy", { price = price }))
+		else
+			buyPrice.set("need", L("Upgrade.Need", { price = price }))
+		end
 	elseif item and item.kind == "tool" then
 		local lv, nextPrice, open = toolUpgradeState(item, levels)
 		local u = item.upgrade
+		Ui.setIcon(upgradeArt, TOOL_ART[item.toolId] or "Upgrade")
+		upgradeArt.ImageTransparency = open and 0 or 0.6
 		if not open then
 			descTitle.Text = "???"
+			Ui.setIcon(descIcon, "Lock")
 			descTag.Visible = false
 			descText.Text = L("Upgrade.LockedDesc", { tool = item.toolName })
-			buyButton.Text = L("Upgrade.LockedButton")
-			buyButton.BackgroundColor3 = C.gray
+			setDetailLevel("", 0, 0)
+			buyPrice.set("locked", L("Upgrade.LockedButton"))
 		else
 			descTitle.Text = item.name
+			Ui.setIcon(descIcon, item.icon)
 			descTag.Visible = true
 			descTag.Text = EFFECT_TAGS[u.Effect] and EFFECT_TAGS[u.Effect](u) or ""
-			local levelText = u.MaxLevel > 1 and "\n" .. L("Upgrade.LevelLine", { lv = lv, max = u.MaxLevel }) or ""
-			descText.Text = item.desc .. levelText
+			descText.Text = item.desc
+			setDetailLevel(L("Upgrade.LevelLine", { lv = lv, max = u.MaxLevel }), lv, u.MaxLevel)
 			if not nextPrice then
-				buyButton.Text = u.MaxLevel > 1 and L("Upgrade.MaxButton") or L("Upgrade.BoughtButton")
-				buyButton.BackgroundColor3 = C.gray
+				if u.MaxLevel > 1 then
+					buyPrice.set("max", L("Upgrade.MaxButton"))
+				else
+					buyPrice.set("owned", L("Upgrade.BoughtButton"))
+				end
+			elseif cash >= nextPrice then
+				buyPrice.set("buy", L("Upgrade.Buy", { price = nextPrice }))
 			else
-				local canBuy = cash >= nextPrice
-				buyButton.Text = canBuy and L("Upgrade.Buy", { price = nextPrice })
-					or L("Upgrade.Need", { price = nextPrice })
-				buyButton.BackgroundColor3 = canBuy and C.green or C.gray
+				buyPrice.set("need", L("Upgrade.Need", { price = nextPrice }))
 			end
 		end
-	elseif item == false then
-		descTitle.Text = "???"
-		descTag.Visible = false
-		descText.Text = L("Upgrade.SoonDesc")
-		buyButton.Text = L("Upgrade.SoonButton")
-		buyButton.BackgroundColor3 = C.gray
 	else
 		descTitle.Text = L("Upgrade.Title")
+		Ui.setIcon(descIcon, "Upgrade")
 		descTag.Visible = false
 		descText.Text = L("Upgrade.PickDesc")
-		buyButton.Text = L("Upgrade.PickButton")
-		buyButton.BackgroundColor3 = C.gray
+		setDetailLevel("", 0, 0)
+		buyPrice.set("locked", L("Upgrade.PickButton"))
 	end
 end
 
 -- По умолчанию выбран первый апгрейд первого инструмента (у Руки — «Удержание»)
-for card, item in pairs(upgradeCards) do
+for _, item in pairs(upgradeCards) do
 	if
 		item
 		and item.kind == "tool"
 		and item.toolId == config.Tools[1].Id
 		and item.upgrade == config.Tools[1].Upgrades[1]
 	then
-		selectUpgrade(item, card)
+		selectUpgrade(item)
 	end
 end
 

@@ -39,7 +39,7 @@ return {
 	["Task.ClearYard"] = { en = "Clear the yard", ru = "Очисти двор" },
 
 	-- Журнал
-	["Journal.Tab.Journal"] = { en = "Journal", ru = "Журнал" },
+	["Journal.Tab.Journal"] = { en = "Tasks", ru = "Задачи" },
 	["Journal.Tab.Upgrades"] = { en = "Upgrades", ru = "Апгрейды" },
 	["Journal.Tab.Collection"] = { en = "Collection", ru = "Коллекция" },
 	["Journal.Tab.Tips"] = { en = "Tips", ru = "Подсказки" },

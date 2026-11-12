@@ -22,6 +22,7 @@ local QueueState = LobbyRemotes:WaitForChild("QueueState")
 
 local player = Players.LocalPlayer
 local new = Ui.new
+Ui.preloadIcons()
 
 local gui = new("ScreenGui", {
 	Name = "LobbyHud",

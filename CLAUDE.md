@@ -116,6 +116,7 @@ Versions are pinned in `rokit.toml`: Rojo 7.7.1, StyLua 2.6.0, Selene 0.32.0, lu
 
 - `stylua src` (tabs, width 120), then `stylua --check src`. `[unverified]` Formatting may not stabilise in one pass.
 - `selene src` (`std = "roblox"`, `roblox_manual_fromscale_or_fromoffset` allowed). 0 warnings are required before commit, like in analyze. A false positive: `-- selene: allow(<rule>)` with the reason. Do not fix real warnings without asking.
+- `DebugWindowLayout` (a workspace attribute, both places, Studio only): `"compact"` or `"narrow"` makes every `Ui.window` use that phone layout on a big screen; without it the layout follows the viewport. It is read when a window opens, so it can be set during Play from the Client context. Remove the attribute after the test.
 - `scripts/analyze.ps1` checks each place together with `src/shared` against a fresh sourcemap. Exit code 0 only with 0 errors. Generated files are in `.luau-lsp/` (not in git). Roblox types are pinned: `$typesVersion` in the script changes together with the luau-lsp version. Files without `--!strict` are checked in non-strict mode.
 
 **Before committing:**

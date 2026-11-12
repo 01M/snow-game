@@ -30,26 +30,26 @@ local playerGui = player:WaitForChild("PlayerGui")
 
 local MAX_PLAYERS = 4
 
--- Цвета журнала-планшета (бумага, дерево); общие цвета — Ui.Color
+-- Цвета журнала-планшета — из общих токенов Ui.Color (дерево — только здесь)
 local C = {
-	white = Color3.fromRGB(255, 255, 255),
-	ink = Color3.fromRGB(42, 28, 16),
-	inkSoft = Color3.fromRGB(122, 100, 80),
-	outline = Color3.fromRGB(11, 15, 28),
-	paper = Color3.fromRGB(255, 248, 234),
-	row = Color3.fromRGB(243, 226, 196),
-	ice = Color3.fromRGB(143, 211, 255),
-	iceDark = Color3.fromRGB(60, 141, 214),
-	wood = Color3.fromRGB(201, 137, 74),
-	woodDark = Color3.fromRGB(168, 107, 51),
-	title = Color3.fromRGB(70, 45, 22),
-	green = Color3.fromRGB(61, 170, 107),
-	greenSoft = Color3.fromRGB(220, 242, 222),
-	red = Color3.fromRGB(226, 83, 74),
-	gold = Color3.fromRGB(255, 180, 67),
-	gray = Color3.fromRGB(200, 181, 150),
-	barBg = Color3.fromRGB(30, 38, 64),
-	lock = Color3.fromRGB(236, 222, 197),
+	white = Ui.Color.white,
+	ink = Ui.Color.ink,
+	inkSoft = Ui.Color.inkSoft,
+	outline = Ui.Color.outline,
+	paper = Ui.Color.card,
+	row = Ui.Color.surface,
+	ice = Ui.Color.blueLight,
+	iceDark = Ui.Color.blue,
+	wood = Ui.Color.wood,
+	woodDark = Ui.Color.woodDark,
+	title = Ui.Color.ink,
+	green = Ui.Color.greenDark,
+	greenSoft = Ui.Color.greenLight,
+	red = Ui.Color.red,
+	gold = Ui.Color.gold,
+	gray = Ui.Color.surfaceLine,
+	barBg = Ui.Color.nightDeep,
+	lock = Ui.Color.surface,
 }
 
 -- ============================================================
@@ -465,45 +465,37 @@ local upgradeBadge = Ui.badge(journalButton, "!")
 upgradeBadge.Position = UDim2.fromOffset(6, 6) -- левый верхний угол: справа внизу ярлык клавиши
 
 -- ============================================================
--- Журнал: деревянный планшет с зажимом, вкладки — закладки слева
+-- Журнал: деревянный планшет с зажимом. Окно — общий Ui.window (затемнение, правило масштаба, анимация,
+-- геймпад: выбор при открытии, ButtonB закрывает), вкладки — общий Ui.tabs.
+-- Раскладки: normal — закладки слева от доски; compact (телефон) — вкладки в ряд сверху; narrow — только иконки.
 -- ============================================================
-local journal = new("ScreenGui", {
-	Name = "JournalGui",
-	ResetOnSpawn = false,
-	IgnoreGuiInset = true,
-	DisplayOrder = 5,
-	Enabled = false,
-	ZIndexBehavior = Enum.ZIndexBehavior.Sibling,
-	Parent = playerGui,
-})
-
--- Modal-кнопка освобождает мышь в LockFirstPerson, пока журнал открыт
-new("TextButton", {
-	Name = "MouseUnlock",
-	Size = UDim2.fromOffset(0, 0),
-	BackgroundTransparency = 1,
-	Text = "",
-	Modal = true,
-	Parent = journal,
-})
-
 local ROOT_W, ROOT_H = 1180, 680
-local root = new("Frame", {
-	Name = "Root",
-	AnchorPoint = Vector2.new(0.5, 0.5),
-	Position = UDim2.fromScale(0.5, 0.5),
-	Size = UDim2.fromOffset(ROOT_W, ROOT_H),
-	BackgroundTransparency = 1,
-	Parent = journal,
-})
-local rootScale = new("UIScale", { Parent = root })
+local COMPACT_W, COMPACT_H = 1050, 468
+local NARROW_W, NARROW_H = 820, 448
+local PAGE_W, PAGE_H = 784, 508 -- страницы «Апгрейды», «Коллекция», «Подсказки» свёрстаны под лист этого размера
+local TAB_ROW_H = 66
 
-local function updateScale()
-	local vp = workspace.CurrentCamera and workspace.CurrentCamera.ViewportSize or Vector2.new(1920, 1080)
-	rootScale.Scale = math.min(1, (vp.X - 20) / ROOT_W, (vp.Y - 20) / ROOT_H)
-end
-updateScale()
-workspace.CurrentCamera:GetPropertyChangedSignal("ViewportSize"):Connect(updateScale)
+local applyJournalLayout -- задаётся ниже, когда собраны доска и вкладки
+local onJournalOpen, onJournalClose
+
+local journalWindow = Ui.window({
+	Name = "JournalGui",
+	Size = Vector2.new(ROOT_W, ROOT_H),
+	Compact = Vector2.new(COMPACT_W, COMPACT_H),
+	Narrow = Vector2.new(NARROW_W, NARROW_H),
+	Plain = true,
+	DisplayOrder = 5,
+	OnLayout = function(layout)
+		applyJournalLayout(layout)
+	end,
+	OnOpen = function()
+		onJournalOpen()
+	end,
+	OnClose = function()
+		onJournalClose()
+	end,
+})
+local root = journalWindow.root
 
 -- Деревянный планшет «Снежной службы»: доска, лист бумаги, металлический зажим, снег сверху
 local board = new("Frame", {
@@ -525,9 +517,10 @@ local board = new("Frame", {
 		}),
 	}),
 })
--- волокна дерева: несколько тонких полос
+-- волокна дерева: несколько тонких полос (лишние в низкой раскладке прячет applyJournalLayout)
+local grain = {}
 for i = 1, 7 do
-	new("Frame", {
+	grain[i] = new("Frame", {
 		Position = UDim2.new(0, 20, 0, 40 + i * 74),
 		Size = UDim2.new(1, -40, 0, 2),
 		BackgroundColor3 = C.woodDark,
@@ -553,7 +546,7 @@ local clip = new("Frame", {
 	AnchorPoint = Vector2.new(0.5, 0),
 	Position = UDim2.new(0.5, 0, 0, 18),
 	Size = UDim2.fromOffset(230, 62),
-	BackgroundColor3 = Color3.fromRGB(174, 184, 196),
+	BackgroundColor3 = Ui.Color.surfaceLine,
 	ZIndex = 4,
 	Parent = board,
 }, { corner(16), border(C.outline, 4) })
@@ -561,7 +554,7 @@ new("Frame", {
 	AnchorPoint = Vector2.new(0.5, 0),
 	Position = UDim2.new(0.5, 0, 0, 12),
 	Size = UDim2.new(1, -32, 0, 12),
-	BackgroundColor3 = Color3.fromRGB(134, 147, 163),
+	BackgroundColor3 = Ui.Color.grayDark,
 	ZIndex = 5,
 	Parent = clip,
 }, { corner("full") })
@@ -574,80 +567,75 @@ new("Frame", {
 	Parent = clip,
 }, { corner(18), border(C.outline, 7) })
 
-local closeButton = Ui.button({
-	Name = "Close",
-	Color = "red",
-	Icon = "Close",
-	Radius = 18,
-	AnchorPoint = Vector2.new(0.5, 0.5),
-	Position = UDim2.fromOffset(300 + 840 - 14, 40),
-	Size = UDim2.fromOffset(68, 68),
-	Parent = root,
-})
-closeButton.ZIndex = 6
+local closeButton = journalWindow.closeButton
 
--- Вкладки слева
+-- Вкладки и страницы. Страница «Журнал» тянется по листу; остальные три пока свёрстаны под лист PAGE_W×PAGE_H
+-- и лежат в прокрутке: в низких раскладках их листают
 local pages = {}
-local tabButtons = {}
+local pageHolders = {}
 local currentPage = nil
+local tabs
 
 local TABS = {
-	{ id = "Journal", text = L("Journal.Tab.Journal"), icon = "Tasks", color = "green" },
-	{ id = "Upgrades", text = L("Journal.Tab.Upgrades"), icon = "Upgrade", color = "amber" },
-	{ id = "Collection", text = L("Journal.Tab.Collection"), icon = "Snow", color = "blue" },
-	{ id = "Tips", text = L("Journal.Tab.Tips"), icon = "Tips", color = "red" },
+	{ Id = "Journal", Text = L("Journal.Tab.Journal"), Icon = "Tasks" },
+	{ Id = "Upgrades", Text = L("Journal.Tab.Upgrades"), Icon = "Upgrade" },
+	{ Id = "Collection", Text = L("Journal.Tab.Collection"), Icon = "Snow" },
+	{ Id = "Tips", Text = L("Journal.Tab.Tips"), Icon = "Tips" },
 }
 
 local function showPage(id)
 	currentPage = id
-	for pageId, page in pairs(pages) do
-		page.Visible = pageId == id
+	for pageId, holder in pairs(pageHolders) do
+		holder.Visible = pageId == id
 	end
-	for tabId, btn in pairs(tabButtons) do
-		local selected = tabId == id
-		-- выбранная закладка выдвинута к листу
-		btn.Position = UDim2.fromOffset(selected and 92 or 64, btn.Position.Y.Offset)
+	tabs.select(id)
+end
+
+tabs = Ui.tabs(root, TABS, showPage)
+journalWindow.setDefaultSelection(tabs.buttons.Journal)
+
+for _, tab in ipairs(TABS) do
+	if tab.Id == "Journal" then
+		pages.Journal = new("Frame", {
+			Name = "JournalPage",
+			Size = UDim2.fromScale(1, 1),
+			BackgroundTransparency = 1,
+			Visible = false,
+			Parent = screen,
+		})
+		pageHolders.Journal = pages.Journal
+	else
+		local holder = new("ScrollingFrame", {
+			Name = tab.Id .. "Holder",
+			Size = UDim2.fromScale(1, 1),
+			BackgroundTransparency = 1,
+			BorderSizePixel = 0,
+			ScrollBarThickness = 6,
+			ScrollBarImageColor3 = C.ice,
+			CanvasSize = UDim2.fromOffset(PAGE_W, PAGE_H),
+			Visible = false,
+			Parent = screen,
+		})
+		pageHolders[tab.Id] = holder
+		pages[tab.Id] = new("Frame", {
+			Name = tab.Id .. "Page",
+			Size = UDim2.fromOffset(PAGE_W, PAGE_H),
+			BackgroundTransparency = 1,
+			Parent = holder,
+		})
 	end
 end
 
-for i, tab in ipairs(TABS) do
-	local btn = Ui.button({
-		Name = tab.id .. "Tab",
-		Color = tab.color,
-		Icon = tab.icon,
-		IconSize = 44,
-		Text = tab.text,
-		TextSize = 24,
-		Radius = 18,
-		Position = UDim2.fromOffset(64, 110 + (i - 1) * 92),
-		Size = UDim2.fromOffset(246, 72),
-		Parent = root,
-	})
-	local tabText = btn:FindFirstChild("Text") :: TextLabel
-	tabText.TextXAlignment = Enum.TextXAlignment.Left
-	tabButtons[tab.id] = btn
-	pages[tab.id] = new("Frame", {
-		Name = tab.id .. "Page",
-		Size = UDim2.fromScale(1, 1),
-		BackgroundTransparency = 1,
-		Visible = false,
-		Parent = screen,
-	})
-	btn.Activated:Connect(function()
-		showPage(tab.id)
-	end)
-end
-
--- «Выйти в лобби» под вкладками: первое нажатие просит подтвердить (3 с), второе — уходит (MatchServer, remote MatchAction).
--- 246×68: журнал на телефоне ужимается примерно до 0.65, кнопка остаётся около 44 px
+-- «Выйти в лобби»: первое нажатие просит подтвердить (3 с), второе — уходит (MatchServer, remote MatchAction).
+-- Высота 60–68: при масштабе 0.75 кнопка остаётся не ниже 45 px
 local MatchAction = ReplicatedStorage:WaitForChild("SnowGame"):WaitForChild("Remotes"):WaitForChild("MatchAction")
 local LEAVE_CONFIRM_TIME = 3
 local leaveButton = Ui.button({
 	Name = "LeaveMatch",
-	Color = "red",
+	Kind = "danger",
 	Text = L("Hud.LeaveMatch"),
-	TextSize = 22,
-	Radius = 18,
+	TextSize = 20,
+	Radius = Ui.Radius.card,
 	Position = UDim2.fromOffset(64, 560),
 	Size = UDim2.fromOffset(246, 68),
 	Parent = root,
@@ -670,6 +658,49 @@ leaveButton.Activated:Connect(function()
 	end)
 end)
 
+-- Раскладка журнала под размер окна (правило масштаба в Ui.window)
+applyJournalLayout = function(layout)
+	local side = layout == "normal"
+	local w = if layout == "narrow" then NARROW_W elseif layout == "compact" then COMPACT_W else ROOT_W
+	local h = if layout == "narrow" then NARROW_H elseif layout == "compact" then COMPACT_H else ROOT_H
+	local boardH
+	if side then
+		board.Position = UDim2.fromOffset(300, 34)
+		board.Size = UDim2.fromOffset(840, 620)
+		boardH = 620
+		screen.Position = UDim2.fromOffset(28, 82)
+		screen.Size = UDim2.new(1, -56, 1, -112)
+		tabs.setMode("column")
+		tabs.frame.Position = UDim2.fromOffset(64, 110)
+		leaveButton.Position = UDim2.fromOffset(64, 560)
+		leaveButton.Size = UDim2.fromOffset(246, 68)
+		closeButton.Position = UDim2.fromOffset(300 + 840 - 14, 40)
+	else
+		boardH = h - TAB_ROW_H
+		board.Position = UDim2.fromOffset(0, TAB_ROW_H)
+		board.Size = UDim2.fromOffset(w, boardH)
+		screen.Position = UDim2.fromOffset(20, 22)
+		screen.Size = UDim2.new(1, -40, 1, -46)
+		tabs.setMode(if layout == "narrow" then "icons" else "row")
+		tabs.frame.Position = UDim2.fromOffset(0, 0)
+		local leaveW = if layout == "narrow" then 190 else 150
+		leaveButton.Position = UDim2.fromOffset(tabs.frame.Size.X.Offset + 12, 4)
+		leaveButton.Size = UDim2.fromOffset(leaveW, 60)
+		closeButton.Position = UDim2.fromOffset(w - 12, TAB_ROW_H + 36) -- ниже кнопки «Выйти»
+	end
+	clip.Visible = side
+	for i, line in ipairs(grain) do
+		line.Visible = 40 + i * 74 < boardH - 24
+	end
+	-- старые страницы: по центру листа, если лист шире страницы; иначе от левого края, и их листают
+	local screenW = (if side then 840 else w) - (if side then 56 else 40)
+	for id, page in pairs(pages) do
+		if id ~= "Journal" then
+			page.Position = UDim2.fromOffset(math.max(0, math.floor((screenW - PAGE_W) / 2)), 0)
+		end
+	end
+end
+
 local function pageTitle(page, x, text)
 	return label({
 		Position = UDim2.fromOffset(x, 12),
@@ -683,21 +714,38 @@ local function pageTitle(page, x, text)
 end
 
 -- ---------- Журнал: задачи + игроки ----------
+-- Две колонки по половине листа, каждая со своей прокруткой: в низкой раскладке списки листаются
 local journalPage = pages.Journal
-pageTitle(journalPage, 20, L("Journal.Tasks"))
-pageTitle(journalPage, 410, L("Journal.Players"))
-
-local taskList = new("ScrollingFrame", {
-	Position = UDim2.fromOffset(20, 60),
-	Size = UDim2.new(0, 370, 1, -72),
-	BackgroundTransparency = 1,
-	BorderSizePixel = 0,
-	ScrollBarThickness = 6,
-	ScrollBarImageColor3 = C.ice,
-	AutomaticCanvasSize = Enum.AutomaticSize.Y,
-	CanvasSize = UDim2.new(),
-	Parent = journalPage,
-}, { new("UIListLayout", { Padding = UDim.new(0, 6), SortOrder = Enum.SortOrder.LayoutOrder }) })
+local function journalColumn(xScale, xOffset, title)
+	local col = new("Frame", {
+		Position = UDim2.new(xScale, xOffset, 0, 0),
+		Size = UDim2.new(0.5, -28, 1, 0),
+		BackgroundTransparency = 1,
+		Parent = journalPage,
+	})
+	label({
+		Position = UDim2.fromOffset(0, 10),
+		Size = UDim2.new(1, 0, 0, 36),
+		Text = title,
+		FontFace = Ui.Font.heavy,
+		TextSize = 28,
+		TextColor3 = C.title,
+		Parent = col,
+	})
+	return new("ScrollingFrame", {
+		Position = UDim2.fromOffset(0, 54),
+		Size = UDim2.new(1, 0, 1, -62),
+		BackgroundTransparency = 1,
+		BorderSizePixel = 0,
+		ScrollBarThickness = 6,
+		ScrollBarImageColor3 = C.ice,
+		AutomaticCanvasSize = Enum.AutomaticSize.Y,
+		CanvasSize = UDim2.new(),
+		Parent = col,
+	}, { new("UIListLayout", { Padding = UDim.new(0, 6), SortOrder = Enum.SortOrder.LayoutOrder }) })
+end
+local taskList = journalColumn(0, 20, L("Journal.Tasks"))
+local playerList = journalColumn(0.5, 8, L("Journal.Players"))
 
 local taskRows = {}
 for i, t in ipairs(tasks) do
@@ -742,10 +790,10 @@ end
 local playerSlots = {}
 for i = 1, MAX_PLAYERS do
 	local slot = new("Frame", {
-		Position = UDim2.fromOffset(410, 60 + (i - 1) * 96),
-		Size = UDim2.fromOffset(330, 88),
+		LayoutOrder = i,
+		Size = UDim2.new(1, -10, 0, 88),
 		BackgroundTransparency = 1,
-		Parent = journalPage,
+		Parent = playerList,
 	})
 	local avatar = new("ImageLabel", {
 		Position = UDim2.fromOffset(0, 6),
@@ -1299,32 +1347,42 @@ for i, tip in ipairs(TIPS) do
 end
 
 -- ============================================================
--- Открытие / закрытие
+-- Открытие / закрытие (само окно — Ui.window: анимация, затемнение, ButtonB на геймпаде)
 -- ============================================================
+onJournalOpen = function()
+	-- HUD прячем, чтобы он не просвечивал под журналом
+	hud.Enabled = false
+	-- Окно чата слева по центру налезает на вкладки журнала — пока журнал открыт, прячем его
+	local chatWindow = TextChatService:FindFirstChildOfClass("ChatWindowConfiguration")
+	if chatWindow then
+		chatWindow.Enabled = false
+	end
+	if not currentPage then
+		showPage("Journal")
+	end
+end
+
+onJournalClose = function()
+	hud.Enabled = true
+	local chatWindow = TextChatService:FindFirstChildOfClass("ChatWindowConfiguration")
+	if chatWindow then
+		chatWindow.Enabled = true
+	end
+end
+
 local function setJournalOpen(open)
 	if open and workspace:GetAttribute("MatchState") == "finished" then
 		open = false
 	end
-	journal.Enabled = open
-	-- HUD прячем, чтобы вкладки не налезали на карточку задачи и бары
-	hud.Enabled = not open
-	-- Окно чата слева по центру налезает на вкладки журнала — пока журнал открыт, прячем его
-	local chatWindow = TextChatService:FindFirstChildOfClass("ChatWindowConfiguration")
-	if chatWindow then
-		chatWindow.Enabled = not open
-	end
 	if open then
-		if not currentPage then
-			showPage("Journal")
-		end
+		journalWindow.open()
+	else
+		journalWindow.close()
 	end
 end
 
 journalButton.Activated:Connect(function()
-	setJournalOpen(not journal.Enabled)
-end)
-closeButton.Activated:Connect(function()
-	setJournalOpen(false)
+	setJournalOpen(not journalWindow.isOpen())
 end)
 
 UserInputService.InputBegan:Connect(function(input, gameProcessed)
@@ -1332,7 +1390,7 @@ UserInputService.InputBegan:Connect(function(input, gameProcessed)
 		return
 	end
 	if input.KeyCode == Enum.KeyCode.Tab then
-		setJournalOpen(not journal.Enabled)
+		setJournalOpen(not journalWindow.isOpen())
 	elseif input.KeyCode == Enum.KeyCode.B then
 		ShopGui.toggle()
 	end
@@ -1622,7 +1680,7 @@ end
 
 while true do
 	refreshHud()
-	if journal.Enabled then
+	if journalWindow.isOpen() then
 		refreshJournal()
 	end
 	task.wait(0.2)

@@ -5,11 +5,15 @@
 -- Шрифт с кириллицей: Nunito.
 -- Общий модуль Lobby и House Map (src/shared/replicated/Ui → ReplicatedStorage.Shared.Ui).
 -- Design system parts (plan 2026-11-11): Ui.Motion (standard animations), Ui.Sound (UI sounds, silent while
--- the ids are 0), button kinds (Ui.button Kind, Ui.setKind), Ui.toasts (toast stack), Ui.currencyPill, Ui.badge.
+-- the ids are 0), button kinds (Ui.button Kind, Ui.setKind), Ui.toasts (toast stack), Ui.currencyPill, Ui.badge,
+-- Ui.tabs, Ui.window (dim, scale rule with layouts, open/close animation, one window at a time, gamepad).
+local ContextActionService = game:GetService("ContextActionService")
 local GuiService = game:GetService("GuiService")
+local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local SoundService = game:GetService("SoundService")
 local TweenService = game:GetService("TweenService")
+local UserInputService = game:GetService("UserInputService")
 
 local Ui = {}
 
@@ -905,6 +909,383 @@ function Ui.toasts(parent: Instance, position: UDim2?): Toasts
 	end
 
 	return { holder = holder, show = show, cash = cash }
+end
+
+-- ============================================================
+-- Tabs: a row or a column of tab buttons. The selected tab differs by shape and colour:
+-- gold and longer (column) or taller (row, icons). Modes: "column" (side bookmarks), "row" (on top), "icons" (narrow)
+-- ============================================================
+export type TabItem = { Id: string, Text: string, Icon: string? }
+export type TabMode = "column" | "row" | "icons"
+export type Tabs = {
+	frame: Frame,
+	buttons: { [string]: TextButton },
+	select: (id: string) -> (),
+	selected: () -> string?,
+	setMode: (mode: TabMode) -> (),
+}
+
+local TAB_SIZE = {
+	column = { w = 246, h = 64, wSel = 274, hSel = 64, gap = 12 },
+	row = { w = 214, h = 54, wSel = 214, hSel = 64, gap = 10 },
+	icons = { w = 92, h = 54, wSel = 92, hSel = 64, gap = 10 },
+}
+
+function Ui.tabs(parent: Instance, items: { TabItem }, onSelect: ((id: string) -> ())?): Tabs
+	local frame: Frame = Ui.new("Frame", { Name = "Tabs", BackgroundTransparency = 1, Parent = parent })
+	local list: UIListLayout = Ui.new("UIListLayout", { SortOrder = Enum.SortOrder.LayoutOrder, Parent = frame })
+	local buttons: { [string]: TextButton } = {}
+	local mode: TabMode = "column"
+	local selectedId: string? = nil
+
+	local function apply()
+		local size = TAB_SIZE[mode]
+		local column = mode == "column"
+		list.FillDirection = if column then Enum.FillDirection.Vertical else Enum.FillDirection.Horizontal
+		list.VerticalAlignment = if column then Enum.VerticalAlignment.Top else Enum.VerticalAlignment.Bottom
+		list.Padding = UDim.new(0, size.gap)
+		local n = #items
+		frame.Size = if column
+			then UDim2.fromOffset(size.wSel, n * size.h + (n - 1) * size.gap)
+			else UDim2.fromOffset(n * size.w + (n - 1) * size.gap, size.hSel)
+		for id, button in buttons do
+			local sel = id == selectedId
+			button.Size = UDim2.fromOffset(if sel then size.wSel else size.w, if sel then size.hSel else size.h)
+			Ui.paint(button, if sel then "amber" else "paper")
+			local icon = button:FindFirstChild("Icon") :: ImageLabel?
+			local label = button:FindFirstChild("Label") :: TextLabel?
+			if icon then
+				icon.AnchorPoint = Vector2.new(if mode == "icons" then 0.5 else 0, 0.5)
+				icon.Position = if mode == "icons" then UDim2.new(0.5, 0, 0.5, -2) else UDim2.new(0, 12, 0.5, -2)
+			end
+			if label then
+				label.Visible = mode ~= "icons"
+				label.TextColor3 = if sel then Ui.Color.white else Ui.Color.ink
+				local stroke = label:FindFirstChildOfClass("UIStroke")
+				if stroke then
+					stroke.Enabled = sel
+				end
+			end
+		end
+	end
+
+	local function selectTab(id: string)
+		selectedId = id
+		apply()
+	end
+
+	for i, item in items do
+		local button = Ui.button({
+			Name = item.Id .. "Tab",
+			Kind = "neutral",
+			Radius = Ui.Radius.card,
+			Size = UDim2.fromOffset(TAB_SIZE.column.w, TAB_SIZE.column.h),
+			LayoutOrder = i,
+			Parent = frame,
+		})
+		if item.Icon then
+			Ui.icon(item.Icon, { Name = "Icon", Size = UDim2.fromOffset(40, 40), Parent = button })
+		end
+		Ui.label({
+			Name = "Label",
+			Position = UDim2.new(0, if item.Icon then 62 else 14, 0, -2),
+			Size = UDim2.new(1, if item.Icon then -72 else -28, 1, 0),
+			Text = item.Text,
+			TextScaled = true,
+			TextColor3 = Ui.Color.ink,
+			Parent = button,
+		}, {
+			Ui.new("UITextSizeConstraint", { MaxTextSize = 22, MinTextSize = Ui.TextSize.caption }),
+			Ui.textStroke(Ui.Stroke.text),
+		})
+		buttons[item.Id] = button
+		button.Activated:Connect(function()
+			selectTab(item.Id)
+			if onSelect then
+				onSelect(item.Id)
+			end
+		end)
+	end
+	apply()
+
+	return {
+		frame = frame,
+		buttons = buttons,
+		select = selectTab,
+		selected = function(): string?
+			return selectedId
+		end,
+		setMode = function(newMode: TabMode)
+			mode = newMode
+			apply()
+		end,
+	}
+end
+
+-- ============================================================
+-- Window: one way to show a window in both places.
+--   * dim behind it (blocks clicks to the HUD) and a Modal button that frees the mouse in first person;
+--   * scale rule: fit always wins; of the layouts given (normal, compact, narrow) the first whose fit is at
+--     least 0.75 is used, else the last one at its fit; the scale never exceeds 1.2. OnLayout tells the caller
+--     which layout is on, so it can reflow (fewer columns, tabs on top) instead of shrinking;
+--   * open and close animation; only one Ui.window is open at a time;
+--   * gamepad: on open the default selection (or the close button) is selected, ButtonB closes.
+-- Plain = true: no panel and header, the caller draws its own frame inside root (the journal clipboard).
+-- In Studio the workspace attribute DebugWindowLayout = "compact" or "narrow" forces a phone layout on a big screen.
+-- ============================================================
+export type WindowLayout = "normal" | "compact" | "narrow"
+export type WindowProps = {
+	Name: string,
+	Size: Vector2,
+	Compact: Vector2?,
+	Narrow: Vector2?,
+	Title: string?,
+	Icon: string?,
+	Plain: boolean?,
+	DisplayOrder: number?,
+	OnLayout: ((layout: WindowLayout) -> ())?,
+	OnOpen: (() -> ())?,
+	OnClose: (() -> ())?,
+}
+export type Window = {
+	gui: ScreenGui,
+	root: Frame,
+	body: Frame,
+	closeButton: TextButton,
+	layout: () -> WindowLayout,
+	open: () -> (),
+	close: () -> (),
+	toggle: () -> (),
+	isOpen: () -> boolean,
+	setDefaultSelection: (object: GuiObject?) -> (),
+}
+
+local WINDOW_SCALE_FLOOR = 0.75
+local WINDOW_SCALE_MAX = 1.2
+local WINDOW_MARGIN = 24
+local WINDOW_DIM = 0.4
+local openWindow: Window? = nil
+
+function Ui.window(p: WindowProps): Window
+	local gui: ScreenGui = Ui.new("ScreenGui", {
+		Name = p.Name,
+		ResetOnSpawn = false,
+		IgnoreGuiInset = true,
+		DisplayOrder = p.DisplayOrder or 20,
+		Enabled = false,
+		ZIndexBehavior = Enum.ZIndexBehavior.Sibling,
+		Parent = Players.LocalPlayer:WaitForChild("PlayerGui"),
+	})
+	Ui.new("TextButton", {
+		Name = "MouseUnlock",
+		Size = UDim2.fromOffset(0, 0),
+		BackgroundTransparency = 1,
+		Text = "",
+		Modal = true,
+		Parent = gui,
+	})
+	local dim: Frame = Ui.new("Frame", {
+		Name = "Dim",
+		Size = UDim2.fromScale(1, 1),
+		BackgroundColor3 = Ui.Color.outline,
+		BackgroundTransparency = 1,
+		BorderSizePixel = 0,
+		Active = true,
+		Parent = gui,
+	})
+	local root: Frame = Ui.new("Frame", {
+		Name = "Root",
+		AnchorPoint = Vector2.new(0.5, 0.5),
+		Position = UDim2.fromScale(0.5, 0.5),
+		Size = UDim2.fromOffset(p.Size.X, p.Size.Y),
+		BackgroundTransparency = 1,
+		Parent = gui,
+	})
+	local scale: UIScale = Ui.new("UIScale", { Parent = root })
+	local body = root
+	if not p.Plain then
+		root.BackgroundTransparency = 0
+		root.BackgroundColor3 = Ui.Color.surface
+		Ui.corner(Ui.Radius.window).Parent = root
+		Ui.border(Ui.Stroke.window).Parent = root
+		local header = Ui.new("Frame", {
+			Name = "Header",
+			Size = UDim2.new(1, 0, 0, 68),
+			BackgroundColor3 = Ui.Color.night,
+			Parent = root,
+		}, { Ui.corner(Ui.Radius.window - 4) })
+		-- the header's lower corners are square
+		Ui.new("Frame", {
+			AnchorPoint = Vector2.new(0, 1),
+			Position = UDim2.fromScale(0, 1),
+			Size = UDim2.new(1, 0, 0, 22),
+			BackgroundColor3 = Ui.Color.night,
+			BorderSizePixel = 0,
+			Parent = header,
+		})
+		if p.Icon then
+			Ui.icon(p.Icon, { Position = UDim2.fromOffset(18, 10), Size = UDim2.fromOffset(46, 46), Parent = header })
+		end
+		Ui.label({
+			Name = "Title",
+			Position = UDim2.fromOffset(if p.Icon then 74 else 22, 0),
+			Size = UDim2.new(1, -170, 1, -4),
+			Text = p.Title or "",
+			TextScaled = true,
+			Parent = header,
+		}, { Ui.new("UITextSizeConstraint", { MaxTextSize = Ui.TextSize.title, MinTextSize = Ui.TextSize.caption }) })
+		Ui.snowCap(root, false, 30)
+		body = Ui.new("Frame", {
+			Name = "Body",
+			Position = UDim2.fromOffset(0, 68),
+			Size = UDim2.new(1, 0, 1, -68),
+			BackgroundTransparency = 1,
+			Parent = root,
+		})
+	end
+	local closeButton = Ui.button({
+		Name = "Close",
+		Kind = "danger",
+		Icon = "Close",
+		Radius = Ui.Radius.card,
+		AnchorPoint = Vector2.new(0.5, 0.5),
+		Position = UDim2.new(1, -8, 0, 8),
+		Size = UDim2.fromOffset(60, 60),
+		Parent = root,
+	})
+	closeButton.ZIndex = 6
+
+	type Layout = { name: WindowLayout, size: Vector2 }
+	local layouts: { Layout } = { { name = "normal", size = p.Size } }
+	if p.Compact then
+		table.insert(layouts, { name = "compact", size = p.Compact })
+	end
+	if p.Narrow then
+		table.insert(layouts, { name = "narrow", size = p.Narrow })
+	end
+	local current: WindowLayout? = nil
+	local target = 1
+	local animToken = 0
+	local defaultSelection: GuiObject? = nil
+	local closeAction = "UiWindowClose_" .. p.Name
+	local window: Window
+
+	-- pick the layout and the scale for the viewport (scale rule)
+	local function fit()
+		local camera = workspace.CurrentCamera
+		local vp = if camera then camera.ViewportSize else Vector2.new(1280, 720)
+		local chosen = layouts[#layouts]
+		local chosenFit = 1
+		-- Studio only: the workspace attribute DebugWindowLayout ("compact" or "narrow") forces that layout
+		local forced = if RunService:IsStudio() then workspace:GetAttribute("DebugWindowLayout") else nil
+		for i, layout in layouts do
+			local share = math.min((vp.X - WINDOW_MARGIN) / layout.size.X, (vp.Y - WINDOW_MARGIN) / layout.size.Y)
+			if forced == layout.name or (forced == nil and share >= WINDOW_SCALE_FLOOR) or i == #layouts then
+				chosen = layout
+				chosenFit = share
+				break
+			end
+		end
+		target = math.min(chosenFit, WINDOW_SCALE_MAX)
+		scale.Scale = target
+		if chosen.name ~= current then
+			current = chosen.name
+			root.Size = UDim2.fromOffset(chosen.size.X, chosen.size.Y)
+			if p.OnLayout then
+				p.OnLayout(chosen.name)
+			end
+		end
+	end
+
+	local function close()
+		if not gui.Enabled or openWindow ~= window then
+			return
+		end
+		openWindow = nil
+		animToken += 1
+		local token = animToken
+		ContextActionService:UnbindAction(closeAction)
+		local selected = GuiService.SelectedObject
+		if selected and selected:IsDescendantOf(gui) then
+			GuiService.SelectedObject = nil
+		end
+		if p.OnClose then
+			p.OnClose()
+		end
+		Motion.tween(dim, 0.12, { BackgroundTransparency = 1 })
+		local tween =
+			Motion.tween(scale, 0.12, { Scale = target * 0.95 }, Enum.EasingStyle.Quad, Enum.EasingDirection.In)
+		tween.Completed:Once(function()
+			if token == animToken then
+				gui.Enabled = false
+				scale.Scale = target
+			end
+		end)
+	end
+
+	local function open()
+		if openWindow == window then
+			return
+		end
+		if openWindow then
+			openWindow.close()
+		end
+		openWindow = window
+		animToken += 1
+		fit()
+		gui.Enabled = true
+		dim.BackgroundTransparency = 1
+		Motion.tween(dim, 0.18, { BackgroundTransparency = WINDOW_DIM })
+		Motion.open(scale, target)
+		if p.OnOpen then
+			p.OnOpen()
+		end
+		-- a selection is set only for a gamepad (without one Roblox warns that the selection is not allowed)
+		if UserInputService.GamepadEnabled then
+			GuiService.SelectedObject = defaultSelection or closeButton
+		end
+		ContextActionService:BindActionAtPriority(closeAction, function(_, state)
+			if state == Enum.UserInputState.Begin then
+				close()
+			end
+			return Enum.ContextActionResult.Sink
+		end, false, Enum.ContextActionPriority.High.Value, Enum.KeyCode.ButtonB)
+	end
+
+	window = {
+		gui = gui,
+		root = root,
+		body = body,
+		closeButton = closeButton,
+		layout = function(): WindowLayout
+			return current or "normal"
+		end,
+		open = open,
+		close = close,
+		toggle = function()
+			if openWindow == window then
+				close()
+			else
+				open()
+			end
+		end,
+		isOpen = function(): boolean
+			return openWindow == window
+		end,
+		setDefaultSelection = function(object: GuiObject?)
+			defaultSelection = object
+		end,
+	}
+	closeButton.Activated:Connect(close)
+	local camera = workspace.CurrentCamera
+	if camera then
+		camera:GetPropertyChangedSignal("ViewportSize"):Connect(function()
+			if gui.Enabled then
+				fit()
+			end
+		end)
+	end
+	return window
 end
 
 return Ui

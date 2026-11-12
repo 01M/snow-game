@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="none">
+  <defs>
+    <style>
+      .c-outline{stop-color:#1B2A5C}.c-light{stop-color:#BFEFFF}.c-mid{stop-color:#5CC8FF}.c-dark{stop-color:#2A7FD6}.c-hi{stop-color:#FFFFFF}
+      .c-gold-l{stop-color:#FFF2A8}.c-gold-m{stop-color:#FFC83D}.c-gold-d{stop-color:#E08A00}
+      .c-green-l{stop-color:#C9F7A5}.c-green-m{stop-color:#5FD35F}.c-green-d{stop-color:#2E9E44}
+      .c-red-l{stop-color:#FFB3A8}.c-red-m{stop-color:#FF6B5C}.c-red-d{stop-color:#C93B3B}
+      .c-wood-l{stop-color:#E8B98A}.c-wood-m{stop-color:#B97A4A}.c-wood-d{stop-color:#7A4A2A}
+      .c-steel-l{stop-color:#E3EAF2}.c-steel-m{stop-color:#A9B8CC}.c-steel-d{stop-color:#6B7C96}
+    </style>
+    <linearGradient id="star-g1" gradientUnits="userSpaceOnUse" x1="120" y1="90" x2="390" y2="450"><stop class="c-gold-l"/><stop offset="0.5" class="c-gold-m"/><stop offset="1" class="c-gold-d"/></linearGradient>
+    <linearGradient id="star-s-outline" gradientUnits="userSpaceOnUse"><stop class="c-outline"/></linearGradient>
+    <linearGradient id="star-s-gold-d" gradientUnits="userSpaceOnUse"><stop class="c-gold-d"/></linearGradient>
+    <linearGradient id="star-s-hi" gradientUnits="userSpaceOnUse"><stop class="c-hi"/></linearGradient>
+  </defs>
+  <path fill="url(#star-s-outline)" d="M256 86L306.5 202.4L432.9 214.5L337.8 298.6L365.3 422.5L256 358L146.7 422.5L174.2 298.6L79.1 214.5L205.5 202.4Z"/>
+  <path stroke="url(#star-s-outline)" stroke-width="70" stroke-linejoin="round" stroke-linecap="round" d="M256 86L306.5 202.4L432.9 214.5L337.8 298.6L365.3 422.5L256 358L146.7 422.5L174.2 298.6L79.1 214.5L205.5 202.4Z"/>
+  <path fill="url(#star-g1)" d="M256 86L306.5 202.4L432.9 214.5L337.8 298.6L365.3 422.5L256 358L146.7 422.5L174.2 298.6L79.1 214.5L205.5 202.4Z"/>
+  <path stroke="url(#star-g1)" stroke-width="34" stroke-linejoin="round" stroke-linecap="round" d="M256 86L306.5 202.4L432.9 214.5L337.8 298.6L365.3 422.5L256 358L146.7 422.5L174.2 298.6L79.1 214.5L205.5 202.4Z"/>
+  <path fill="url(#star-s-gold-d)" opacity=".45" d="M365.3 422.5L256 358L146.7 422.5L256 330L337.8 298.6Z"/>
+  <path stroke="url(#star-s-hi)" stroke-width="16" stroke-linejoin="round" stroke-linecap="round" opacity=".9" d="M206 196L222 150"/>
+</svg>

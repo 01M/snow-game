@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="none">
+  <defs>
+    <style>
+      .c-outline{stop-color:#1B2A5C}.c-light{stop-color:#BFEFFF}.c-mid{stop-color:#5CC8FF}.c-dark{stop-color:#2A7FD6}.c-hi{stop-color:#FFFFFF}
+      .c-gold-l{stop-color:#FFF2A8}.c-gold-m{stop-color:#FFC83D}.c-gold-d{stop-color:#E08A00}
+      .c-green-l{stop-color:#C9F7A5}.c-green-m{stop-color:#5FD35F}.c-green-d{stop-color:#2E9E44}
+      .c-red-l{stop-color:#FFB3A8}.c-red-m{stop-color:#FF6B5C}.c-red-d{stop-color:#C93B3B}
+      .c-wood-l{stop-color:#E8B98A}.c-wood-m{stop-color:#B97A4A}.c-wood-d{stop-color:#7A4A2A}
+      .c-steel-l{stop-color:#E3EAF2}.c-steel-m{stop-color:#A9B8CC}.c-steel-d{stop-color:#6B7C96}
+    </style>
+    <linearGradient id="robux-g1" gradientUnits="userSpaceOnUse" x1="110" y1="90" x2="400" y2="430"><stop class="c-hi"/><stop offset="0.5" class="c-steel-l"/><stop offset="1" class="c-steel-m"/></linearGradient>
+    <linearGradient id="robux-s-outline" gradientUnits="userSpaceOnUse"><stop class="c-outline"/></linearGradient>
+    <linearGradient id="robux-s-steel-d" gradientUnits="userSpaceOnUse"><stop class="c-steel-d"/></linearGradient>
+  </defs>
+  <path fill="url(#robux-s-outline)" d="M256 80L408.4 168L408.4 344L256 432L103.6 344L103.6 168Z"/>
+  <path stroke="url(#robux-s-outline)" stroke-width="66" stroke-linejoin="round" stroke-linecap="round" d="M256 80L408.4 168L408.4 344L256 432L103.6 344L103.6 168Z"/>
+  <path fill="url(#robux-g1)" d="M256 80L408.4 168L408.4 344L256 432L103.6 344L103.6 168Z"/>
+  <path stroke="url(#robux-g1)" stroke-width="30" stroke-linejoin="round" stroke-linecap="round" d="M256 80L408.4 168L408.4 344L256 432L103.6 344L103.6 168Z"/>
+  <path stroke="url(#robux-s-steel-d)" stroke-width="26" stroke-linejoin="round" stroke-linecap="round" d="M256 144L353 200L353 312L256 368L159 312L159 200Z"/>
+  <path fill="url(#robux-s-outline)" d="M230 220H282Q292 220 292 230V282Q292 292 282 292H230Q220 292 220 282V230Q220 220 230 220Z"/>
+</svg>

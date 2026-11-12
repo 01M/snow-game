@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="none">
+  <defs>
+    <style>
+      .c-outline{stop-color:#1B2A5C}.c-light{stop-color:#BFEFFF}.c-mid{stop-color:#5CC8FF}.c-dark{stop-color:#2A7FD6}.c-hi{stop-color:#FFFFFF}
+      .c-gold-l{stop-color:#FFF2A8}.c-gold-m{stop-color:#FFC83D}.c-gold-d{stop-color:#E08A00}
+      .c-green-l{stop-color:#C9F7A5}.c-green-m{stop-color:#5FD35F}.c-green-d{stop-color:#2E9E44}
+      .c-red-l{stop-color:#FFB3A8}.c-red-m{stop-color:#FF6B5C}.c-red-d{stop-color:#C93B3B}
+      .c-wood-l{stop-color:#E8B98A}.c-wood-m{stop-color:#B97A4A}.c-wood-d{stop-color:#7A4A2A}
+      .c-steel-l{stop-color:#E3EAF2}.c-steel-m{stop-color:#A9B8CC}.c-steel-d{stop-color:#6B7C96}
+    </style>
+    <linearGradient id="alarm_clock-g1" gradientUnits="userSpaceOnUse" x1="90" y1="60" x2="420" y2="200"><stop class="c-gold-l"/><stop offset="0.5" class="c-gold-m"/><stop offset="1" class="c-gold-d"/></linearGradient>
+    <linearGradient id="alarm_clock-s-outline" gradientUnits="userSpaceOnUse"><stop class="c-outline"/></linearGradient>
+    <linearGradient id="alarm_clock-s-steel-d" gradientUnits="userSpaceOnUse"><stop class="c-steel-d"/></linearGradient>
+    <linearGradient id="alarm_clock-g2" gradientUnits="userSpaceOnUse" x1="120" y1="150" x2="390" y2="440"><stop class="c-red-l"/><stop offset="0.5" class="c-red-m"/><stop offset="1" class="c-red-d"/></linearGradient>
+    <linearGradient id="alarm_clock-g3" gradientUnits="userSpaceOnUse" x1="170" y1="190" x2="340" y2="400"><stop class="c-hi"/><stop offset="1" class="c-steel-l"/></linearGradient>
+    <linearGradient id="alarm_clock-s-hi" gradientUnits="userSpaceOnUse"><stop class="c-hi"/></linearGradient>
+  </defs>
+  <!-- bells and legs -->
+  <path fill="url(#alarm_clock-g1)" d="M82 136a62 62 0 1 0 124 0a62 62 0 1 0 -124 0Z"/>
+  <path stroke="url(#alarm_clock-s-outline)" stroke-width="18" stroke-linejoin="round" stroke-linecap="round" d="M82 136a62 62 0 1 0 124 0a62 62 0 1 0 -124 0Z"/>
+  <path fill="url(#alarm_clock-g1)" d="M306 136a62 62 0 1 0 124 0a62 62 0 1 0 -124 0Z"/>
+  <path stroke="url(#alarm_clock-s-outline)" stroke-width="18" stroke-linejoin="round" stroke-linecap="round" d="M306 136a62 62 0 1 0 124 0a62 62 0 1 0 -124 0Z"/>
+  <path stroke="url(#alarm_clock-s-outline)" stroke-width="62" stroke-linejoin="round" stroke-linecap="round" d="M160 420L130 462M352 420L382 462"/>
+  <path stroke="url(#alarm_clock-s-steel-d)" stroke-width="26" stroke-linejoin="round" stroke-linecap="round" d="M160 420L130 462M352 420L382 462"/>
+  <!-- case -->
+  <path fill="url(#alarm_clock-g2)" d="M88 292a168 168 0 1 0 336 0a168 168 0 1 0 -336 0Z"/>
+  <path stroke="url(#alarm_clock-s-outline)" stroke-width="18" stroke-linejoin="round" stroke-linecap="round" d="M88 292a168 168 0 1 0 336 0a168 168 0 1 0 -336 0Z"/>
+  <!-- face -->
+  <path fill="url(#alarm_clock-g3)" d="M138 292a118 118 0 1 0 236 0a118 118 0 1 0 -236 0Z"/>
+  <path stroke="url(#alarm_clock-s-outline)" stroke-width="14" stroke-linejoin="round" stroke-linecap="round" d="M138 292a118 118 0 1 0 236 0a118 118 0 1 0 -236 0Z"/>
+  <path stroke="url(#alarm_clock-s-outline)" stroke-width="22" stroke-linejoin="round" stroke-linecap="round" d="M256 292V214M256 292L312 322"/>
+  <path stroke="url(#alarm_clock-s-hi)" stroke-width="12" stroke-linejoin="round" stroke-linecap="round" opacity=".9" d="M128 250A136 136 0 0 1 190 172"/>
+</svg>

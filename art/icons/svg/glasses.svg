@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="none">
+  <defs>
+    <style>
+      .c-outline{stop-color:#1B2A5C}.c-light{stop-color:#BFEFFF}.c-mid{stop-color:#5CC8FF}.c-dark{stop-color:#2A7FD6}.c-hi{stop-color:#FFFFFF}
+      .c-gold-l{stop-color:#FFF2A8}.c-gold-m{stop-color:#FFC83D}.c-gold-d{stop-color:#E08A00}
+      .c-green-l{stop-color:#C9F7A5}.c-green-m{stop-color:#5FD35F}.c-green-d{stop-color:#2E9E44}
+      .c-red-l{stop-color:#FFB3A8}.c-red-m{stop-color:#FF6B5C}.c-red-d{stop-color:#C93B3B}
+      .c-wood-l{stop-color:#E8B98A}.c-wood-m{stop-color:#B97A4A}.c-wood-d{stop-color:#7A4A2A}
+      .c-steel-l{stop-color:#E3EAF2}.c-steel-m{stop-color:#A9B8CC}.c-steel-d{stop-color:#6B7C96}
+    </style>
+    <linearGradient id="glasses-g1" gradientUnits="userSpaceOnUse" x1="80" y1="190" x2="430" y2="350"><stop class="c-hi"/><stop offset="0.5" class="c-light"/><stop offset="1" class="c-mid"/></linearGradient>
+    <linearGradient id="glasses-s-steel-d" gradientUnits="userSpaceOnUse"><stop class="c-steel-d"/></linearGradient>
+    <linearGradient id="glasses-s-outline" gradientUnits="userSpaceOnUse"><stop class="c-outline"/></linearGradient>
+    <linearGradient id="glasses-s-hi" gradientUnits="userSpaceOnUse"><stop class="c-hi"/></linearGradient>
+  </defs>
+  <!-- arms and bridge -->
+  <path stroke="url(#glasses-s-outline)" stroke-width="56" stroke-linejoin="round" stroke-linecap="round" d="M70 232L40 200M442 232L472 200"/>
+  <path stroke="url(#glasses-s-steel-d)" stroke-width="22" stroke-linejoin="round" stroke-linecap="round" d="M70 232L40 200M442 232L472 200"/>
+  <path stroke="url(#glasses-s-outline)" stroke-width="56" stroke-linejoin="round" stroke-linecap="round" d="M222 262Q256 232 290 262"/>
+  <path stroke="url(#glasses-s-steel-d)" stroke-width="22" stroke-linejoin="round" stroke-linecap="round" d="M222 262Q256 232 290 262"/>
+  <!-- lenses -->
+  <path fill="url(#glasses-s-outline)" d="M66 270a84 84 0 1 0 168 0a84 84 0 1 0 -168 0Z"/>
+  <path stroke="url(#glasses-s-outline)" stroke-width="36" stroke-linejoin="round" stroke-linecap="round" d="M66 270a84 84 0 1 0 168 0a84 84 0 1 0 -168 0Z"/>
+  <path fill="url(#glasses-s-steel-d)" d="M66 270a84 84 0 1 0 168 0a84 84 0 1 0 -168 0Z"/>
+  <path fill="url(#glasses-g1)" d="M88 270a62 62 0 1 0 124 0a62 62 0 1 0 -124 0Z"/>
+  <path stroke="url(#glasses-s-hi)" stroke-width="12" stroke-linejoin="round" stroke-linecap="round" opacity=".9" d="M116 262A40 40 0 0 1 144 234"/>
+  <path fill="url(#glasses-s-outline)" d="M278 270a84 84 0 1 0 168 0a84 84 0 1 0 -168 0Z"/>
+  <path stroke="url(#glasses-s-outline)" stroke-width="36" stroke-linejoin="round" stroke-linecap="round" d="M278 270a84 84 0 1 0 168 0a84 84 0 1 0 -168 0Z"/>
+  <path fill="url(#glasses-s-steel-d)" d="M278 270a84 84 0 1 0 168 0a84 84 0 1 0 -168 0Z"/>
+  <path fill="url(#glasses-g1)" d="M300 270a62 62 0 1 0 124 0a62 62 0 1 0 -124 0Z"/>
+  <path stroke="url(#glasses-s-hi)" stroke-width="12" stroke-linejoin="round" stroke-linecap="round" opacity=".9" d="M328 262A40 40 0 0 1 356 234"/>
+</svg>

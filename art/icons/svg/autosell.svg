@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="none">
+  <defs>
+    <style>
+      .c-outline{stop-color:#1B2A5C}.c-light{stop-color:#BFEFFF}.c-mid{stop-color:#5CC8FF}.c-dark{stop-color:#2A7FD6}.c-hi{stop-color:#FFFFFF}
+      .c-gold-l{stop-color:#FFF2A8}.c-gold-m{stop-color:#FFC83D}.c-gold-d{stop-color:#E08A00}
+      .c-green-l{stop-color:#C9F7A5}.c-green-m{stop-color:#5FD35F}.c-green-d{stop-color:#2E9E44}
+      .c-red-l{stop-color:#FFB3A8}.c-red-m{stop-color:#FF6B5C}.c-red-d{stop-color:#C93B3B}
+      .c-wood-l{stop-color:#E8B98A}.c-wood-m{stop-color:#B97A4A}.c-wood-d{stop-color:#7A4A2A}
+      .c-steel-l{stop-color:#E3EAF2}.c-steel-m{stop-color:#A9B8CC}.c-steel-d{stop-color:#6B7C96}
+    </style>
+    <linearGradient id="autosell-g1" gradientUnits="userSpaceOnUse" x1="96" y1="96" x2="416" y2="416"><stop class="c-green-l"/><stop offset="0.5" class="c-green-m"/><stop offset="1" class="c-green-d"/></linearGradient>
+    <linearGradient id="autosell-s-outline" gradientUnits="userSpaceOnUse"><stop class="c-outline"/></linearGradient>
+    <linearGradient id="autosell-g2" gradientUnits="userSpaceOnUse" x1="197.2" y1="197.2" x2="314.8" y2="314.8"><stop class="c-gold-l"/><stop offset="0.5" class="c-gold-m"/><stop offset="1" class="c-gold-d"/></linearGradient>
+    <linearGradient id="autosell-g3" gradientUnits="userSpaceOnUse" x1="214" y1="214" x2="298" y2="298"><stop class="c-gold-l"/><stop offset="1" class="c-gold-m"/></linearGradient>
+    <linearGradient id="autosell-s-gold-d" gradientUnits="userSpaceOnUse"><stop class="c-gold-d"/></linearGradient>
+    <linearGradient id="autosell-s-hi" gradientUnits="userSpaceOnUse"><stop class="c-hi"/></linearGradient>
+  </defs>
+  <!-- circular arrow -->
+  <path stroke="url(#autosell-s-outline)" stroke-width="84" stroke-linejoin="round" stroke-linecap="round" d="M130.4 150.6A164 164 0 1 1 101.9 312.1M55.8 365.4L90.3 280.1L171.5 323.3"/>
+  <path stroke="url(#autosell-g1)" stroke-width="46" stroke-linejoin="round" stroke-linecap="round" d="M130.4 150.6A164 164 0 1 1 101.9 312.1M55.8 365.4L90.3 280.1L171.5 323.3"/>
+  <!-- coin -->
+  <path fill="url(#autosell-g2)" d="M172 256a84 84 0 1 0 168 0a84 84 0 1 0 -168 0Z"/>
+  <path fill="url(#autosell-g3)" d="M198.9 256a57.120000000000005 57.120000000000005 0 1 0 114.2 0a57.120000000000005 57.120000000000005 0 1 0 -114.2 0Z"/>
+  <path stroke="url(#autosell-s-gold-d)" stroke-width="6" stroke-linejoin="round" stroke-linecap="round" d="M198.9 256a57.120000000000005 57.120000000000005 0 1 0 114.2 0a57.120000000000005 57.120000000000005 0 1 0 -114.2 0Z"/>
+  <path stroke="url(#autosell-s-gold-d)" stroke-width="9.24" stroke-linejoin="round" stroke-linecap="round" d="M256 222.4V289.6M226.9 239.2L285.1 272.8M226.9 272.8L285.1 239.2"/>
+  <path stroke="url(#autosell-s-hi)" stroke-width="8" stroke-linejoin="round" stroke-linecap="round" opacity=".9" d="M188.8 234.2A71.4 71.4 0 0 1 230.8 188.8"/>
+  <path stroke="url(#autosell-s-outline)" stroke-width="16" stroke-linejoin="round" stroke-linecap="round" d="M172 256a84 84 0 1 0 168 0a84 84 0 1 0 -168 0Z"/>
+</svg>

@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="none">
+  <defs>
+    <style>
+      .c-outline{stop-color:#1B2A5C}.c-light{stop-color:#BFEFFF}.c-mid{stop-color:#5CC8FF}.c-dark{stop-color:#2A7FD6}.c-hi{stop-color:#FFFFFF}
+      .c-gold-l{stop-color:#FFF2A8}.c-gold-m{stop-color:#FFC83D}.c-gold-d{stop-color:#E08A00}
+      .c-green-l{stop-color:#C9F7A5}.c-green-m{stop-color:#5FD35F}.c-green-d{stop-color:#2E9E44}
+      .c-red-l{stop-color:#FFB3A8}.c-red-m{stop-color:#FF6B5C}.c-red-d{stop-color:#C93B3B}
+      .c-wood-l{stop-color:#E8B98A}.c-wood-m{stop-color:#B97A4A}.c-wood-d{stop-color:#7A4A2A}
+      .c-steel-l{stop-color:#E3EAF2}.c-steel-m{stop-color:#A9B8CC}.c-steel-d{stop-color:#6B7C96}
+    </style>
+    <linearGradient id="fx_hand-g1" gradientUnits="userSpaceOnUse" x1="150" y1="90" x2="380" y2="400"><stop class="c-gold-l"/><stop offset="0.5" class="c-gold-m"/><stop offset="1" class="c-gold-d"/></linearGradient>
+    <linearGradient id="fx_hand-s-hi" gradientUnits="userSpaceOnUse"><stop class="c-hi"/></linearGradient>
+    <linearGradient id="fx_hand-s-outline" gradientUnits="userSpaceOnUse"><stop class="c-outline"/></linearGradient>
+    <linearGradient id="fx_hand-s-steel-m" gradientUnits="userSpaceOnUse"><stop class="c-steel-m"/></linearGradient>
+  </defs>
+  <path fill="url(#fx_hand-s-outline)" d="M182.5 242C200 285.2 193.3 328.6 167.6 339C141.9 349.4 106.9 322.8 89.5 279.6C72 236.4 78.7 193 104.4 182.6C130.1 172.2 165.1 198.8 182.5 242Z"/>
+  <path stroke="url(#fx_hand-s-outline)" stroke-width="36" stroke-linejoin="round" stroke-linecap="round" d="M182.5 242C200 285.2 193.3 328.6 167.6 339C141.9 349.4 106.9 322.8 89.5 279.6C72 236.4 78.7 193 104.4 182.6C130.1 172.2 165.1 198.8 182.5 242Z"/>
+  <path fill="url(#fx_hand-s-outline)" d="M174.8 345.2L174.8 167.4C174.8 108.1 215.8 67 266 67C316.2 67 357.2 108.1 357.2 167.4L357.2 345.2Z"/>
+  <path stroke="url(#fx_hand-s-outline)" stroke-width="36" stroke-linejoin="round" stroke-linecap="round" d="M174.8 345.2L174.8 167.4C174.8 108.1 215.8 67 266 67C316.2 67 357.2 108.1 357.2 167.4L357.2 345.2Z"/>
+  <path fill="url(#fx_hand-g1)" d="M182.5 242C200 285.2 193.3 328.6 167.6 339C141.9 349.4 106.9 322.8 89.5 279.6C72 236.4 78.7 193 104.4 182.6C130.1 172.2 165.1 198.8 182.5 242Z"/>
+  <path fill="url(#fx_hand-g1)" d="M174.8 345.2L174.8 167.4C174.8 108.1 215.8 67 266 67C316.2 67 357.2 108.1 357.2 167.4L357.2 345.2Z"/>
+  <path stroke="url(#fx_hand-s-hi)" stroke-width="14" stroke-linejoin="round" stroke-linecap="round" opacity=".9" d="M209 190.2L209 133.2"/>
+  <path fill="url(#fx_hand-s-outline)" d="M161.1 345.2L370.9 345.2L370.9 441L161.1 441Z"/>
+  <path stroke="url(#fx_hand-s-outline)" stroke-width="52" stroke-linejoin="round" stroke-linecap="round" d="M161.1 345.2L370.9 345.2L370.9 441L161.1 441Z"/>
+  <path fill="url(#fx_hand-s-hi)" d="M161.1 345.2L370.9 345.2L370.9 441L161.1 441Z"/>
+  <path stroke="url(#fx_hand-s-hi)" stroke-width="16" stroke-linejoin="round" stroke-linecap="round" d="M161.1 345.2L370.9 345.2L370.9 441L161.1 441Z"/>
+  <path stroke="url(#fx_hand-s-steel-m)" stroke-width="10" stroke-linejoin="round" stroke-linecap="round" d="M213.6 368L213.6 418.2M266 368L266 418.2M318.4 368L318.4 418.2"/>
+</svg>

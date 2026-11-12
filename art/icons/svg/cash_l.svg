@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="none">
+  <defs>
+    <style>
+      .c-outline{stop-color:#1B2A5C}.c-light{stop-color:#BFEFFF}.c-mid{stop-color:#5CC8FF}.c-dark{stop-color:#2A7FD6}.c-hi{stop-color:#FFFFFF}
+      .c-gold-l{stop-color:#FFF2A8}.c-gold-m{stop-color:#FFC83D}.c-gold-d{stop-color:#E08A00}
+      .c-green-l{stop-color:#C9F7A5}.c-green-m{stop-color:#5FD35F}.c-green-d{stop-color:#2E9E44}
+      .c-red-l{stop-color:#FFB3A8}.c-red-m{stop-color:#FF6B5C}.c-red-d{stop-color:#C93B3B}
+      .c-wood-l{stop-color:#E8B98A}.c-wood-m{stop-color:#B97A4A}.c-wood-d{stop-color:#7A4A2A}
+      .c-steel-l{stop-color:#E3EAF2}.c-steel-m{stop-color:#A9B8CC}.c-steel-d{stop-color:#6B7C96}
+    </style>
+    <linearGradient id="cash_l-g1" gradientUnits="userSpaceOnUse" x1="110" y1="120" x2="410" y2="460"><stop class="c-wood-l"/><stop offset="0.5" class="c-wood-m"/><stop offset="1" class="c-wood-d"/></linearGradient>
+    <linearGradient id="cash_l-s-outline" gradientUnits="userSpaceOnUse"><stop class="c-outline"/></linearGradient>
+    <linearGradient id="cash_l-s-wood-d" gradientUnits="userSpaceOnUse"><stop class="c-wood-d"/></linearGradient>
+    <linearGradient id="cash_l-s-red-m" gradientUnits="userSpaceOnUse"><stop class="c-red-m"/></linearGradient>
+    <linearGradient id="cash_l-s-hi" gradientUnits="userSpaceOnUse"><stop class="c-hi"/></linearGradient>
+    <linearGradient id="cash_l-g2" gradientUnits="userSpaceOnUse" x1="197.2" y1="257.2" x2="314.8" y2="374.8"><stop class="c-gold-l"/><stop offset="0.5" class="c-gold-m"/><stop offset="1" class="c-gold-d"/></linearGradient>
+    <linearGradient id="cash_l-g3" gradientUnits="userSpaceOnUse" x1="214" y1="274" x2="298" y2="358"><stop class="c-gold-l"/><stop offset="1" class="c-gold-m"/></linearGradient>
+    <linearGradient id="cash_l-s-gold-d" gradientUnits="userSpaceOnUse"><stop class="c-gold-d"/></linearGradient>
+  </defs>
+  <!-- sack -->
+  <path fill="url(#cash_l-s-outline)" d="M190 150L160 84Q256 120 352 84L322 150Z"/>
+  <path stroke="url(#cash_l-s-outline)" stroke-width="36" stroke-linejoin="round" stroke-linecap="round" d="M190 150L160 84Q256 120 352 84L322 150Z"/>
+  <path fill="url(#cash_l-s-outline)" d="M196 150C150 190 84 270 84 350C84 430 150 460 256 460C362 460 428 430 428 350C428 270 362 190 316 150Z"/>
+  <path stroke="url(#cash_l-s-outline)" stroke-width="36" stroke-linejoin="round" stroke-linecap="round" d="M196 150C150 190 84 270 84 350C84 430 150 460 256 460C362 460 428 430 428 350C428 270 362 190 316 150Z"/>
+  <path fill="url(#cash_l-g1)" d="M190 150L160 84Q256 120 352 84L322 150Z"/>
+  <path fill="url(#cash_l-g1)" d="M196 150C150 190 84 270 84 350C84 430 150 460 256 460C362 460 428 430 428 350C428 270 362 190 316 150Z"/>
+  <path fill="url(#cash_l-s-wood-d)" opacity=".6" d="M428 350C428 430 362 460 256 460C150 460 84 430 84 350C110 410 180 426 256 426C332 426 402 410 428 350Z"/>
+  <path stroke="url(#cash_l-s-outline)" stroke-width="54" stroke-linejoin="round" stroke-linecap="round" d="M190 152H322"/>
+  <path stroke="url(#cash_l-s-red-m)" stroke-width="22" stroke-linejoin="round" stroke-linecap="round" d="M190 152H322"/>
+  <path stroke="url(#cash_l-s-hi)" stroke-width="14" stroke-linejoin="round" stroke-linecap="round" opacity=".9" d="M140 290Q150 240 190 206"/>
+  <!-- coin emblem -->
+  <path fill="url(#cash_l-g2)" d="M172 316a84 84 0 1 0 168 0a84 84 0 1 0 -168 0Z"/>
+  <path fill="url(#cash_l-g3)" d="M198.9 316a57.120000000000005 57.120000000000005 0 1 0 114.2 0a57.120000000000005 57.120000000000005 0 1 0 -114.2 0Z"/>
+  <path stroke="url(#cash_l-s-gold-d)" stroke-width="6" stroke-linejoin="round" stroke-linecap="round" d="M198.9 316a57.120000000000005 57.120000000000005 0 1 0 114.2 0a57.120000000000005 57.120000000000005 0 1 0 -114.2 0Z"/>
+  <path stroke="url(#cash_l-s-gold-d)" stroke-width="9.24" stroke-linejoin="round" stroke-linecap="round" d="M256 282.4V349.6M226.9 299.2L285.1 332.8M226.9 332.8L285.1 299.2"/>
+  <path stroke="url(#cash_l-s-hi)" stroke-width="8" stroke-linejoin="round" stroke-linecap="round" opacity=".9" d="M188.8 294.2A71.4 71.4 0 0 1 230.8 248.8"/>
+  <path stroke="url(#cash_l-s-outline)" stroke-width="16" stroke-linejoin="round" stroke-linecap="round" d="M172 316a84 84 0 1 0 168 0a84 84 0 1 0 -168 0Z"/>
+  <path fill="url(#cash_l-s-hi)" d="M424 70Q431 103 464 110 431 117 424 150 417 117 384 110 417 103 424 70Z"/>
+  <path stroke="url(#cash_l-s-outline)" stroke-width="10" stroke-linejoin="round" stroke-linecap="round" d="M424 70Q431 103 464 110 431 117 424 150 417 117 384 110 417 103 424 70Z"/>
+</svg>

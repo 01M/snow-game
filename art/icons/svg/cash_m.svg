@@ -1,0 +1,64 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="none">
+  <defs>
+    <style>
+      .c-outline{stop-color:#1B2A5C}.c-light{stop-color:#BFEFFF}.c-mid{stop-color:#5CC8FF}.c-dark{stop-color:#2A7FD6}.c-hi{stop-color:#FFFFFF}
+      .c-gold-l{stop-color:#FFF2A8}.c-gold-m{stop-color:#FFC83D}.c-gold-d{stop-color:#E08A00}
+      .c-green-l{stop-color:#C9F7A5}.c-green-m{stop-color:#5FD35F}.c-green-d{stop-color:#2E9E44}
+      .c-red-l{stop-color:#FFB3A8}.c-red-m{stop-color:#FF6B5C}.c-red-d{stop-color:#C93B3B}
+      .c-wood-l{stop-color:#E8B98A}.c-wood-m{stop-color:#B97A4A}.c-wood-d{stop-color:#7A4A2A}
+      .c-steel-l{stop-color:#E3EAF2}.c-steel-m{stop-color:#A9B8CC}.c-steel-d{stop-color:#6B7C96}
+    </style>
+    <linearGradient id="cash_m-g1" gradientUnits="userSpaceOnUse" x1="64" y1="361.92" x2="288" y2="361.92"><stop class="c-gold-m"/><stop offset="1" class="c-gold-d"/></linearGradient>
+    <linearGradient id="cash_m-s-outline" gradientUnits="userSpaceOnUse"><stop class="c-outline"/></linearGradient>
+    <linearGradient id="cash_m-g2" gradientUnits="userSpaceOnUse" x1="64" y1="323.84000000000003" x2="288" y2="400"><stop class="c-gold-l"/><stop offset="1" class="c-gold-m"/></linearGradient>
+    <linearGradient id="cash_m-g3" gradientUnits="userSpaceOnUse" x1="64" y1="321.92" x2="288" y2="321.92"><stop class="c-gold-m"/><stop offset="1" class="c-gold-d"/></linearGradient>
+    <linearGradient id="cash_m-g4" gradientUnits="userSpaceOnUse" x1="64" y1="283.84000000000003" x2="288" y2="360"><stop class="c-gold-l"/><stop offset="1" class="c-gold-m"/></linearGradient>
+    <linearGradient id="cash_m-g5" gradientUnits="userSpaceOnUse" x1="64" y1="281.92" x2="288" y2="281.92"><stop class="c-gold-m"/><stop offset="1" class="c-gold-d"/></linearGradient>
+    <linearGradient id="cash_m-g6" gradientUnits="userSpaceOnUse" x1="64" y1="243.84" x2="288" y2="320"><stop class="c-gold-l"/><stop offset="1" class="c-gold-m"/></linearGradient>
+    <linearGradient id="cash_m-g7" gradientUnits="userSpaceOnUse" x1="234" y1="361.92" x2="458" y2="361.92"><stop class="c-gold-m"/><stop offset="1" class="c-gold-d"/></linearGradient>
+    <linearGradient id="cash_m-g8" gradientUnits="userSpaceOnUse" x1="234" y1="323.84000000000003" x2="458" y2="400"><stop class="c-gold-l"/><stop offset="1" class="c-gold-m"/></linearGradient>
+    <linearGradient id="cash_m-g9" gradientUnits="userSpaceOnUse" x1="234" y1="321.92" x2="458" y2="321.92"><stop class="c-gold-m"/><stop offset="1" class="c-gold-d"/></linearGradient>
+    <linearGradient id="cash_m-g10" gradientUnits="userSpaceOnUse" x1="234" y1="283.84000000000003" x2="458" y2="360"><stop class="c-gold-l"/><stop offset="1" class="c-gold-m"/></linearGradient>
+    <linearGradient id="cash_m-g11" gradientUnits="userSpaceOnUse" x1="234" y1="281.92" x2="458" y2="281.92"><stop class="c-gold-m"/><stop offset="1" class="c-gold-d"/></linearGradient>
+    <linearGradient id="cash_m-g12" gradientUnits="userSpaceOnUse" x1="234" y1="243.84" x2="458" y2="320"><stop class="c-gold-l"/><stop offset="1" class="c-gold-m"/></linearGradient>
+    <linearGradient id="cash_m-g13" gradientUnits="userSpaceOnUse" x1="234" y1="241.92000000000002" x2="458" y2="241.92000000000002"><stop class="c-gold-m"/><stop offset="1" class="c-gold-d"/></linearGradient>
+    <linearGradient id="cash_m-g14" gradientUnits="userSpaceOnUse" x1="234" y1="203.84" x2="458" y2="280"><stop class="c-gold-l"/><stop offset="1" class="c-gold-m"/></linearGradient>
+    <linearGradient id="cash_m-g15" gradientUnits="userSpaceOnUse" x1="234" y1="201.92000000000002" x2="458" y2="201.92000000000002"><stop class="c-gold-m"/><stop offset="1" class="c-gold-d"/></linearGradient>
+    <linearGradient id="cash_m-g16" gradientUnits="userSpaceOnUse" x1="234" y1="163.84" x2="458" y2="240.00000000000003"><stop class="c-gold-l"/><stop offset="1" class="c-gold-m"/></linearGradient>
+    <linearGradient id="cash_m-s-hi" gradientUnits="userSpaceOnUse"><stop class="c-hi"/></linearGradient>
+  </defs>
+  <path fill="url(#cash_m-g1)" d="M64 361.9V401.9A112 38.1 0 0 0 288 401.9V361.9Z"/>
+  <path stroke="url(#cash_m-s-outline)" stroke-width="14" stroke-linejoin="round" stroke-linecap="round" d="M64 361.9V401.9A112 38.1 0 0 0 288 401.9V361.9Z"/>
+  <path fill="url(#cash_m-g2)" d="M288 361.9C288 383 237.9 400 176 400C114.1 400 64 383 64 361.9C64 340.9 114.1 323.8 176 323.8C237.9 323.8 288 340.9 288 361.9Z"/>
+  <path stroke="url(#cash_m-s-outline)" stroke-width="14" stroke-linejoin="round" stroke-linecap="round" d="M288 361.9C288 383 237.9 400 176 400C114.1 400 64 383 64 361.9C64 340.9 114.1 323.8 176 323.8C237.9 323.8 288 340.9 288 361.9Z"/>
+  <path fill="url(#cash_m-g3)" d="M64 321.9V361.9A112 38.1 0 0 0 288 361.9V321.9Z"/>
+  <path stroke="url(#cash_m-s-outline)" stroke-width="14" stroke-linejoin="round" stroke-linecap="round" d="M64 321.9V361.9A112 38.1 0 0 0 288 361.9V321.9Z"/>
+  <path fill="url(#cash_m-g4)" d="M288 321.9C288 343 237.9 360 176 360C114.1 360 64 343 64 321.9C64 300.9 114.1 283.8 176 283.8C237.9 283.8 288 300.9 288 321.9Z"/>
+  <path stroke="url(#cash_m-s-outline)" stroke-width="14" stroke-linejoin="round" stroke-linecap="round" d="M288 321.9C288 343 237.9 360 176 360C114.1 360 64 343 64 321.9C64 300.9 114.1 283.8 176 283.8C237.9 283.8 288 300.9 288 321.9Z"/>
+  <path fill="url(#cash_m-g5)" d="M64 281.9V321.9A112 38.1 0 0 0 288 321.9V281.9Z"/>
+  <path stroke="url(#cash_m-s-outline)" stroke-width="14" stroke-linejoin="round" stroke-linecap="round" d="M64 281.9V321.9A112 38.1 0 0 0 288 321.9V281.9Z"/>
+  <path fill="url(#cash_m-g6)" d="M288 281.9C288 303 237.9 320 176 320C114.1 320 64 303 64 281.9C64 260.9 114.1 243.8 176 243.8C237.9 243.8 288 260.9 288 281.9Z"/>
+  <path stroke="url(#cash_m-s-outline)" stroke-width="14" stroke-linejoin="round" stroke-linecap="round" d="M288 281.9C288 303 237.9 320 176 320C114.1 320 64 303 64 281.9C64 260.9 114.1 243.8 176 243.8C237.9 243.8 288 260.9 288 281.9Z"/>
+  <path fill="url(#cash_m-g7)" d="M234 361.9V401.9A112 38.1 0 0 0 458 401.9V361.9Z"/>
+  <path stroke="url(#cash_m-s-outline)" stroke-width="14" stroke-linejoin="round" stroke-linecap="round" d="M234 361.9V401.9A112 38.1 0 0 0 458 401.9V361.9Z"/>
+  <path fill="url(#cash_m-g8)" d="M458 361.9C458 383 407.9 400 346 400C284.1 400 234 383 234 361.9C234 340.9 284.1 323.8 346 323.8C407.9 323.8 458 340.9 458 361.9Z"/>
+  <path stroke="url(#cash_m-s-outline)" stroke-width="14" stroke-linejoin="round" stroke-linecap="round" d="M458 361.9C458 383 407.9 400 346 400C284.1 400 234 383 234 361.9C234 340.9 284.1 323.8 346 323.8C407.9 323.8 458 340.9 458 361.9Z"/>
+  <path fill="url(#cash_m-g9)" d="M234 321.9V361.9A112 38.1 0 0 0 458 361.9V321.9Z"/>
+  <path stroke="url(#cash_m-s-outline)" stroke-width="14" stroke-linejoin="round" stroke-linecap="round" d="M234 321.9V361.9A112 38.1 0 0 0 458 361.9V321.9Z"/>
+  <path fill="url(#cash_m-g10)" d="M458 321.9C458 343 407.9 360 346 360C284.1 360 234 343 234 321.9C234 300.9 284.1 283.8 346 283.8C407.9 283.8 458 300.9 458 321.9Z"/>
+  <path stroke="url(#cash_m-s-outline)" stroke-width="14" stroke-linejoin="round" stroke-linecap="round" d="M458 321.9C458 343 407.9 360 346 360C284.1 360 234 343 234 321.9C234 300.9 284.1 283.8 346 283.8C407.9 283.8 458 300.9 458 321.9Z"/>
+  <path fill="url(#cash_m-g11)" d="M234 281.9V321.9A112 38.1 0 0 0 458 321.9V281.9Z"/>
+  <path stroke="url(#cash_m-s-outline)" stroke-width="14" stroke-linejoin="round" stroke-linecap="round" d="M234 281.9V321.9A112 38.1 0 0 0 458 321.9V281.9Z"/>
+  <path fill="url(#cash_m-g12)" d="M458 281.9C458 303 407.9 320 346 320C284.1 320 234 303 234 281.9C234 260.9 284.1 243.8 346 243.8C407.9 243.8 458 260.9 458 281.9Z"/>
+  <path stroke="url(#cash_m-s-outline)" stroke-width="14" stroke-linejoin="round" stroke-linecap="round" d="M458 281.9C458 303 407.9 320 346 320C284.1 320 234 303 234 281.9C234 260.9 284.1 243.8 346 243.8C407.9 243.8 458 260.9 458 281.9Z"/>
+  <path fill="url(#cash_m-g13)" d="M234 241.9V281.9A112 38.1 0 0 0 458 281.9V241.9Z"/>
+  <path stroke="url(#cash_m-s-outline)" stroke-width="14" stroke-linejoin="round" stroke-linecap="round" d="M234 241.9V281.9A112 38.1 0 0 0 458 281.9V241.9Z"/>
+  <path fill="url(#cash_m-g14)" d="M458 241.9C458 263 407.9 280 346 280C284.1 280 234 263 234 241.9C234 220.9 284.1 203.8 346 203.8C407.9 203.8 458 220.9 458 241.9Z"/>
+  <path stroke="url(#cash_m-s-outline)" stroke-width="14" stroke-linejoin="round" stroke-linecap="round" d="M458 241.9C458 263 407.9 280 346 280C284.1 280 234 263 234 241.9C234 220.9 284.1 203.8 346 203.8C407.9 203.8 458 220.9 458 241.9Z"/>
+  <path fill="url(#cash_m-g15)" d="M234 201.9V241.9A112 38.1 0 0 0 458 241.9V201.9Z"/>
+  <path stroke="url(#cash_m-s-outline)" stroke-width="14" stroke-linejoin="round" stroke-linecap="round" d="M234 201.9V241.9A112 38.1 0 0 0 458 241.9V201.9Z"/>
+  <path fill="url(#cash_m-g16)" d="M458 201.9C458 223 407.9 240 346 240C284.1 240 234 223 234 201.9C234 180.9 284.1 163.8 346 163.8C407.9 163.8 458 180.9 458 201.9Z"/>
+  <path stroke="url(#cash_m-s-outline)" stroke-width="14" stroke-linejoin="round" stroke-linecap="round" d="M458 201.9C458 223 407.9 240 346 240C284.1 240 234 223 234 201.9C234 180.9 284.1 163.8 346 163.8C407.9 163.8 458 180.9 458 201.9Z"/>
+  <path fill="url(#cash_m-s-hi)" d="M150 110Q157 143 190 150 157 157 150 190 143 157 110 150 143 143 150 110Z"/>
+  <path stroke="url(#cash_m-s-outline)" stroke-width="10" stroke-linejoin="round" stroke-linecap="round" d="M150 110Q157 143 190 150 157 157 150 190 143 157 110 150 143 143 150 110Z"/>
+</svg>

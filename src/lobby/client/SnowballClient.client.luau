@@ -9,6 +9,7 @@ local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 
 local L = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Locale")).t
+local Ui = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Ui"))
 local LobbyFolder = ReplicatedStorage:WaitForChild("Lobby")
 local Snowball = require(LobbyFolder:WaitForChild("Snowball")) :: any
 local Remotes = LobbyFolder:WaitForChild("Remotes")
@@ -133,22 +134,27 @@ UserInputService.InputBegan:Connect(function(input: InputObject, processed: bool
 	end
 end)
 
-if UserInputService.TouchEnabled then
-	local button = Instance.new("TextButton")
-	button.Name = "Throw"
-	button.AnchorPoint = Vector2.new(1, 1)
-	button.Position = UDim2.new(1, -24, 1, -190)
-	button.Size = UDim2.fromOffset(84, 84)
-	button.BackgroundColor3 = Color3.fromRGB(45, 55, 75)
-	button.BackgroundTransparency = 0.15
-	button.Font = Enum.Font.FredokaOne
-	button.TextScaled = true
-	button.TextColor3 = Color3.new(1, 1, 1)
-	button.Text = L("Lobby.Hud.Throw")
-	button.Parent = gui
-	local corner = Instance.new("UICorner")
-	corner.CornerRadius = UDim.new(0.5, 0)
-	corner.Parent = button
+-- Кнопка броска для сенсорных экранов: общий Ui, группа масштабируется по правилу масштаба (не меньше 0.75).
+-- В Studio её можно показать атрибутом workspace DebugTouchButton = true (ставится до Play).
+if UserInputService.TouchEnabled or (RunService:IsStudio() and workspace:GetAttribute("DebugTouchButton") == true) then
+	local group = Ui.new("Frame", {
+		Name = "ThrowGroup",
+		AnchorPoint = Vector2.new(1, 1),
+		Position = UDim2.new(1, -30, 1, -160),
+		Size = UDim2.fromOffset(104, 104),
+		BackgroundTransparency = 1,
+		Parent = gui,
+	})
+	Ui.autoScale(group, 0.75, 1.2)
+	local button = Ui.button({
+		Name = "Throw",
+		Kind = "secondary",
+		Text = L("Lobby.Hud.Throw"),
+		TextSize = 20,
+		Radius = 52,
+		Size = UDim2.fromOffset(104, 104),
+		Parent = group,
+	})
 	button.Activated:Connect(function()
 		local center = camera.ViewportSize / 2
 		throwAlong(camera:ViewportPointToRay(center.X, center.Y))

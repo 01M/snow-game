@@ -301,35 +301,66 @@ local function currentUse(): (boolean, Tool?)
 	return true, tool
 end
 
+-- Кнопка «Убирать» для сенсорных экранов: круглая, с картинкой инструмента и подписью «ДЕРЖИ» / «ЖМИ».
+-- Вид — общий Ui; группа масштабируется по правилу масштаба (не меньше 0.75: кнопка 110 → от 82 px на экране).
+-- Стоит над кнопкой прыжка Roblox (та занимает до 140 px от низа экрана на планшете).
+local Ui = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Ui"))
+local L = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Locale")).t
+
 local touchGui = Instance.new("ScreenGui")
 touchGui.Name = "ToolTouchGui"
 touchGui.ResetOnSpawn = false
 touchGui.Enabled = false
 touchGui.Parent = player:WaitForChild("PlayerGui")
 
-local useButton = Instance.new("ImageButton")
-useButton.Name = "UseTool"
-useButton.AnchorPoint = Vector2.new(1, 1)
-useButton.Position = UDim2.new(1, -60, 1, -160)
-useButton.Size = UDim2.fromOffset(100, 100)
-useButton.BackgroundColor3 = Color3.fromRGB(255, 180, 67) -- янтарь, как акцент Ui
-useButton.BackgroundTransparency = 0
-useButton.AutoButtonColor = true
-useButton.ScaleType = Enum.ScaleType.Fit
-useButton.Parent = touchGui
-local useCorner = Instance.new("UICorner")
-useCorner.CornerRadius = UDim.new(1, 0)
-useCorner.Parent = useButton
-local useStroke = Instance.new("UIStroke")
-useStroke.Color = Color3.fromRGB(11, 15, 28)
-useStroke.Thickness = 4
-useStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
-useStroke.Parent = useButton
-local usePad = Instance.new("UIPadding")
-for _, side in { "PaddingTop", "PaddingBottom", "PaddingLeft", "PaddingRight" } do
-	usePad[side] = UDim.new(0, 14)
-end
-usePad.Parent = useButton
+local useGroup = Ui.new("Frame", {
+	Name = "UseGroup",
+	AnchorPoint = Vector2.new(1, 1),
+	Position = UDim2.new(1, -40, 1, -150),
+	Size = UDim2.fromOffset(130, 150),
+	BackgroundTransparency = 1,
+	Parent = touchGui,
+})
+Ui.autoScale(useGroup, 0.75, 1.2)
+
+local useButton = Ui.new("ImageButton", {
+	Name = "UseTool",
+	AnchorPoint = Vector2.new(0.5, 0.5),
+	Position = UDim2.new(0.5, 0, 0, 55),
+	Size = UDim2.fromOffset(110, 110),
+	BackgroundColor3 = Ui.Color.gold,
+	AutoButtonColor = false,
+	ScaleType = Enum.ScaleType.Fit,
+	Parent = useGroup,
+}, {
+	Ui.corner("full"),
+	Ui.border(Ui.Stroke.window),
+	Ui.new("UIPadding", {
+		PaddingTop = UDim.new(0, 12),
+		PaddingBottom = UDim.new(0, 12),
+		PaddingLeft = UDim.new(0, 12),
+		PaddingRight = UDim.new(0, 12),
+	}),
+})
+local useScale = Ui.new("UIScale", { Parent = useButton })
+
+local useLabel = Ui.label({
+	Name = "Label",
+	AnchorPoint = Vector2.new(0.5, 1),
+	Position = UDim2.new(0.5, 0, 1, 0),
+	Size = UDim2.fromOffset(0, 32),
+	AutomaticSize = Enum.AutomaticSize.X,
+	BackgroundTransparency = 0,
+	BackgroundColor3 = Ui.Color.nightRaised,
+	Text = "",
+	TextSize = 18,
+	TextXAlignment = Enum.TextXAlignment.Center,
+	Parent = useGroup,
+}, {
+	Ui.corner("full"),
+	Ui.border(Ui.Stroke.chip),
+	Ui.new("UIPadding", { PaddingLeft = UDim.new(0, 14), PaddingRight = UDim.new(0, 14) }),
+})
 
 local function refreshTouchButton()
 	local usable, tool = currentUse()
@@ -337,6 +368,8 @@ local function refreshTouchButton()
 		or (RunService:IsStudio() and workspace:GetAttribute("DebugTouchButton") == true)
 	touchGui.Enabled = touch and usable
 	useButton.Image = tool and tool.TextureId or config.BareTool.Icon
+	-- click-инструмент без апгрейда «Удержание» — «ЖМИ», иначе «ДЕРЖИ»
+	useLabel.Text = L(isClickMode(tool) and "Hud.Use.Tap" or "Hud.Use.Hold")
 end
 
 -- Палец может соскользнуть с кнопки, поэтому отпускание ловим по самому нажатию в UserInputService
@@ -347,6 +380,7 @@ local function releaseHeld()
 	if heldInput then
 		release(heldTool)
 	end
+	Ui.Motion.press(useScale, false)
 	heldInput = nil
 	heldTool = nil
 end
@@ -359,6 +393,7 @@ useButton.InputBegan:Connect(function(input)
 	if usable and not heldInput then
 		heldInput = input
 		heldTool = tool
+		Ui.Motion.press(useScale, true)
 		press(tool)
 	end
 end)
@@ -420,6 +455,7 @@ if player.Character then
 end
 UserInputService:GetPropertyChangedSignal("TouchEnabled"):Connect(refreshTouchButton)
 workspace:GetAttributeChangedSignal("DebugTouchButton"):Connect(refreshTouchButton)
+player:GetAttributeChangedSignal("ToolUpgrades"):Connect(refreshTouchButton) -- апгрейд «Удержание» меняет подпись
 
 -- Deactivated не приходит, если кнопку отпустили в меню Roblox или в другом окне
 UserInputService.WindowFocusReleased:Connect(function()

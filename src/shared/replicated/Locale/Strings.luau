@@ -13,6 +13,8 @@ return {
 	["Hud.SellMarker"] = { en = "Sell · {m} m", ru = "Продать · {m} м" },
 	["Hud.TaskDone"] = { en = "Done! +{cash} Cash", ru = "Готово! +{cash} Cash" },
 	["Hud.Cleared"] = { en = "CLEARED", ru = "ОЧИЩЕНО" },
+	["Hud.Use.Hold"] = { en = "HOLD", ru = "ДЕРЖИ" },
+	["Hud.Use.Tap"] = { en = "TAP", ru = "ЖМИ" },
 
 	-- Цепочка задач новичка (Config.Onboarding)
 	["Task.Collect"] = { en = "Collect {goal} snow", ru = "Собери {goal} снега" },

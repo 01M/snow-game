@@ -1,5 +1,6 @@
 -- GameHudClient: HUD матча и журнал (Tab). Вид HUD — общий Ui (ReplicatedStorage.Shared.Ui).
--- HUD: текущая задача (цепочка Config.Onboarding, считает OnboardingServer; карточка скрывается, когда цепочка пройдена),
+-- HUD: текущая задача (цепочка Config.Onboarding, считает OnboardingServer); когда цепочка пройдена, карточка показывает
+-- следующую цель (nextGoal: активная зона → самый дешёвый некупленный инструмент → апгрейд рюкзака), без награды,
 -- рюкзак, зона и таймер матча по центру (workspace.MatchStartTime/MatchEndTime ставит MatchServer),
 -- Cash с множителем магазина (Shop.cashMultiplier) и всплывающим «+N», кнопки журнала и магазина. Низ экрана свободен для управления на телефоне.
 -- Журнал: «Журнал» (задачи + игроки), «Апгрейды» (инструменты из Config.Tools — Remotes.BuyToolUpgrade, рюкзак — Remotes.BuyUpgrade),
@@ -145,7 +146,7 @@ local function group(name: string, anchor: Vector2, position: UDim2, size: Vecto
 		BackgroundTransparency = 1,
 		Parent = hud,
 	})
-	Ui.autoScale(frame)
+	Ui.autoScale(frame, 0.75, 1.2) -- правило масштаба: не меньше 0.75
 	return frame
 end
 
@@ -176,12 +177,12 @@ local taskCardScale = new("UIScale", { Parent = taskCard })
 local taskTag = Ui.label({
 	Name = "Tag",
 	Position = UDim2.fromOffset(14, 12),
-	Size = UDim2.fromOffset(0, 22),
+	Size = UDim2.fromOffset(0, 24),
 	AutomaticSize = Enum.AutomaticSize.X,
 	BackgroundTransparency = 0,
 	BackgroundColor3 = Ui.Color.green,
 	Text = L("Hud.CurrentTask"),
-	TextSize = 13,
+	TextSize = Ui.TextSize.caption,
 	TextColor3 = Ui.Color.white,
 	Parent = taskCard,
 }, {
@@ -190,10 +191,19 @@ local taskTag = Ui.label({
 	new("UIPadding", { PaddingLeft = UDim.new(0, 8), PaddingRight = UDim.new(0, 8) }),
 })
 
+-- Награда шага: «+N» и иконка Cash справа
+local taskRewardIcon = Ui.icon("Cash", {
+	Name = "RewardIcon",
+	AnchorPoint = Vector2.new(1, 0),
+	Position = UDim2.new(1, -12, 0, 9),
+	Size = UDim2.fromOffset(28, 28),
+	Visible = false,
+	Parent = taskCard,
+})
 local taskReward = Ui.label({
 	Name = "Reward",
 	AnchorPoint = Vector2.new(1, 0),
-	Position = UDim2.new(1, -14, 0, 10),
+	Position = UDim2.new(1, -44, 0, 10),
 	Size = UDim2.fromOffset(110, 26),
 	Text = "",
 	TextSize = 18,
@@ -231,6 +241,12 @@ local taskCount = Ui.label({
 	Parent = taskCard,
 })
 
+local function setTaskReward(reward: number?)
+	local show = reward ~= nil and reward > 0
+	taskReward.Text = if show then "+" .. Ui.number(reward :: number) else ""
+	taskRewardIcon.Visible = show
+end
+
 -- Шаг выполнен: карточка на время показывает награду
 local TASK_TOAST_TIME = 2
 local taskToastUntil = 0
@@ -248,7 +264,7 @@ local function showTaskDone(reward: number)
 	taskText.Text = L("Hud.TaskDone", { cash = reward })
 	taskBar.Visible = false
 	taskCount.Text = ""
-	taskReward.Text = ""
+	setTaskReward(nil)
 	taskCardScale.Scale = 1.1
 	TweenService:Create(taskCardScale, TweenInfo.new(0.3, Enum.EasingStyle.Back), { Scale = 1 }):Play()
 	taskDoneSound:Play()
@@ -288,7 +304,7 @@ local bagTitle = Ui.label({
 	Position = UDim2.fromOffset(66, 8),
 	Size = UDim2.new(1, -170, 0, 18),
 	Text = L("Hud.Backpack"),
-	TextSize = 14,
+	TextSize = Ui.TextSize.caption,
 	TextColor3 = Ui.Color.textSoft,
 	TextTruncate = Enum.TextTruncate.AtEnd,
 	Parent = bag,
@@ -406,46 +422,13 @@ end
 -- Справа сверху: Cash с множителем, кнопки журнала и магазина
 local rightGroup = group("TopRight", Vector2.new(1, 0), UDim2.new(1, -20, 0, 10), Vector2.new(300, 180))
 
-local cashPill = Ui.pill({
+local cashPill = Ui.currencyPill("Cash", {
 	Name = "Cash",
 	AnchorPoint = Vector2.new(1, 0),
 	Position = UDim2.new(1, 0, 0, 0),
 	Size = UDim2.fromOffset(0, 60),
-	AutomaticSize = Enum.AutomaticSize.X,
 	Parent = rightGroup,
 })
-new("UIListLayout", {
-	SortOrder = Enum.SortOrder.LayoutOrder,
-	FillDirection = Enum.FillDirection.Horizontal,
-	VerticalAlignment = Enum.VerticalAlignment.Center,
-	Padding = UDim.new(0, 8),
-	Parent = cashPill,
-})
-new("UIPadding", { PaddingLeft = UDim.new(0, 7), PaddingRight = UDim.new(0, 16), Parent = cashPill })
-Ui.icon("Cash", { Size = UDim2.fromOffset(44, 44), LayoutOrder = 1, Parent = cashPill })
-local cashLabel = Ui.label({
-	Name = "Amount",
-	Size = UDim2.fromOffset(0, 60),
-	AutomaticSize = Enum.AutomaticSize.X,
-	Text = "0",
-	TextSize = 30,
-	LayoutOrder = 2,
-	Parent = cashPill,
-})
--- множитель Cash из магазина (Shop.cashMultiplier); x1 не показываем
-local multiplierLabel = Ui.label({
-	Name = "Multiplier",
-	Size = UDim2.fromOffset(0, 24),
-	AutomaticSize = Enum.AutomaticSize.X,
-	BackgroundTransparency = 0,
-	BackgroundColor3 = Ui.Color.amber,
-	Text = "",
-	TextSize = 15,
-	TextColor3 = Ui.Color.ink,
-	LayoutOrder = 3,
-	Visible = false,
-	Parent = cashPill,
-}, { Ui.corner(8), new("UIPadding", { PaddingLeft = UDim.new(0, 7), PaddingRight = UDim.new(0, 7) }) })
 
 local buttonRow = new("Frame", {
 	Name = "Buttons",
@@ -517,22 +500,9 @@ local shopButton = Ui.button({
 keyTag(shopButton, "B")
 shopButton.Activated:Connect(ShopGui.toggle)
 
--- Красный «!», когда хватает денег на апгрейд
-local upgradeBadge = Ui.label({
-	Name = "Badge",
-	AnchorPoint = Vector2.new(0.5, 0.5),
-	Position = UDim2.fromOffset(4, 4),
-	Size = UDim2.fromOffset(26, 26),
-	BackgroundTransparency = 0,
-	BackgroundColor3 = Ui.Color.red,
-	Text = "!",
-	TextSize = 18,
-	TextColor3 = Ui.Color.white,
-	TextXAlignment = Enum.TextXAlignment.Center,
-	Visible = false,
-	ZIndex = 5,
-	Parent = journalButton,
-}, { Ui.corner("full"), Ui.border(2) })
+-- Красный «!», когда хватает денег на апгрейд рюкзака или купленного инструмента
+local upgradeBadge = Ui.badge(journalButton, "!")
+upgradeBadge.Position = UDim2.fromOffset(6, 6) -- левый верхний угол: справа внизу ярлык клавиши
 
 -- ============================================================
 -- Журнал: деревянный планшет с зажимом, вкладки — закладки слева
@@ -1417,7 +1387,67 @@ end)
 -- ============================================================
 -- Обновление
 -- ============================================================
+local function canAffordToolUpgrade(cash: number): boolean
+	local levels = decodeLevels()
+	for _, rowData in ipairs(UPGRADE_ROWS) do
+		for _, item in ipairs(rowData.items) do
+			if item.kind == "tool" then
+				local _, nextPrice, open = toolUpgradeState(item, levels)
+				if open and nextPrice and cash >= nextPrice then
+					return true
+				end
+			end
+		end
+	end
+	return false
+end
+
+-- Следующая цель после цепочки новичка: считает клиент из уже известных данных, награды нет.
+-- Порядок: активная зона (сначала та, где стоит игрок) → самый дешёвый некупленный инструмент → апгрейд рюкзака
+local function nextGoal(cash: number)
+	local zone = nil
+	if getZoneValue(barZone, "State") == "active" then
+		zone = barZone
+	else
+		for _, z in zoneConfig.Zones do
+			if getZoneValue(z, "State") == "active" then
+				zone = z
+				break
+			end
+		end
+	end
+	if zone then
+		local total = getZoneValue(zone, "Total")
+		local share = total > 0 and math.clamp(getZoneValue(zone, "Score") / total, 0, 1) or 0
+		return {
+			text = L("Hud.Goal.Zone", { zone = L("Zone." .. zone.Name) }),
+			share = share,
+			count = string.format("%d%%", math.floor(share * 100)),
+		}
+	end
+	local best = nil
+	for _, tool in ipairs(config.Tools) do
+		if tool.Price > 0 and not ownsTool(tool.Id) and (not best or tool.Price < best.Price) then
+			best = tool
+		end
+	end
+	if best then
+		return {
+			text = L("Hud.Goal.Tool", { tool = L("Tool." .. best.Id) }),
+			share = math.clamp(cash / best.Price, 0, 1),
+			count = Ui.number(best.Price),
+		}
+	end
+	local price = getUpgradePrice()
+	return {
+		text = L("Task.UpgradeBackpack"),
+		share = price > 0 and math.clamp(cash / price, 0, 1) or 0,
+		count = Ui.number(price),
+	}
+end
+
 local lastCash: number? = nil
+local shownCash: number? = nil
 
 local function refreshHud()
 	local cash = getStat("Cash")
@@ -1429,11 +1459,13 @@ local function refreshHud()
 		showCashToast(cash - lastCash)
 	end
 	lastCash = cash
-	cashLabel.Text = Ui.number(cash)
+	if cash ~= shownCash then
+		cashPill.set(cash, shownCash ~= nil) -- первое значение сразу, дальше число досчитывается
+		shownCash = cash
+	end
 	local multiplier = Shop.cashMultiplier(player)
-	multiplierLabel.Visible = multiplier > 1.001
-	multiplierLabel.Text = string.format("x%g", math.floor(multiplier * 100 + 0.5) / 100)
-	upgradeBadge.Visible = cash >= price
+	cashPill.setTag(if multiplier > 1.001 then string.format("x%g", math.floor(multiplier * 100 + 0.5) / 100) else nil)
+	upgradeBadge.Visible = cash >= price or canAffordToolUpgrade(cash)
 
 	-- рюкзак: полный — янтарный и подсказка «продай»
 	local full = snow >= capacity
@@ -1459,15 +1491,28 @@ local function refreshHud()
 		end
 	end
 	if os.clock() >= taskToastUntil then
-		-- Цепочка пройдена: карточка скрыта. Ежедневные задания встанут сюда, в current
-		taskCard.Visible = current ~= nil
-		taskTag.BackgroundColor3 = Ui.Color.green
 		if current then
+			taskCard.Visible = true
+			taskTag.Text = L("Hud.CurrentTask")
+			taskTag.BackgroundColor3 = Ui.Color.green
 			taskText.Text = current.text
-			taskReward.Text = current.reward and current.reward > 0 and ("+" .. Ui.number(current.reward)) or ""
+			setTaskReward(current.reward)
 			taskBar.Visible = currentGoal > 1
 			setTaskBar(currentValue / currentGoal, Ui.Color.green)
 			taskCount.Text = currentGoal > 1 and string.format("%d/%d", currentValue, currentGoal) or ""
+		elseif stepsDone ~= nil and workspace:GetAttribute("MatchState") ~= "finished" then
+			-- Цепочка пройдена: карточка показывает следующую цель (без награды)
+			local goal = nextGoal(cash)
+			taskCard.Visible = true
+			taskTag.Text = L("Hud.NextGoal")
+			taskTag.BackgroundColor3 = Ui.Color.blue
+			taskText.Text = goal.text
+			setTaskReward(nil)
+			taskBar.Visible = true
+			setTaskBar(goal.share, Ui.Color.ice)
+			taskCount.Text = goal.count
+		else
+			taskCard.Visible = false
 		end
 	end
 

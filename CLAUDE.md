@@ -62,6 +62,7 @@ Oleg creates a new product in the Creator Dashboard and sends the id; `Id = 0` m
 
 ## Rojo
 
+- At the start of each working session, check the required Rojo servers and start/restart them in persistent local terminals as needed. Do not create duplicates. Verify the project, port and placeId mapping and a working localhost response before syncing; tell Oleg when Studio can Connect. Manage this automatically instead of asking Oleg to run terminal commands.
 - The plugin is installed with `rojo plugin install`. Run one serve per place, each in its own terminal. In Studio: Plugins → Rojo → `localhost`, the place's port → Connect. `servePlaceIds` will not let you connect a project to the wrong place; open the place from the cloud, not from an `.rbxl` file.
 - Rojo deletes everything in its folders that is not in the files. A new object there (RemoteEvent etc.) is a file `Name.model.json` with `className`.
 - Rojo does not manage Workspace, Lighting, Terrain, SoundService, TextChatService, ServerStorage or the properties of StarterPlayer. They live in the place and are saved by publishing.

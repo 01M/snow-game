@@ -474,11 +474,11 @@ upgradeBadge.Position = UDim2.fromOffset(6, 6) -- левый верхний уг
 local ROOT_W, ROOT_H = 1180, 680
 local COMPACT_W, COMPACT_H = 1050, 468
 local NARROW_W, NARROW_H = 820, 448
-local PAGE_W, PAGE_H = 784, 508 -- страницы «Апгрейды», «Коллекция», «Подсказки» свёрстаны под лист этого размера
 local TAB_ROW_H = 66
 
 local applyJournalLayout -- задаётся ниже, когда собраны доска и вкладки
 local upgradeArt -- большая картинка инструмента в блоке описания «Апгрейдов»: видна только в высокой раскладке
+local collectionLayout -- шапка и число колонок «Коллекции» по раскладке
 local onJournalOpen, onJournalClose
 
 local journalWindow = Ui.window({
@@ -572,10 +572,8 @@ new("Frame", {
 
 local closeButton = journalWindow.closeButton
 
--- Вкладки и страницы. Страницы «Задачи» и «Апгрейды» тянутся по листу; «Коллекция» и «Подсказки» пока свёрстаны
--- под лист PAGE_W×PAGE_H и лежат в прокрутке: в низких раскладках их листают
+-- Вкладки и страницы. Каждая страница тянется по листу и сама листает свои списки
 local pages = {}
-local pageHolders = {}
 local currentPage = nil
 local tabs
 
@@ -588,8 +586,8 @@ local TABS = {
 
 local function showPage(id)
 	currentPage = id
-	for pageId, holder in pairs(pageHolders) do
-		holder.Visible = pageId == id
+	for pageId, page in pairs(pages) do
+		page.Visible = pageId == id
 	end
 	tabs.select(id)
 end
@@ -598,35 +596,13 @@ tabs = Ui.tabs(root, TABS, showPage)
 journalWindow.setDefaultSelection(tabs.buttons.Journal)
 
 for _, tab in ipairs(TABS) do
-	if tab.Id == "Journal" or tab.Id == "Upgrades" then
-		pages[tab.Id] = new("Frame", {
-			Name = tab.Id .. "Page",
-			Size = UDim2.fromScale(1, 1),
-			BackgroundTransparency = 1,
-			Visible = false,
-			Parent = screen,
-		})
-		pageHolders[tab.Id] = pages[tab.Id]
-	else
-		local holder = new("ScrollingFrame", {
-			Name = tab.Id .. "Holder",
-			Size = UDim2.fromScale(1, 1),
-			BackgroundTransparency = 1,
-			BorderSizePixel = 0,
-			ScrollBarThickness = 6,
-			ScrollBarImageColor3 = C.ice,
-			CanvasSize = UDim2.fromOffset(PAGE_W, PAGE_H),
-			Visible = false,
-			Parent = screen,
-		})
-		pageHolders[tab.Id] = holder
-		pages[tab.Id] = new("Frame", {
-			Name = tab.Id .. "Page",
-			Size = UDim2.fromOffset(PAGE_W, PAGE_H),
-			BackgroundTransparency = 1,
-			Parent = holder,
-		})
-	end
+	pages[tab.Id] = new("Frame", {
+		Name = tab.Id .. "Page",
+		Size = UDim2.fromScale(1, 1),
+		BackgroundTransparency = 1,
+		Visible = false,
+		Parent = screen,
+	})
 end
 
 -- «Выйти в лобби»: небольшая белая кнопка в правом нижнем углу страницы «Задачи», под списком игроков,
@@ -701,22 +677,19 @@ applyJournalLayout = function(layout)
 	for i, line in ipairs(grain) do
 		line.Visible = 40 + i * 74 < boardH - 24
 	end
-	-- старые страницы: по центру листа, если лист шире страницы; иначе от левого края, и их листают
-	local screenW = (if side then 840 else w) - (if side then 56 else 40)
-	for id, page in pairs(pages) do
-		if id ~= "Journal" and id ~= "Upgrades" then
-			page.Position = UDim2.fromOffset(math.max(0, math.floor((screenW - PAGE_W) / 2)), 0)
-		end
+	-- шапка и сетка «Коллекции» под выбранную раскладку
+	if collectionLayout then
+		collectionLayout(layout)
 	end
 end
 
 local function pageTitle(page, x, text)
 	return label({
-		Position = UDim2.fromOffset(x, 12),
-		Size = UDim2.fromOffset(340, 40),
+		Position = UDim2.fromOffset(x, 10),
+		Size = UDim2.new(1, -x - 20, 0, 36),
 		Text = text,
 		FontFace = Ui.Font.heavy,
-		TextSize = 30,
+		TextSize = 28,
 		TextColor3 = C.title,
 		Parent = page,
 	})
@@ -1249,12 +1222,80 @@ buyPrice.button.Activated:Connect(function()
 end)
 
 -- ---------- Коллекция ----------
+-- Сверху шапка: название, короткий текст и справа счётчик «НАЙДЕНО n / 9» с полосой. Ниже — прокрутка карточек
+-- (Ui.card): 3 колонки в normal, 2 в compact, 1 в narrow. Страница тянется по листу.
 local collectionPage = pages.Collection
 local collectionRows = {}
 
+local collectionHead = new("Frame", {
+	Name = "Head",
+	Position = UDim2.fromOffset(16, 10),
+	Size = UDim2.new(1, -32, 0, 104),
+	BackgroundTransparency = 1,
+	Parent = collectionPage,
+})
+label({
+	Name = "Title",
+	Size = UDim2.new(1, -236, 0, 34),
+	Text = L("Collection.Title"),
+	FontFace = Ui.Font.heavy,
+	TextSize = 28,
+	TextColor3 = C.title,
+	Parent = collectionHead,
+})
+label({
+	Name = "Text",
+	Position = UDim2.fromOffset(0, 36),
+	Size = UDim2.new(1, -236, 1, -36),
+	-- абзацы текста в шапке идут подряд
+	Text = (string.gsub(L("Collection.Text", { n = finds.SetCrystals }), "\n+", " ")),
+	TextSize = Ui.TextSize.caption,
+	TextWrapped = true,
+	TextYAlignment = Enum.TextYAlignment.Top,
+	TextColor3 = C.inkSoft,
+	Parent = collectionHead,
+})
+
+local foundBox = Ui.card({
+	Name = "Found",
+	AnchorPoint = Vector2.new(1, 0),
+	Position = UDim2.fromScale(1, 0),
+	Size = UDim2.new(0, 220, 1, 0),
+	Parent = collectionHead,
+}, false, 14)
+label({
+	Position = UDim2.fromOffset(14, 6),
+	Size = UDim2.new(0.5, -14, 0.55, 0),
+	Text = L("Collection.Found"),
+	FontFace = Ui.Font.heavy,
+	TextSize = 18,
+	TextColor3 = C.inkSoft,
+	Parent = foundBox,
+})
+local collectionCount = label({
+	AnchorPoint = Vector2.new(1, 0),
+	Position = UDim2.new(1, -14, 0, 6),
+	Size = UDim2.new(0.5, -14, 0.55, 0),
+	Text = "0 / " .. #finds.Items,
+	FontFace = Ui.Font.heavy,
+	TextSize = 32,
+	TextColor3 = C.title,
+	TextXAlignment = Enum.TextXAlignment.Right,
+	Parent = foundBox,
+})
+local _, setCollectionBar = Ui.bar({
+	Name = "Bar",
+	AnchorPoint = Vector2.new(0.5, 1),
+	Position = UDim2.new(0.5, 0, 1, -12),
+	Size = UDim2.new(1, -28, 0, 14),
+	BackgroundColor3 = Ui.Color.surfaceLine,
+	Parent = foundBox,
+})
+
 local collectionList = new("ScrollingFrame", {
-	Position = UDim2.fromOffset(16, 16),
-	Size = UDim2.new(0, 360, 1, -32),
+	Name = "Cards",
+	Position = UDim2.fromOffset(12, 122),
+	Size = UDim2.new(1, -24, 1, -130),
 	BackgroundTransparency = 1,
 	BorderSizePixel = 0,
 	ScrollBarThickness = 6,
@@ -1263,87 +1304,74 @@ local collectionList = new("ScrollingFrame", {
 	CanvasSize = UDim2.new(),
 	Parent = collectionPage,
 }, {
-	new("UIListLayout", { Padding = UDim.new(0, 10), SortOrder = Enum.SortOrder.LayoutOrder }),
-	new("UIPadding", { PaddingTop = UDim.new(0, 3), PaddingLeft = UDim.new(0, 3) }),
+	new("UIGridLayout", {
+		CellSize = UDim2.new(1 / 3, -32 / 3, 0, 112),
+		CellPadding = UDim2.fromOffset(10, 10),
+		FillDirectionMaxCells = 3,
+		SortOrder = Enum.SortOrder.LayoutOrder,
+	}),
+	-- отступы, чтобы контур крайних карточек не срезался краем прокрутки
+	new("UIPadding", {
+		PaddingTop = UDim.new(0, 4),
+		PaddingLeft = UDim.new(0, 4),
+		PaddingRight = UDim.new(0, 10),
+		PaddingBottom = UDim.new(0, 6),
+	}),
 })
+local collectionGrid = collectionList:FindFirstChildOfClass("UIGridLayout")
 
 for i, item in ipairs(finds.Items) do
-	local entry = new("Frame", {
-		LayoutOrder = i,
-		Size = UDim2.new(1, -12, 0, 92),
-		BackgroundColor3 = C.white,
-		Parent = collectionList,
-	}, { corner(12), border(C.gray, 2) })
+	local entry = Ui.card({ Name = "Find_" .. item.Id, LayoutOrder = i, Parent = collectionList }, false, 14)
 	local iconLabel = Ui.icon("Question", {
 		AnchorPoint = Vector2.new(0.5, 0.5),
 		Position = UDim2.fromScale(0.5, 0.5),
-		Size = UDim2.fromScale(0.8, 0.8),
+		Size = UDim2.fromScale(0.82, 0.82),
 	})
 	local iconFrame = new("Frame", {
 		AnchorPoint = Vector2.new(0, 0.5),
-		Position = UDim2.new(0, 14, 0.5, 0),
-		Size = UDim2.fromOffset(64, 64),
+		Position = UDim2.new(0, 12, 0.5, 0),
+		Size = UDim2.fromOffset(72, 72),
 		BackgroundColor3 = C.lock,
 		Parent = entry,
 	}, { corner("full"), iconLabel })
 	local nameLabel = label({
-		Position = UDim2.fromOffset(92, 16),
-		Size = UDim2.new(1, -100, 0, 28),
+		Position = UDim2.new(0, 96, 0.5, -36),
+		Size = UDim2.new(1, -106, 0, 48),
 		Text = L("Collection.Unknown"),
 		FontFace = Ui.Font.heavy,
 		TextSize = 19,
-		TextTruncate = Enum.TextTruncate.AtEnd,
+		TextWrapped = true,
 		Parent = entry,
 	})
 	local statusLabel = label({
-		Position = UDim2.fromOffset(92, 50),
-		Size = UDim2.new(1, -100, 0, 24),
+		Position = UDim2.new(0, 96, 0.5, 18),
+		Size = UDim2.new(1, -106, 0, 22),
 		Text = L("Collection.NotFound"),
-		TextSize = 16,
+		TextSize = Ui.TextSize.caption,
 		TextColor3 = C.inkSoft,
 		Parent = entry,
 	})
-	collectionRows[i] = { item = item, frame = iconFrame, icon = iconLabel, name = nameLabel, status = statusLabel }
+	collectionRows[i] = {
+		item = item,
+		card = entry,
+		frame = iconFrame,
+		icon = iconLabel,
+		name = nameLabel,
+		status = statusLabel,
+	}
 end
 
-label({
-	Position = UDim2.fromOffset(400, 16),
-	Size = UDim2.fromOffset(350, 40),
-	Text = L("Collection.Title"),
-	FontFace = Ui.Font.heavy,
-	TextSize = 30,
-	TextColor3 = C.title,
-	Parent = collectionPage,
-})
-label({
-	Position = UDim2.fromOffset(400, 64),
-	Size = UDim2.fromOffset(345, 230),
-	Text = L("Collection.Text", { n = finds.SetCrystals }),
-	TextSize = 19,
-	TextWrapped = true,
-	TextYAlignment = Enum.TextYAlignment.Top,
-	Parent = collectionPage,
-})
-label({
-	Position = UDim2.fromOffset(400, 310),
-	Size = UDim2.fromOffset(345, 36),
-	Text = L("Collection.Found"),
-	FontFace = Ui.Font.heavy,
-	TextSize = 28,
-	TextColor3 = C.title,
-	TextXAlignment = Enum.TextXAlignment.Center,
-	Parent = collectionPage,
-})
-local collectionCount = label({
-	Position = UDim2.fromOffset(400, 350),
-	Size = UDim2.fromOffset(345, 50),
-	Text = "0 / " .. #finds.Items,
-	FontFace = Ui.Font.heavy,
-	TextSize = 40,
-	TextColor3 = C.title,
-	TextXAlignment = Enum.TextXAlignment.Center,
-	Parent = collectionPage,
-})
+-- В compact текст шапки шире и занимает меньше строк. В narrow сохраняем высоту для текста от 16 px.
+collectionLayout = function(layout)
+	local columns = if layout == "narrow" then 1 elseif layout == "compact" then 2 else 3
+	local headH = if layout == "compact" then 88 else 104
+	collectionHead.Size = UDim2.new(1, -32, 0, headH)
+	collectionList.Position = UDim2.fromOffset(12, headH + 18)
+	collectionList.Size = UDim2.new(1, -24, 1, -(headH + 26))
+	collectionGrid.FillDirectionMaxCells = columns
+	-- UIGridLayout считает Scale от ширины с полосой прокрутки; оставляем ей место и запас для контура.
+	collectionGrid.CellSize = UDim2.new(1 / columns, -(10 * (columns - 1) + 12) / columns, 0, 112)
+end
 
 local function refreshCollection()
 	local have = string.split(player:GetAttribute("Collection") or "", ",")
@@ -1353,35 +1381,39 @@ local function refreshCollection()
 		if found then
 			count += 1
 		end
-		row.frame.BackgroundColor3 = found and C.greenSoft or C.lock
+		Ui.setCardState(row.card, if found then "done" else "locked")
+		row.frame.BackgroundColor3 = found and C.greenSoft or Ui.Color.surfaceLine
 		Ui.setIcon(row.icon, found and row.item.Icon or "Question")
-		row.icon.ImageTransparency = found and 0 or 0.45
+		row.icon.ImageTransparency = found and 0 or 0.35
 		row.name.Text = found and upperRu(L("Find.Item." .. row.item.Id)) or L("Collection.Unknown")
 		row.status.Text = found and L("Collection.Have") or L("Collection.NotFound")
+		row.status.TextColor3 = found and C.green or C.inkSoft
 	end
 	collectionCount.Text = count .. " / " .. #finds.Items
+	setCollectionBar(count / #finds.Items, Ui.Color.green)
 end
 player:GetAttributeChangedSignal("Collection"):Connect(refreshCollection)
 refreshCollection()
 
 -- ---------- Подсказки ----------
+-- Список на всю страницу; строка растёт по высоте под свой текст, у каждой подсказки своя иконка
 local tipsPage = pages.Tips
 pageTitle(tipsPage, 20, L("Journal.TipsTitle"))
 local TIPS = {
-	"Tip.Hand",
-	"Tip.Shed",
-	"Tip.Backpack",
-	"Tip.BackpackUpgrades",
-	"Tip.Pusher",
-	"Tip.Manhole",
-	"Tip.Snowblower",
-	"Tip.YardClean",
-	"Tip.Together",
-	"Tip.MatchEnd",
+	{ "Tip.Hand", "ToolHand" },
+	{ "Tip.Shed", "ToolShovel" },
+	{ "Tip.Backpack", "Backpack" },
+	{ "Tip.BackpackUpgrades", "Upgrade" },
+	{ "Tip.Pusher", "ToolSnowPusher" },
+	{ "Tip.Manhole", "Melter" },
+	{ "Tip.Snowblower", "ToolSnowblower" },
+	{ "Tip.YardClean", "Snow" },
+	{ "Tip.Together", "Invite" },
+	{ "Tip.MatchEnd", "Star" },
 }
 local tipsList = new("ScrollingFrame", {
-	Position = UDim2.fromOffset(20, 60),
-	Size = UDim2.new(1, -40, 1, -72),
+	Position = UDim2.fromOffset(16, 56),
+	Size = UDim2.new(1, -28, 1, -64),
 	BackgroundTransparency = 1,
 	BorderSizePixel = 0,
 	ScrollBarThickness = 6,
@@ -1389,26 +1421,43 @@ local tipsList = new("ScrollingFrame", {
 	AutomaticCanvasSize = Enum.AutomaticSize.Y,
 	CanvasSize = UDim2.new(),
 	Parent = tipsPage,
-}, { new("UIListLayout", { Padding = UDim.new(0, 10), SortOrder = Enum.SortOrder.LayoutOrder }) })
+}, {
+	new("UIListLayout", { Padding = UDim.new(0, 8), SortOrder = Enum.SortOrder.LayoutOrder }),
+	new("UIPadding", {
+		PaddingTop = UDim.new(0, 4),
+		PaddingLeft = UDim.new(0, 4),
+		PaddingRight = UDim.new(0, 12),
+		PaddingBottom = UDim.new(0, 6),
+	}),
+})
 for i, tip in ipairs(TIPS) do
-	local row = new("Frame", {
+	local row = Ui.card({
+		Name = "Tip" .. i,
 		LayoutOrder = i,
-		Size = UDim2.new(1, -12, 0, 64),
-		BackgroundColor3 = C.white,
+		Size = UDim2.new(1, 0, 0, 0),
+		AutomaticSize = Enum.AutomaticSize.Y,
 		Parent = tipsList,
-	}, { corner(12), border(C.gray, 2) })
-	Ui.icon("Snow", {
-		AnchorPoint = Vector2.new(0, 0.5),
-		Position = UDim2.new(0, 10, 0.5, 0),
-		Size = UDim2.fromOffset(36, 36),
+	}, false, 12)
+	new("UIPadding", {
+		PaddingTop = UDim.new(0, 10),
+		PaddingBottom = UDim.new(0, 10),
+		PaddingLeft = UDim.new(0, 10),
+		PaddingRight = UDim.new(0, 12),
+		Parent = row,
+	})
+	Ui.icon(tip[2], {
+		Position = UDim2.fromOffset(0, 0),
+		Size = UDim2.fromOffset(44, 44),
 		Parent = row,
 	})
 	label({
 		Position = UDim2.fromOffset(56, 0),
-		Size = UDim2.new(1, -68, 1, 0),
-		Text = L(tip),
-		TextSize = 17,
+		Size = UDim2.new(1, -56, 0, 44),
+		AutomaticSize = Enum.AutomaticSize.Y,
+		Text = L(tip[1]),
+		TextSize = 18,
 		TextWrapped = true,
+		TextYAlignment = Enum.TextYAlignment.Center,
 		Parent = row,
 	})
 end

@@ -698,6 +698,19 @@ end
 -- ---------- Журнал: задачи + игроки ----------
 -- Две колонки по половине листа, каждая со своей прокруткой: в низкой раскладке списки листаются
 local journalPage = pages.Journal
+-- Внешняя обводка и галочка выступают за прямоугольники элементов максимум на 3 px.
+-- Расширяем область обрезки и возвращаем начало содержимого padding: строки сохраняют положение и размер.
+-- Ещё 1 px оставляем под сглаживание. Саму обрезку сохраняем, чтобы списки не заходили на заголовки и кнопки.
+local SCROLL_GUTTER = Ui.Stroke.card + 1
+local function scrollPadding()
+	return new("UIPadding", {
+		PaddingLeft = UDim.new(0, SCROLL_GUTTER),
+		PaddingRight = UDim.new(0, SCROLL_GUTTER),
+		PaddingTop = UDim.new(0, SCROLL_GUTTER),
+		PaddingBottom = UDim.new(0, SCROLL_GUTTER),
+	})
+end
+
 local function journalColumn(xScale, xOffset, title, bottomPad)
 	local col = new("Frame", {
 		Position = UDim2.new(xScale, xOffset, 0, 0),
@@ -715,16 +728,20 @@ local function journalColumn(xScale, xOffset, title, bottomPad)
 		Parent = col,
 	})
 	return new("ScrollingFrame", {
-		Position = UDim2.fromOffset(0, 54),
-		Size = UDim2.new(1, 0, 1, -62 - (bottomPad or 0)),
+		Position = UDim2.fromOffset(-SCROLL_GUTTER, 54 - SCROLL_GUTTER),
+		Size = UDim2.new(1, 2 * SCROLL_GUTTER, 1, -62 - (bottomPad or 0) + 2 * SCROLL_GUTTER),
 		BackgroundTransparency = 1,
 		BorderSizePixel = 0,
+		ClipsDescendants = true,
 		ScrollBarThickness = 6,
 		ScrollBarImageColor3 = C.ice,
 		AutomaticCanvasSize = Enum.AutomaticSize.Y,
 		CanvasSize = UDim2.new(),
 		Parent = col,
-	}, { new("UIListLayout", { Padding = UDim.new(0, 6), SortOrder = Enum.SortOrder.LayoutOrder }) })
+	}, {
+		new("UIListLayout", { Padding = UDim.new(0, 6), SortOrder = Enum.SortOrder.LayoutOrder }),
+		scrollPadding(),
+	})
 end
 local taskList = journalColumn(0, 20, L("Journal.Tasks"))
 local playerList = journalColumn(0.5, 8, L("Journal.Players"), LEAVE_H + 16) -- под списком — кнопка «Выйти в лобби»
@@ -970,16 +987,20 @@ local CARD_H = 66
 
 local upgradeList = new("ScrollingFrame", {
 	Name = "Rows",
-	Position = UDim2.fromOffset(14, 12),
-	Size = UDim2.new(1, -(DETAIL_W + 14 + 12 + 14), 1, -24),
+	Position = UDim2.fromOffset(14 - SCROLL_GUTTER, 12 - SCROLL_GUTTER),
+	Size = UDim2.new(1, -(DETAIL_W + 14 + 12 + 14) + 2 * SCROLL_GUTTER, 1, -24 + 2 * SCROLL_GUTTER),
 	BackgroundTransparency = 1,
 	BorderSizePixel = 0,
+	ClipsDescendants = true,
 	ScrollBarThickness = 6,
 	ScrollBarImageColor3 = C.ice,
 	AutomaticCanvasSize = Enum.AutomaticSize.Y,
 	CanvasSize = UDim2.new(),
 	Parent = upgradesPage,
-}, { new("UIListLayout", { Padding = UDim.new(0, 6), SortOrder = Enum.SortOrder.LayoutOrder }) })
+}, {
+	new("UIListLayout", { Padding = UDim.new(0, 6), SortOrder = Enum.SortOrder.LayoutOrder }),
+	scrollPadding(),
+})
 
 for r, rowData in ipairs(UPGRADE_ROWS) do
 	local row = new("Frame", {

@@ -247,6 +247,28 @@ return {
 
 	-- Экран конца матча (MatchEndClient)
 	["MatchEnd.Title"] = { en = "YARD CLEARED!", ru = "ДВОР ОЧИЩЕН!" },
+	["MatchEnd.Results"] = { en = "YOUR RESULTS", ru = "ТВОИ РЕЗУЛЬТАТЫ" },
+	["MatchEnd.SnowLabel"] = { en = "Snow collected", ru = "Собрано снега" },
+	["MatchEnd.CashLabel"] = { en = "Cash earned", ru = "Заработано Cash" },
+	["MatchEnd.CrystalsLabel"] = { en = "Crystals earned", ru = "Получено кристаллов" },
+	["MatchEnd.TeamHeading"] = { en = "YOUR TEAM", ru = "ТВОЯ КОМАНДА" },
+	["MatchEnd.Team"] = { en = "TEAM · {n}/{m} PLAYING AGAIN", ru = "КОМАНДА · ЕЩЁ РАЗ: {n}/{m}" },
+	["MatchEnd.You"] = { en = "You", ru = "Ты" },
+	["MatchEnd.ChoicePending"] = { en = "Choosing…", ru = "Выбирает…" },
+	["MatchEnd.ChoiceAgain"] = { en = "Playing again", ru = "Играет ещё" },
+	["MatchEnd.ChoiceLobby"] = { en = "To lobby", ru = "В лобби" },
+	["MatchEnd.DecisionHint"] = {
+		en = "Your choice. Only Play again joins the next match.",
+		ru = "Выбор за тобой. «Играть ещё» — новый матч.",
+	},
+	["MatchEnd.JoinedHint"] = {
+		en = "You're in! Cancel while others choose.",
+		ru = "Ты играешь ещё! Можно отменить, пока другие выбирают.",
+	},
+	["MatchEnd.LeaveToLobby"] = { en = "Leave to lobby", ru = "Выйти в лобби" },
+	["MatchEnd.Time"] = { en = "{n} s", ru = "{n} с" },
+	["MatchEnd.Reopen"] = { en = "Match results", ru = "Итоги матча" },
+	["MatchEnd.ReopenTime"] = { en = "Results · {n} s", ru = "Итоги · {n} с" },
 	["MatchEnd.Snow"] = { en = "Snow collected: {n}", ru = "Собрано снега: {n}" },
 	["MatchEnd.Cash"] = { en = "Earned: {n} Cash", ru = "Заработано: {n} Cash" },
 	["MatchEnd.Crystals"] = { en = "Crystals: +{n}", ru = "Кристаллы: +{n}" },

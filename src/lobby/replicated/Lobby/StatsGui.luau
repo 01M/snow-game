@@ -1,104 +1,158 @@
 --!strict
--- StatsGui: окно постоянных статов за Crystals в лобби (только клиент). Открывается кнопкой «Улучшения» в HUD
--- и ProximityPrompt с тегом StatsPrompt у прилавка Upgrades (LobbyHudClient). Статы и цены — Shared.Crystals.
--- Данные — атрибуты игрока Crystals и Stat_<Id> (LobbyCashServer, StatServer). Покупка — Lobby.Remotes.BuyStat
--- с уровнем, который игрок видит следующим; сервер сам проверяет уровень, цену и баланс.
--- Геймпад: при открытии выбрана кнопка первой карточки (или «Закрыть»), ButtonB закрывает окно.
-local ContextActionService = game:GetService("ContextActionService")
-local GuiService = game:GetService("GuiService")
+-- StatsGui: presentation only. Crystals owns progression; BuyStat validates and saves each purchase.
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local TweenService = game:GetService("TweenService")
-local UserInputService = game:GetService("UserInputService")
-
 local Crystals = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Crystals"))
 local L = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Locale")).t
 local Ui = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Ui"))
 local BuyStat = script.Parent:WaitForChild("Remotes"):WaitForChild("BuyStat") :: RemoteFunction
-
 local player = Players.LocalPlayer
-
-local PANEL_W, PANEL_H = 960, 500 -- 5 карточек в ряд; на узком экране окно уменьшает UIScale (fit)
-local CARD_W, CARD_H = 172, 330
-local GAP = 14
-local CLOSE_ACTION = "StatsGuiClose"
-
+local C = Ui.Color
 local StatsGui = {}
 
 type Card = {
 	stat: Crystals.Stat,
+	frame: TextButton,
+	icon: ImageLabel,
+	iconScale: UIScale,
+	title: TextLabel,
+	desc: TextLabel,
+	level: TextLabel,
+	levelScale: UIScale,
 	pips: { Frame },
-	effect: TextLabel,
-	button: TextButton,
+	pipRow: Frame,
+	current: TextLabel,
+	next: TextLabel,
+	price: Ui.PriceButton,
 }
-
-local screen: ScreenGui? = nil
+local window: Ui.Window? = nil
 local cards: { Card } = {}
-local closeButton: TextButton? = nil
+local row: ScrollingFrame? = nil
 local message: TextLabel? = nil
-local buying = false
+local hint: TextLabel? = nil
+local selected = "DeepPockets"
+local buying: string? = nil
 local messageToken = 0
 
-local function crystals(): number
-	local c = player:GetAttribute("Crystals")
-	return if typeof(c) == "number" then c else 0
+local function balance(): number?
+	local value = player:GetAttribute("Crystals")
+	return if typeof(value) == "number" then value else nil
 end
-
--- Текст эффекта на уровне level: вместимость, скорость ходьбы или проценты
+local function loaded(card: Card): boolean
+	return balance() ~= nil and typeof(player:GetAttribute("Stat_" .. card.stat.Id)) == "number"
+end
 local function effectText(stat: Crystals.Stat, level: number): string
-	local v = Crystals.bonusAt(stat.Id, level)
+	local value = Crystals.bonusAt(stat.Id, level)
 	if stat.Id == "SnowBoots" then
-		v += Crystals.BASE_WALK_SPEED
+		value += Crystals.BASE_WALK_SPEED
 	elseif stat.Id == "StrongArms" or stat.Id == "TipJar" or stat.Id == "CrystalSense" then
-		v = math.floor(v * 100 + 0.5)
+		value = math.floor(value * 100 + 0.5)
 	end
-	return L("Stat." .. stat.Id .. ".Effect", { n = v })
+	return L("Stat." .. stat.Id .. ".Effect", { n = value })
 end
-
-local function showMessage(text: string, color: Color3?)
-	local label = message :: TextLabel
+local function reveal(card: Card)
+	local scroll = row
+	local currentWindow = window
+	if not scroll or not currentWindow or currentWindow.layout() ~= "narrow" then
+		return
+	end
+	local scale = currentWindow.root:FindFirstChildOfClass("UIScale") :: UIScale
+	-- CanvasPosition and AbsolutePosition use screen pixels, including the window's UIScale.
+	local left = card.frame.AbsolutePosition.X - scroll.AbsolutePosition.X + scroll.CanvasPosition.X
+	local width = scroll.AbsoluteSize.X
+	local margin = 8 * scale.Scale
+	local target = math.clamp(scroll.CanvasPosition.X, left + card.frame.AbsoluteSize.X + margin - width, left - margin)
+	scroll.CanvasPosition = Vector2.new(math.max(0, target), 0)
+end
+local function showMessage(key: string, color: Color3, args: { [string]: any }?)
+	local label = message
+	if not label then
+		return
+	end
 	messageToken += 1
-	local my = messageToken
-	label.Text = text
-	label.TextColor3 = color or Ui.Color.ink
-	task.delay(3, function()
-		if messageToken == my then
-			label.Text = ""
+	local token = messageToken
+	label.Text = L(key, args)
+	label.TextColor3 = color
+	task.delay(4, function()
+		if messageToken == token then
+			label.Text = L("Stats.Choose")
+			label.TextColor3 = C.inkSoft
 		end
 	end)
 end
-
 local function refresh()
-	if not screen then
+	local currentWindow = window
+	if not currentWindow then
 		return
 	end
-	local balance = crystals()
+	local amount = balance()
+	local default: GuiObject = currentWindow.closeButton
 	for _, card in cards do
 		local stat = card.stat
 		local level = Crystals.levelOf(player, stat.Id)
 		local max = Crystals.maxLevel(stat)
-		for i, pip in card.pips do
-			pip.BackgroundColor3 = if i <= level then Ui.Color.ice else Ui.Color.paperShade
-		end
-		local text = card.button:FindFirstChild("Text") :: TextLabel
-		local icon = card.button:FindFirstChild("Icon") :: ImageLabel
 		local price = Crystals.priceOf(stat, level)
-		if price then
-			card.effect.Text = effectText(stat, level) .. "  →  " .. effectText(stat, level + 1)
-			text.Text = tostring(price)
-			icon.Visible = true
-			Ui.paint(card.button, if balance >= price then "green" else "gray")
+		local isLoaded = loaded(card)
+		local isSelected = selected == stat.Id
+		Ui.setCardState(
+			card.frame,
+			if isSelected then "selected" elseif not price and isLoaded then "done" else "normal"
+		)
+		if not price and isLoaded then
+			card.frame.BackgroundColor3 = C.goldLight
+			local border = card.frame:FindFirstChild("Border") :: UIStroke
+			border.Color = if isSelected then C.outline else C.goldDark
+		end
+		card.title.Text = L("Stat." .. stat.Id .. ".Name")
+		card.desc.Text = L("Stat." .. stat.Id .. ".Desc")
+		card.level.Text = if isLoaded then L("Stats.Level", { n = level, max = max }) else L("Stats.Loading")
+		card.level.TextColor3 = if not price and isLoaded then C.ink else C.inkSoft
+		for i, pip in card.pips do
+			pip.BackgroundColor3 = if isLoaded and i <= level then C.blue else C.white
+			local border = pip:FindFirstChildOfClass("UIStroke") :: UIStroke
+			border.Color = if isLoaded and i <= level then C.outline else C.grayDark
+		end
+		card.current.Text = if isLoaded then effectText(stat, level) else ""
+		card.next.Text = if not isLoaded
+			then ""
+			elseif price then "→ " .. effectText(stat, level + 1)
+			else L("Stats.FullyUpgraded")
+		card.next.TextColor3 = if price then C.greenDark else C.ink
+		if not isLoaded then
+			card.price.set("locked", L("Stats.Loading"))
+		elseif not price then
+			card.price.set("max", L("Stats.Max"))
+		elseif buying then
+			card.price.set("locked", if buying == stat.Id then L("Stats.Buying") else Ui.number(price))
 		else
-			card.effect.Text = effectText(stat, max)
-			text.Text = L("Stats.Max")
-			icon.Visible = false
-			Ui.paint(card.button, "amber")
+			card.price.set(if (amount or 0) >= price then "buy" else "need", Ui.number(price))
+		end
+		card.price.button.Selectable = isLoaded
+		if isSelected and isLoaded then
+			default = card.price.button
 		end
 	end
+	if hint then
+		hint.Text = L("Stats.Hint")
+	end
+	local header = currentWindow.root:FindFirstChild("Header") :: Frame
+	local title = header:FindFirstChild("Title") :: TextLabel
+	title.Text = L("Stats.Title")
+	currentWindow.setDefaultSelection(default)
 end
-
+local function selectCard(card: Card, scrollToCard: boolean?)
+	selected = card.stat.Id
+	refresh()
+	if scrollToCard then
+		reveal(card)
+	end
+end
 local function buy(card: Card)
 	if buying then
+		return
+	end
+	selectCard(card)
+	if not loaded(card) then
 		return
 	end
 	local stat = card.stat
@@ -107,339 +161,326 @@ local function buy(card: Card)
 	if not price then
 		return
 	end
-	if crystals() < price then
-		showMessage(L("Stats.NotEnough"), Ui.Color.redDark)
+	if (balance() or 0) < price then
+		showMessage("Stats.NotEnough", C.redDark)
 		return
 	end
-	buying = true
+	buying = stat.Id
+	refresh()
 	local ok, result = pcall(function()
 		return BuyStat:InvokeServer(stat.Id, level + 1)
 	end)
-	buying = false
+	buying = nil
 	local status = if ok and typeof(result) == "table" then result.status else "Unavailable"
-	local name = L("Stat." .. stat.Id .. ".Name")
-	if status == "Ok" then
-		showMessage(L("Stats.Bought", { name = name, n = result.level }), Ui.Color.greenDark)
-	elseif status == "NotEnough" then
-		showMessage(L("Stats.NotEnough"), Ui.Color.redDark)
-	elseif status == "Busy" then
-		showMessage(L("Stats.Busy"), Ui.Color.amberDark)
-	elseif status ~= "AlreadyOwned" and status ~= "Max" then
-		showMessage(L("Stats.Unavailable"), Ui.Color.redDark)
-	end
 	refresh()
+	if status == "Ok" then
+		showMessage("Stats.Bought", C.greenDark, { name = L("Stat." .. stat.Id .. ".Name"), n = result.level })
+		local currentWindow = window
+		if currentWindow and currentWindow.isOpen() then
+			Ui.Motion.pop(card.iconScale)
+			Ui.Motion.pop(card.levelScale)
+			Ui.Sound.play("purchase")
+		end
+	elseif status == "NotEnough" then
+		showMessage("Stats.NotEnough", C.redDark)
+	elseif status == "Busy" then
+		showMessage("Stats.Busy", C.ink)
+	elseif status ~= "AlreadyOwned" and status ~= "Max" then
+		showMessage("Stats.Unavailable", C.redDark)
+		Ui.Sound.play("error")
+	end
 end
-
 local function makeCard(parent: Instance, index: number, stat: Crystals.Stat): Card
-	local frame = Ui.new("Frame", {
-		Name = "Card" .. stat.Id,
-		LayoutOrder = index,
-		Size = UDim2.fromOffset(CARD_W, CARD_H),
-		BackgroundColor3 = Ui.Color.white,
-		Parent = parent,
-	}, { Ui.corner(18), Ui.border(3) })
-	Ui.icon(stat.Icon, {
-		Name = "Icon",
+	local frame = Ui.card(
+		{ Name = "Card" .. stat.Id, LayoutOrder = index, Size = UDim2.fromOffset(180, 344), Parent = parent },
+		true
+	) :: TextButton
+	frame.Selectable = false
+	local iconHolder = Ui.new("Frame", {
+		Name = "IconHolder",
 		AnchorPoint = Vector2.new(0.5, 0),
-		Position = UDim2.new(0.5, 0, 0, 12),
-		Size = UDim2.fromOffset(72, 72),
-		Parent = frame,
-	})
-	Ui.label({
-		Name = "Name",
-		Position = UDim2.fromOffset(8, 90),
-		Size = UDim2.new(1, -16, 0, 30),
-		Text = L("Stat." .. stat.Id .. ".Name"),
-		TextScaled = true,
-		TextColor3 = Ui.Color.ink,
-		TextXAlignment = Enum.TextXAlignment.Center,
-		Parent = frame,
-	}, { Ui.new("UITextSizeConstraint", { MaxTextSize = 24 }) })
-	Ui.label({
-		Name = "Desc",
-		Position = UDim2.fromOffset(10, 122),
-		Size = UDim2.new(1, -20, 0, 40),
-		Text = L("Stat." .. stat.Id .. ".Desc"),
-		FontFace = Ui.Font.bold,
-		TextSize = 16,
-		TextWrapped = true,
-		TextColor3 = Ui.Color.inkSoft,
-		TextXAlignment = Enum.TextXAlignment.Center,
-		TextYAlignment = Enum.TextYAlignment.Top,
-		Parent = frame,
-	})
-	-- Уровни: по точке на уровень
-	local max = Crystals.maxLevel(stat)
-	local pipRow = Ui.new("Frame", {
-		Name = "Pips",
-		AnchorPoint = Vector2.new(0.5, 0),
-		Position = UDim2.new(0.5, 0, 0, 170),
-		Size = UDim2.fromOffset(max * 22 + (max - 1) * 6, 22),
+		Position = UDim2.new(0.5, 0, 0, 10),
+		Size = UDim2.fromOffset(56, 56),
 		BackgroundTransparency = 1,
 		Parent = frame,
 	})
-	Ui.new("UIListLayout", {
-		FillDirection = Enum.FillDirection.Horizontal,
-		Padding = UDim.new(0, 6),
-		SortOrder = Enum.SortOrder.LayoutOrder,
-		Parent = pipRow,
-	})
-	local pips = {}
-	for i = 1, max do
-		table.insert(
-			pips,
-			Ui.new("Frame", {
-				Name = "Pip" .. i,
-				LayoutOrder = i,
-				Size = UDim2.fromOffset(22, 22),
-				BackgroundColor3 = Ui.Color.paperShade,
-				Parent = pipRow,
-			}, { Ui.corner("full"), Ui.border(2) })
-		)
-	end
-	local effect = Ui.label({
-		Name = "Effect",
-		Position = UDim2.fromOffset(6, 202),
-		Size = UDim2.new(1, -12, 0, 44),
+	local iconScale = Ui.new("UIScale", { Parent = iconHolder })
+	local icon = Ui.icon(stat.Icon, { Name = "Icon", Size = UDim2.fromScale(1, 1), Parent = iconHolder })
+	local title = Ui.label({
+		Name = "Name",
+		Position = UDim2.fromOffset(8, 72),
+		Size = UDim2.new(1, -16, 0, 46),
 		Text = "",
-		FontFace = Ui.Font.heavy,
-		TextSize = 18,
+		TextSize = 20,
+		TextColor3 = C.ink,
 		TextWrapped = true,
-		TextColor3 = Ui.Color.ink,
 		TextXAlignment = Enum.TextXAlignment.Center,
 		Parent = frame,
 	})
-	local button = Ui.button({
-		Name = "Buy",
-		Color = "green",
-		Icon = "Gem",
-		IconSize = 34,
+	local desc = Ui.label({
+		Name = "Desc",
+		Position = UDim2.fromOffset(8, 120),
+		Size = UDim2.new(1, -16, 0, 38),
 		Text = "",
-		TextSize = 26,
-		Radius = 16,
-		AnchorPoint = Vector2.new(0.5, 1),
-		Position = UDim2.new(0.5, 0, 1, -14),
-		Size = UDim2.new(1, -24, 0, 58),
+		TextSize = 16,
+		TextColor3 = C.inkSoft,
+		TextWrapped = true,
+		TextXAlignment = Enum.TextXAlignment.Center,
 		Parent = frame,
 	})
-	local card = { stat = stat, pips = pips, effect = effect, button = button }
-	button.Activated:Connect(function()
+	local level = Ui.label({
+		Name = "Level",
+		AnchorPoint = Vector2.new(0.5, 0),
+		Position = UDim2.new(0.5, 0, 0, 166),
+		Size = UDim2.new(1, -16, 0, 22),
+		Text = "",
+		TextSize = 16,
+		TextColor3 = C.inkSoft,
+		TextXAlignment = Enum.TextXAlignment.Center,
+		Parent = frame,
+	})
+	local levelScale = Ui.new("UIScale", { Parent = level })
+	local pipRow = Ui.new("Frame", {
+		Name = "Levels",
+		AnchorPoint = Vector2.new(0.5, 0),
+		Position = UDim2.new(0.5, 0, 0, 194),
+		Size = UDim2.fromOffset(144, 12),
+		BackgroundTransparency = 1,
+		Parent = frame,
+	}, {
+		Ui.new("UIListLayout", {
+			FillDirection = Enum.FillDirection.Horizontal,
+			Padding = UDim.new(0, 6),
+			SortOrder = Enum.SortOrder.LayoutOrder,
+		}),
+	})
+	local pips = {}
+	for i = 1, Crystals.maxLevel(stat) do
+		table.insert(
+			pips,
+			Ui.new("Frame", {
+				Name = "Level" .. i,
+				Size = UDim2.fromOffset(24, 12),
+				LayoutOrder = i,
+				BackgroundColor3 = C.white,
+				Parent = pipRow,
+			}, { Ui.corner(4), Ui.border(2, C.grayDark) })
+		)
+	end
+	local current = Ui.label({
+		Name = "Current",
+		Position = UDim2.fromOffset(8, 216),
+		Size = UDim2.new(1, -16, 0, 22),
+		Text = "",
+		TextSize = 16,
+		TextColor3 = C.inkSoft,
+		TextXAlignment = Enum.TextXAlignment.Center,
+		Parent = frame,
+	})
+	local nextEffect = Ui.label({
+		Name = "Next",
+		Position = UDim2.fromOffset(8, 238),
+		Size = UDim2.new(1, -16, 0, 26),
+		Text = "",
+		TextSize = 18,
+		TextColor3 = C.greenDark,
+		TextXAlignment = Enum.TextXAlignment.Center,
+		Parent = frame,
+	})
+	local price = Ui.priceButton("Gem", {
+		Name = "Buy",
+		Text = "",
+		TextSize = 24,
+		IconSize = 28,
+		AnchorPoint = Vector2.new(0.5, 1),
+		Position = UDim2.new(0.5, 0, 1, -12),
+		Size = UDim2.new(1, -24, 0, 60),
+		Parent = frame,
+	})
+	local card: Card = {
+		stat = stat,
+		frame = frame,
+		icon = icon,
+		iconScale = iconScale,
+		title = title,
+		desc = desc,
+		level = level,
+		levelScale = levelScale,
+		pips = pips,
+		pipRow = pipRow,
+		current = current,
+		next = nextEffect,
+		price = price,
+	}
+	frame.Activated:Connect(function()
+		selectCard(card)
+	end)
+	price.button.SelectionGained:Connect(function()
+		selectCard(card, true)
+	end)
+	price.button.Activated:Connect(function()
 		buy(card)
 	end)
 	return card
 end
-
 local function build()
-	local gui = Ui.new("ScreenGui", {
+	local applyLayout: ((Ui.WindowLayout) -> ())? = nil
+	local currentWindow = Ui.window({
 		Name = "StatsGui",
-		ResetOnSpawn = false,
-		IgnoreGuiInset = true,
-		DisplayOrder = 20,
-		Enabled = false,
-		ZIndexBehavior = Enum.ZIndexBehavior.Sibling,
-		Parent = player:WaitForChild("PlayerGui"),
+		Title = L("Stats.Title"),
+		Icon = "Upgrade",
+		Size = Vector2.new(1000, 528),
+		Compact = Vector2.new(1000, 468),
+		Narrow = Vector2.new(820, 448),
+		OnLayout = function(mode)
+			if applyLayout then
+				applyLayout(mode)
+			end
+		end,
+		OnOpen = function()
+			refresh()
+			if message then
+				message.Text = L("Stats.Choose")
+			end
+			for _, card in cards do
+				if card.stat.Id == selected then
+					task.defer(function()
+						reveal(card)
+					end)
+				end
+			end
+		end,
 	})
-	Ui.new("Frame", {
-		Size = UDim2.fromScale(1, 1),
-		BackgroundColor3 = Ui.Color.outline,
-		BackgroundTransparency = 0.4,
-		BorderSizePixel = 0,
-		Parent = gui,
+	window = currentWindow
+	currentWindow.closeButton.Position = UDim2.new(1, -36, 0, 34)
+	local body = currentWindow.body
+	hint = Ui.label({
+		Name = "Hint",
+		Position = UDim2.fromOffset(24, 8),
+		Size = UDim2.new(1, -224, 0, 40),
+		Text = L("Stats.Hint"),
+		TextSize = 16,
+		TextWrapped = true,
+		TextColor3 = C.inkSoft,
+		Parent = body,
 	})
-	local panel = Ui.new("Frame", {
-		Name = "Panel",
-		AnchorPoint = Vector2.new(0.5, 0.5),
-		Position = UDim2.fromScale(0.5, 0.5),
-		Size = UDim2.fromOffset(PANEL_W, PANEL_H),
-		BackgroundColor3 = Ui.Color.paper,
-		Parent = gui,
-	}, { Ui.corner(26), Ui.border(4) })
-	local scale = Ui.new("UIScale", { Parent = panel })
-	local function fit()
-		local vp = workspace.CurrentCamera.ViewportSize
-		scale.Scale = math.min(1.2, (vp.X - 30) / PANEL_W, (vp.Y - 30) / PANEL_H)
-	end
-	fit()
-	workspace.CurrentCamera:GetPropertyChangedSignal("ViewportSize"):Connect(fit)
-
-	-- Шапка как у магазина; справа баланс Crystals
-	local header = Ui.new("Frame", {
-		Name = "Header",
-		Size = UDim2.new(1, 0, 0, 68),
-		BackgroundColor3 = Ui.Color.night,
-		Parent = panel,
-	}, { Ui.corner(22) })
-	Ui.new("Frame", {
-		AnchorPoint = Vector2.new(0, 1),
-		Position = UDim2.fromScale(0, 1),
-		Size = UDim2.new(1, 0, 0, 22),
-		BackgroundColor3 = Ui.Color.night,
-		BorderSizePixel = 0,
-		Parent = header,
-	})
-	Ui.new("Frame", {
-		AnchorPoint = Vector2.new(0, 1),
-		Position = UDim2.fromScale(0, 1),
-		Size = UDim2.new(1, 0, 0, 4),
-		BackgroundColor3 = Ui.Color.outline,
-		BorderSizePixel = 0,
-		ZIndex = 2,
-		Parent = header,
-	})
-	Ui.icon("Upgrade", { Position = UDim2.fromOffset(18, 10), Size = UDim2.fromOffset(46, 46), Parent = header })
-	Ui.label({
-		Position = UDim2.fromOffset(74, 0),
-		Size = UDim2.new(1, -320, 1, -4),
-		Text = L("Stats.Title"),
-		TextScaled = true,
-		Parent = header,
-	}, { Ui.new("UITextSizeConstraint", { MaxTextSize = 32 }) })
-	local balanceRow = Ui.new("Frame", {
+	local pill = Ui.currencyPill("Gem", {
 		Name = "Balance",
-		AnchorPoint = Vector2.new(1, 0.5),
-		Position = UDim2.new(1, -60, 0.5, -2),
-		Size = UDim2.fromOffset(0, 44),
-		AutomaticSize = Enum.AutomaticSize.X,
-		BackgroundTransparency = 1,
-		Parent = header,
+		AnchorPoint = Vector2.new(1, 0),
+		Position = UDim2.new(1, -24, 0, 8),
+		Size = UDim2.fromOffset(0, 40),
+		Parent = body,
 	})
-	Ui.new("UIListLayout", {
-		FillDirection = Enum.FillDirection.Horizontal,
-		VerticalAlignment = Enum.VerticalAlignment.Center,
-		Padding = UDim.new(0, 6),
-		SortOrder = Enum.SortOrder.LayoutOrder,
-		Parent = balanceRow,
-	})
-	Ui.icon("Gem", { Size = UDim2.fromOffset(38, 38), LayoutOrder = 1, Parent = balanceRow })
-	local balance = Ui.label({
-		Name = "Amount",
-		Size = UDim2.fromOffset(0, 44),
-		AutomaticSize = Enum.AutomaticSize.X,
-		Text = "",
-		TextSize = 28,
-		LayoutOrder = 2,
-		Parent = balanceRow,
-	})
-	Ui.snowCap(panel, false, 30)
-
-	local close = Ui.button({
-		Name = "Close",
-		Color = "red",
-		Icon = "Close",
-		Radius = 18,
-		AnchorPoint = Vector2.new(0.5, 0.5),
-		Position = UDim2.new(1, -8, 0, 8),
-		Size = UDim2.fromOffset(60, 60),
-		Parent = panel,
-	})
-	close.ZIndex = 5
-	close.Activated:Connect(function()
-		StatsGui.close()
+	local function updateBalance()
+		pill.set(balance(), currentWindow.isOpen())
+		refresh()
+	end
+	player:GetAttributeChangedSignal("Crystals"):Connect(updateBalance)
+	pill.frame:GetPropertyChangedSignal("AbsoluteSize"):Connect(function()
+		local scale = currentWindow.root:FindFirstChildOfClass("UIScale") :: UIScale
+		local label = hint :: TextLabel
+		label.Size = UDim2.new(1, -64 - pill.frame.AbsoluteSize.X / scale.Scale, 0, 40)
 	end)
-	closeButton = close
-
-	local row = Ui.new("Frame", {
+	local scroll: ScrollingFrame = Ui.new("ScrollingFrame", {
 		Name = "Cards",
-		AnchorPoint = Vector2.new(0.5, 0),
-		Position = UDim2.new(0.5, 0, 0, 86),
-		Size = UDim2.fromOffset(#Crystals.Stats * CARD_W + (#Crystals.Stats - 1) * GAP, CARD_H),
+		Position = UDim2.fromOffset(20, 56),
+		Size = UDim2.new(1, -40, 0, 356),
 		BackgroundTransparency = 1,
-		Parent = panel,
+		BorderSizePixel = 0,
+		ScrollingDirection = Enum.ScrollingDirection.X,
+		CanvasSize = UDim2.new(),
+		AutomaticCanvasSize = Enum.AutomaticSize.X,
+		ScrollBarThickness = 6,
+		ScrollBarImageColor3 = C.inkSoft,
+		Parent = body,
+	}, {
+		Ui.new(
+			"UIPadding",
+			{ PaddingLeft = UDim.new(0, 4), PaddingRight = UDim.new(0, 4), PaddingTop = UDim.new(0, 4) }
+		),
 	})
-	Ui.new("UIListLayout", {
+	row = scroll
+	local list = Ui.new("UIListLayout", {
 		FillDirection = Enum.FillDirection.Horizontal,
-		Padding = UDim.new(0, GAP),
+		Padding = UDim.new(0, 12),
 		SortOrder = Enum.SortOrder.LayoutOrder,
-		Parent = row,
+		Parent = scroll,
 	})
 	for i, stat in Crystals.Stats do
-		table.insert(cards, makeCard(row, i, stat))
+		table.insert(cards, makeCard(scroll, i, stat))
 	end
-
-	message = Ui.label({
+	local footer = Ui.label({
 		Name = "Message",
-		Position = UDim2.fromOffset(24, 86 + CARD_H + 8),
-		Size = UDim2.new(1, -48, 0, 26),
-		Text = "",
-		FontFace = Ui.Font.bold,
-		TextSize = 20,
-		TextColor3 = Ui.Color.ink,
-		TextXAlignment = Enum.TextXAlignment.Center,
-		Parent = panel,
+		Position = UDim2.new(0, 24, 1, -32),
+		Size = UDim2.new(1, -48, 0, 24),
+		Text = L("Stats.Choose"),
+		TextSize = 16,
+		TextColor3 = C.inkSoft,
+		Parent = body,
 	})
-	Ui.label({
-		Name = "Hint",
-		AnchorPoint = Vector2.new(0, 1),
-		Position = UDim2.new(0, 24, 1, -16),
-		Size = UDim2.new(1, -48, 0, 26),
-		Text = L("Stats.Hint"),
-		FontFace = Ui.Font.bold,
-		TextSize = 18,
-		TextWrapped = true,
-		TextColor3 = Ui.Color.inkSoft,
-		TextXAlignment = Enum.TextXAlignment.Center,
-		Parent = panel,
-	})
-
-	local function refreshBalance()
-		balance.Text = Ui.number(crystals())
+	message = footer
+	local function fitLayout(mode: Ui.WindowLayout)
+		local normal = mode == "normal"
+		local narrow = mode == "narrow"
+		local height = if normal then 344 elseif narrow then 290 else 310
+		scroll.Position = UDim2.fromOffset(20, if normal then 56 else 48)
+		scroll.Size = UDim2.new(1, -40, 0, height + 12)
+		list.HorizontalAlignment = if narrow then Enum.HorizontalAlignment.Left else Enum.HorizontalAlignment.Center
+		scroll.ScrollingEnabled = narrow
+		scroll.ScrollBarThickness = if narrow then 6 else 0
+		if not narrow then
+			scroll.CanvasPosition = Vector2.zero
+		end
+		footer.Position = UDim2.new(0, 24, 1, if normal then -32 else -24)
+		for _, card in cards do
+			card.frame.Size = UDim2.fromOffset(180, height)
+			local holder = card.icon.Parent :: Frame
+			local iconSize = if normal then 56 elseif narrow then 40 else 48
+			holder.Size = UDim2.fromOffset(iconSize, iconSize)
+			holder.Position = UDim2.new(0.5, 0, 0, if normal then 10 else 8)
+			card.title.Position = UDim2.fromOffset(8, if normal then 72 elseif narrow then 50 else 58)
+			card.title.Size = UDim2.new(1, -16, 0, if narrow then 40 else 46)
+			card.desc.Position = UDim2.fromOffset(8, if normal then 120 elseif narrow then 92 else 106)
+			card.desc.Size = UDim2.new(1, -16, 0, if narrow then 36 else 38)
+			card.level.Position = UDim2.new(0.5, 0, 0, if normal then 166 elseif narrow then 130 else 146)
+			card.pipRow.Position = UDim2.new(0.5, 0, 0, if normal then 194 elseif narrow then 154 else 170)
+			card.current.Position = UDim2.fromOffset(8, if normal then 216 elseif narrow then 170 else 186)
+			card.current.Size = UDim2.new(1, -16, 0, if normal then 22 else 20)
+			card.next.Position = UDim2.fromOffset(8, if normal then 238 elseif narrow then 190 else 206)
+			card.next.Size = UDim2.new(1, -16, 0, if normal then 26 else 24)
+		end
+		task.defer(function()
+			for _, card in cards do
+				if card.stat.Id == selected then
+					reveal(card)
+				end
+			end
+		end)
 	end
-	player:GetAttributeChangedSignal("Crystals"):Connect(function()
-		refreshBalance()
-		refresh()
-	end)
+	applyLayout = fitLayout
+	fitLayout(currentWindow.layout())
 	for _, stat in Crystals.Stats do
 		player:GetAttributeChangedSignal("Stat_" .. stat.Id):Connect(refresh)
 	end
-	refreshBalance()
-	screen = gui
-	refresh()
+	updateBalance()
 end
-
 function StatsGui.open()
-	if not screen then
+	if not window then
 		build()
 	end
-	local gui = screen :: ScreenGui
-	if gui.Enabled then
-		return
-	end
-	gui.Enabled = true
-	refresh()
-	local panel = gui:FindFirstChild("Panel") :: Frame
-	local pop = panel:FindFirstChildOfClass("UIScale") :: UIScale
-	local target = pop.Scale
-	pop.Scale = target * 0.9
-	TweenService:Create(pop, TweenInfo.new(0.15, Enum.EasingStyle.Back), { Scale = target }):Play()
-	-- Выбор кнопки — только для геймпада (без него Roblox считает выбор недопустимым и пишет предупреждение)
-	if UserInputService.GamepadEnabled then
-		GuiService.SelectedObject = if cards[1] then cards[1].button else closeButton
-	end
-	ContextActionService:BindActionAtPriority(CLOSE_ACTION, function(_, state)
-		if state == Enum.UserInputState.Begin then
-			StatsGui.close()
-		end
-		return Enum.ContextActionResult.Sink
-	end, false, Enum.ContextActionPriority.High.Value, Enum.KeyCode.ButtonB)
+	local currentWindow = window :: Ui.Window
+	currentWindow.open()
 end
-
 function StatsGui.close()
-	if screen and screen.Enabled then
-		screen.Enabled = false
-		ContextActionService:UnbindAction(CLOSE_ACTION)
-		local selected = GuiService.SelectedObject
-		if selected and selected:IsDescendantOf(screen) then
-			GuiService.SelectedObject = nil
-		end
+	if window then
+		window.close()
 	end
 end
-
 function StatsGui.toggle()
-	if screen and screen.Enabled then
-		StatsGui.close()
-	else
-		StatsGui.open()
+	if not window then
+		build()
 	end
+	local currentWindow = window :: Ui.Window
+	currentWindow.toggle()
 end
-
 return StatsGui

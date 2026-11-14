@@ -302,8 +302,8 @@ local start = Ui.button({
 	IconSize = 32,
 	Text = "",
 	TextSize = 24,
-	AnchorPoint = Vector2.new(1, 0),
-	Size = UDim2.fromOffset(520, 64),
+	AnchorPoint = Vector2.new(0.5, 0),
+	Size = UDim2.fromOffset(360, 64),
 	Parent = main,
 })
 local footnote = Ui.label({
@@ -434,7 +434,8 @@ local function membersLayout(mode)
 		slot.name.Position = UDim2.fromOffset(avatarSize + 16, h / 2 - (if slot.userId then 23 else 12))
 		slot.name.Size = UDim2.new(1, -avatarSize - 24, 0, 25)
 		slot.role.Position = UDim2.fromOffset(avatarSize + 16, h / 2 + 2)
-		slot.role.Size = UDim2.new(1, -avatarSize - 24, 0, 20)
+		slot.role.Size = UDim2.new(1, -avatarSize - 24, 0, if compact then 24 else 20)
+		slot.role.TextSize = if compact then 18 else 16
 	end
 end
 refresh = function()
@@ -509,6 +510,7 @@ refresh = function()
 	Ui.setKind(minus, if edit and s.maxPlayers > math.max(1, #s.players) then "neutral" else "disabled")
 	Ui.setKind(plus, if edit and s.maxPlayers < Maps.MaxPlayers then "neutral" else "disabled")
 	Ui.setKind(friends, if not edit then "disabled" elseif s.friendsOnly then "reward" else "neutral")
+	Ui.setIcon(friends:FindFirstChild("Icon"), if s.friendsOnly then "Lock" else "Invite")
 	setText(friends, L("Lobby.Menu.FriendsState", { state = L(if s.friendsOnly then "Common.On" else "Common.Off") }))
 	privacy.Text = L(
 		if s.phase == "starting"
@@ -571,6 +573,10 @@ applyLayout = function(mode)
 	local normal = mode == "normal"
 	local compact = mode == "compact"
 	local w = if normal then 680 elseif compact then 920 else 780
+	header.Title.Size = UDim2.new(1, if compact then -432 else -400, 1, -4)
+	timer.Size = UDim2.fromOffset(if compact then 260 else 228, 40)
+	timerText.TextSize = if compact then 20 else 18
+	mapCaption.TextSize = if compact then 18 else 16
 	roster.Position = UDim2.fromOffset(20, if normal then 16 else 12)
 	roster.Size = UDim2.fromOffset(w, if compact then 84 else 104)
 	membersPane.Size = UDim2.fromOffset(w - 192, if compact then 60 else 104)
@@ -594,8 +600,8 @@ applyLayout = function(mode)
 	privacy.Size = if normal then UDim2.fromOffset(w - 304, 60) else UDim2.fromOffset(w - 592, 44)
 	local footerY = if normal then 300 elseif compact then 240 else 272
 	leave.Position = UDim2.fromOffset(20, footerY)
-	start.Position = UDim2.new(1, -20, 0, footerY)
-	start.Size = UDim2.fromOffset(w - 160, 64)
+	start.Position = UDim2.new(0.5, 0, 0, footerY)
+	start.Size = UDim2.fromOffset(if compact then 440 else 360, 64)
 	footnote.Position = UDim2.fromOffset(20, if normal then 376 elseif compact then 316 else 344)
 	footnote.Size = UDim2.fromOffset(w, 24)
 	membersLayout(mode)

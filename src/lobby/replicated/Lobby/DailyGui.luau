@@ -1,157 +1,76 @@
 --!strict
--- DailyGui: окно ежедневной награды в лобби (только клиент). Открывается кнопкой «Награды» в HUD и ProximityPrompt
--- с тегом DailyPrompt в беседке (LobbyHudClient). 8 карточек 2×4 — от последней вехи до следующей.
--- Данные — атрибуты игрока от сервера (DailyServer, LobbyCashServer): Crystals, DailyFirst, DailyClaimed,
--- DailyDay, DailyReady. Получение — Lobby.Remotes.ClaimDaily; окно в сохранение ничего не пишет.
--- Отсчёт до следующей награды — до полуночи UTC по часам сервера (workspace:GetServerTimeNow).
--- Геймпад: при открытии выбрана кнопка «Забрать» (или «Закрыть»), ButtonB закрывает окно.
-local ContextActionService = game:GetService("ContextActionService")
+-- DailyGui: presentation only. DailyServer owns days, claims, rewards and saved data.
 local GuiService = game:GetService("GuiService")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
-local TweenService = game:GetService("TweenService")
-local UserInputService = game:GetService("UserInputService")
-
 local Daily = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Daily"))
 local L = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Locale")).t
 local Ui = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Ui"))
 local ClaimDaily = script.Parent:WaitForChild("Remotes"):WaitForChild("ClaimDaily") :: RemoteFunction
-
 local player = Players.LocalPlayer
-
-local PANEL_W, PANEL_H = 760, 520
-local CARD_W, CARD_H = 160, 150
-local GAP = 16
-local CLOSE_ACTION = "DailyGuiClose"
--- Состояния карточки: прозрачность иконки у полученной и пропущенной, серый тон пропущенной
--- (у ImageLabel нет насыщенности, серость — умножением цвета). Check в атласе уже зелёный,
--- Close — светлый, его красим в красный
-local ICON_DIM = 0.6
-local MISSED_TINT = Color3.fromRGB(150, 150, 150)
-local CHECK_TINT = Color3.new(1, 1, 1)
-local CLOSE_TINT = Ui.Color.red
-
+local C = Ui.Color
 local DailyGui = {}
-
 type Card = {
-	frame: Frame,
+	frame: GuiObject,
 	title: TextLabel,
 	amount: TextLabel,
 	icon: ImageLabel,
+	star: ImageLabel,
 	mark: ImageLabel,
+	status: TextLabel,
 	ring: UIStroke,
-	pulse: UIScale,
+	attention: UIScale,
+	pop: UIScale,
+	today: boolean,
 }
-
-local screen: ScreenGui? = nil
+local window: Ui.Window? = nil
 local cards: { Card } = {}
 local claimButton: TextButton? = nil
-local closeButton: TextButton? = nil
-local footer: TextLabel? = nil
-local message: TextLabel? = nil
+local statusLabel: TextLabel? = nil
+local timerLabel: TextLabel? = nil
+local statusIcon: ImageLabel? = nil
 local claiming = false
-local messageToken = 0
-
-local function formatTime(seconds: number): string
-	seconds = math.max(0, math.floor(seconds))
-	return string.format("%02d:%02d:%02d", seconds // 3600, (seconds // 60) % 60, seconds % 60)
-end
-
+local notice: { text: string, color: Color3, icon: string, expires: number }? = nil
+local celebratingDay: number? = nil
+local celebrationToken = 0
 local function today(): number
 	local day = player:GetAttribute("DailyDay")
 	return if typeof(day) == "number" then day else 1
 end
-
 local function ready(): boolean
 	return player:GetAttribute("DailyReady") == true
 end
-
-local function showMessage(text: string, color: Color3?)
-	local label = message :: TextLabel
-	messageToken += 1
-	local my = messageToken
-	label.Text = text
-	label.TextColor3 = color or Ui.Color.ink
-	task.delay(3, function()
-		if messageToken == my then
-			label.Text = ""
-		end
-	end)
+local function loaded(): boolean
+	return typeof(player:GetAttribute("DailyReady")) == "boolean"
 end
-
-local function makeCard(parent: Instance, index: number): Card
-	local frame = Ui.new("Frame", {
-		Name = "Card" .. index,
-		LayoutOrder = index,
-		Size = UDim2.fromOffset(CARD_W, CARD_H),
-		BackgroundColor3 = Ui.Color.white,
-		Parent = parent,
-	}, { Ui.corner(18) })
-	local ring = Ui.border(3) :: UIStroke
-	ring.Parent = frame
-	local pulse = Ui.new("UIScale", { Parent = frame })
-	local title = Ui.label({
-		Name = "Title",
-		Position = UDim2.fromOffset(0, 8),
-		Size = UDim2.new(1, 0, 0, 28),
-		Text = "",
-		TextSize = 24,
-		TextColor3 = Ui.Color.ink,
-		TextXAlignment = Enum.TextXAlignment.Center,
-		Parent = frame,
-	})
-	-- Большая иконка награды: Gift у вехи, Gem у обычного дня (refresh)
-	local icon = Ui.icon("Gem", {
-		Name = "Icon",
-		AnchorPoint = Vector2.new(0.5, 0),
-		Position = UDim2.new(0.5, 0, 0, 38),
-		Size = UDim2.fromOffset(60, 60),
-		Parent = frame,
-	})
-	local row = Ui.new("Frame", {
-		Name = "Reward",
-		AnchorPoint = Vector2.new(0.5, 1),
-		Position = UDim2.new(0.5, 0, 1, -10),
-		Size = UDim2.fromOffset(0, 36),
-		AutomaticSize = Enum.AutomaticSize.X,
-		BackgroundTransparency = 1,
-		Parent = frame,
-	})
-	Ui.new("UIListLayout", {
-		FillDirection = Enum.FillDirection.Horizontal,
-		VerticalAlignment = Enum.VerticalAlignment.Center,
-		Padding = UDim.new(0, 4),
-		SortOrder = Enum.SortOrder.LayoutOrder,
-		Parent = row,
-	})
-	Ui.icon("Gem", { Size = UDim2.fromOffset(32, 32), LayoutOrder = 1, Parent = row })
-	local amount = Ui.label({
-		Name = "Amount",
-		Size = UDim2.fromOffset(0, 36),
-		AutomaticSize = Enum.AutomaticSize.X,
-		Text = "",
-		TextSize = 28,
-		TextColor3 = Ui.Color.ink,
-		LayoutOrder = 2,
-		Parent = row,
-	})
-	-- Отметка поверх иконки: Check — получено, Close — пропущено
-	local mark = Ui.icon("Check", {
-		Name = "Mark",
-		AnchorPoint = Vector2.new(0.5, 0.5),
-		Position = UDim2.new(0.5, 0, 0, 38 + 30),
-		Size = UDim2.fromOffset(56, 56),
-		ZIndex = 3,
-		Visible = false,
-		Parent = frame,
-	})
-	return { frame = frame, title = title, amount = amount, icon = icon, mark = mark, ring = ring, pulse = pulse }
+local function formatTime(seconds: number): string
+	seconds = math.max(0, math.floor(seconds))
+	return string.format("%02d:%02d:%02d", seconds // 3600, (seconds // 60) % 60, seconds % 60)
 end
-
--- Перерисовать карточки и кнопку по атрибутам
+local function updateStatus()
+	if not statusLabel or not timerLabel or not statusIcon then
+		return
+	end
+	if notice and notice.expires <= os.clock() then
+		notice = nil
+	end
+	statusLabel.Text = if notice
+		then notice.text
+		elseif claiming then L("Daily.Claiming")
+		elseif not loaded() then L("Daily.Loading")
+		elseif ready() then L("Daily.Ready")
+		else L("Daily.Already")
+	statusLabel.TextColor3 = if notice then notice.color else C.ink
+	Ui.setIcon(statusIcon, if notice then notice.icon elseif ready() then "Gift" else "Clock")
+	timerLabel.Text = if not loaded()
+		then ""
+		elseif ready() then L("Daily.ResetHint")
+		else L("Daily.NextIn", { time = formatTime(Daily.secondsToMidnight(workspace:GetServerTimeNow())) })
+end
 local function refresh()
-	if not screen then
+	local currentWindow = window
+	if not currentWindow or not claimButton then
 		return
 	end
 	local n = today()
@@ -163,278 +82,349 @@ local function refresh()
 		local isClaimed = Daily.isClaimed(claimed, day)
 		local missed = day < n and not isClaimed
 		local isToday = day == n
-		card.title.Text = L("Daily.Day", { n = day })
-		card.amount.Text = "+" .. Daily.rewardFor(day)
-		Ui.setIcon(card.icon, if milestone then "Gift" else "Gem")
-		-- Получено — иконка приглушена; пропущено — приглушена и серая, карточка тоже
-		-- У вехи иконка daily уже с галочкой: полученная веха только приглушена, без отметки сверху
-		local ownCheck = milestone and isClaimed
-		card.icon.ImageTransparency = if ownCheck then 0.5 elseif isClaimed or missed then ICON_DIM else 0
-		card.icon.ImageColor3 = if missed then MISSED_TINT else Color3.new(1, 1, 1)
-		card.frame.BackgroundColor3 = if milestone then Ui.Color.amber else Ui.Color.card
-		card.frame.BackgroundTransparency = if missed then 0.45 else 0
-		card.mark.Visible = (isClaimed or missed) and not ownCheck
-		Ui.setIcon(card.mark, if isClaimed then "Check" else "Close")
-		card.mark.ImageColor3 = if isClaimed then CHECK_TINT else CLOSE_TINT
-		if isToday and not isClaimed then
-			card.ring.Color = Ui.Color.green
-			card.ring.Thickness = 6
-		elseif milestone then
-			card.ring.Color = Ui.Color.amberDark
-			card.ring.Thickness = 4
-		else
-			card.ring.Color = Ui.Color.outline
-			card.ring.Thickness = 3
+		Ui.setCardState(card.frame, if isClaimed then "done" elseif missed then "locked" else "normal")
+		if milestone and not missed then
+			card.frame.BackgroundColor3 = C.goldLight
 		end
-		card.pulse:SetAttribute("Today", isToday and not isClaimed)
+		if isToday and ready() then
+			card.frame.BackgroundColor3 = C.greenLight
+			card.ring.Color = C.greenDark
+		end
+		card.ring.Thickness = if isToday then 3 else 2
+		card.title.Text = L("Daily.Day", { n = day })
+		card.title.TextColor3 = if missed then C.inkSoft else C.ink
+		if celebratingDay ~= day then
+			card.amount.Text = "+" .. Ui.number(Daily.rewardFor(day))
+		end
+		card.amount.TextColor3 = if missed then C.inkSoft else C.ink
+		Ui.setIcon(card.icon, if milestone then "Gift" else "Gem")
+		card.icon.ImageTransparency = if missed then 0.6 elseif isClaimed then 0.2 else 0
+		card.star.Visible = milestone
+		card.star.ImageTransparency = if missed then 0.6 else 0
+		card.status.Text = L(
+			if isClaimed
+				then "Daily.DayClaimed"
+				elseif missed then "Daily.Missed"
+				elseif isToday then "Daily.Today"
+				else "Daily.Upcoming"
+		)
+		card.status.TextColor3 = if isClaimed or (isToday and ready()) then C.greenDark else C.inkSoft
+		Ui.setIcon(
+			card.mark,
+			if isClaimed then "Check" elseif missed then "Close" elseif isToday then "Clock" else "Lock"
+		)
+		card.mark.ImageTransparency = if missed then 0.3 else 0
+		card.today = isToday and ready()
 	end
-	local button = claimButton :: TextButton
-	local text = button:FindFirstChild("Text") :: TextLabel
-	if ready() then
-		text.Text = L("Daily.Claim", { n = Daily.rewardFor(n) })
-		Ui.paint(button, "green")
-	else
-		text.Text = L("Daily.Claimed")
-		Ui.paint(button, "gray")
+	local text = claimButton:FindFirstChild("Text") :: TextLabel
+	text.Text = if claiming
+		then L("Daily.Claiming")
+		elseif not loaded() then L("Daily.Loading")
+		elseif ready() then L("Daily.Claim", { n = Daily.rewardFor(n) })
+		else L("Daily.Claimed")
+	Ui.setKind(claimButton, if ready() and not claiming then "primary" else "disabled")
+	Ui.setIcon(
+		claimButton:FindFirstChild("Icon") :: ImageLabel,
+		if claiming then "Clock" elseif ready() then "Gem" else "Check"
+	)
+	currentWindow.setDefaultSelection(if ready() and not claiming then claimButton else currentWindow.closeButton)
+	if GuiService.SelectedObject == claimButton and (claiming or not ready()) then
+		GuiService.SelectedObject = currentWindow.closeButton
 	end
+	updateStatus()
 end
-
+local function showNotice(key: string, color: Color3, icon: string, args: { [string]: any }?)
+	notice = { text = L(key, args), color = color, icon = icon, expires = os.clock() + 4 }
+	updateStatus()
+end
 local function claim()
 	if claiming or not ready() then
 		return
 	end
 	claiming = true
+	notice = nil
+	refresh()
 	local ok, result = pcall(function()
 		return ClaimDaily:InvokeServer()
 	end)
 	claiming = false
 	local status = if ok and typeof(result) == "table" then result.status else "Unavailable"
-	if status == "Ok" then
-		showMessage(L("Daily.Got", { n = result.reward }), Ui.Color.greenDark)
-	elseif status == "Already" or status == "NotYet" then
-		showMessage(L("Daily.Already"))
-	elseif status == "Busy" then
-		showMessage(L("Daily.Busy"), Ui.Color.amberDark)
-	else
-		showMessage(L("Daily.Unavailable"), Ui.Color.redDark)
-	end
 	refresh()
-	if screen and screen.Enabled and claimButton and GuiService.SelectedObject == claimButton and not ready() then
-		GuiService.SelectedObject = closeButton
+	if status == "Ok" then
+		showNotice("Daily.Got", C.greenDark, "Check", { n = result.reward })
+		local currentWindow = window
+		if currentWindow and currentWindow.isOpen() then
+			-- Celebrate only the confirmed response. Balance reads the server's Crystals attribute separately.
+			local card = cards[result.day - Daily.windowStart(today()) + 1]
+			if card then
+				celebrationToken += 1
+				local token = celebrationToken
+				celebratingDay = result.day
+				Ui.Motion.pop(card.pop)
+				Ui.Motion.countUp(card.amount, 0, result.reward, nil, function(n)
+					return "+" .. Ui.number(math.floor(n + 0.5))
+				end)
+				task.delay(0.5, function()
+					if token == celebrationToken then
+						celebratingDay = nil
+						refresh()
+					end
+				end)
+			end
+			Ui.Sound.play("reward")
+		end
+	elseif status == "Already" or status == "NotYet" then
+		showNotice("Daily.Already", C.ink, "Clock")
+	elseif status == "Busy" then
+		showNotice("Daily.Busy", C.ink, "Clock")
+		Ui.Sound.play("error")
+	else
+		showNotice("Daily.Unavailable", C.redDark, "Close")
+		Ui.Sound.play("error")
 	end
 end
-
-local function build()
-	local gui = Ui.new("ScreenGui", {
-		Name = "DailyGui",
-		ResetOnSpawn = false,
-		IgnoreGuiInset = true,
-		DisplayOrder = 20,
-		Enabled = false,
-		ZIndexBehavior = Enum.ZIndexBehavior.Sibling,
-		Parent = player:WaitForChild("PlayerGui"),
-	})
-	Ui.new("Frame", {
-		Size = UDim2.fromScale(1, 1),
-		BackgroundColor3 = Ui.Color.outline,
-		BackgroundTransparency = 0.4,
-		BorderSizePixel = 0,
-		Parent = gui,
-	})
-	local panel = Ui.new("Frame", {
-		Name = "Panel",
-		AnchorPoint = Vector2.new(0.5, 0.5),
-		Position = UDim2.fromScale(0.5, 0.5),
-		Size = UDim2.fromOffset(PANEL_W, PANEL_H),
-		BackgroundColor3 = Ui.Color.paper,
-		Parent = gui,
-	}, { Ui.corner(26), Ui.border(4) })
-	local scale = Ui.new("UIScale", { Parent = panel })
-	local function fit()
-		local vp = workspace.CurrentCamera.ViewportSize
-		scale.Scale = math.min(1.2, (vp.X - 30) / PANEL_W, (vp.Y - 30) / PANEL_H)
-	end
-	fit()
-	workspace.CurrentCamera:GetPropertyChangedSignal("ViewportSize"):Connect(fit)
-
-	-- Шапка как у магазина
-	local header = Ui.new("Frame", {
-		Name = "Header",
-		Size = UDim2.new(1, 0, 0, 68),
-		BackgroundColor3 = Ui.Color.night,
-		Parent = panel,
-	}, { Ui.corner(22) })
-	Ui.new("Frame", {
-		AnchorPoint = Vector2.new(0, 1),
-		Position = UDim2.fromScale(0, 1),
-		Size = UDim2.new(1, 0, 0, 22),
-		BackgroundColor3 = Ui.Color.night,
-		BorderSizePixel = 0,
-		Parent = header,
-	})
-	Ui.new("Frame", {
-		AnchorPoint = Vector2.new(0, 1),
-		Position = UDim2.fromScale(0, 1),
-		Size = UDim2.new(1, 0, 0, 4),
-		BackgroundColor3 = Ui.Color.outline,
-		BorderSizePixel = 0,
-		ZIndex = 2,
-		Parent = header,
-	})
-	Ui.icon("Gift", { Position = UDim2.fromOffset(18, 10), Size = UDim2.fromOffset(46, 46), Parent = header })
-	Ui.label({
-		Position = UDim2.fromOffset(74, 0),
-		Size = UDim2.new(1, -160, 1, -4),
-		Text = L("Daily.Title"),
-		TextSize = 32,
-		Parent = header,
-	})
-	Ui.snowCap(panel, false, 30)
-
-	local close = Ui.button({
-		Name = "Close",
-		Color = "red",
-		Icon = "Close",
-		Radius = 18,
-		AnchorPoint = Vector2.new(0.5, 0.5),
-		Position = UDim2.new(1, -8, 0, 8),
-		Size = UDim2.fromOffset(60, 60),
-		Parent = panel,
-	})
-	close.ZIndex = 5
-	close.Activated:Connect(function()
-		DailyGui.close()
-	end)
-	closeButton = close
-
-	-- Карточки 2×4
-	local grid = Ui.new("Frame", {
-		Name = "Cards",
-		AnchorPoint = Vector2.new(0.5, 0),
-		Position = UDim2.new(0.5, 0, 0, 90),
-		Size = UDim2.fromOffset(CARD_W * 4 + GAP * 3, CARD_H * 2 + GAP),
+local function makeCard(parent: Instance, index: number): Card
+	local slot = Ui.new("Frame", {
+		Name = "Day" .. index,
+		LayoutOrder = index,
 		BackgroundTransparency = 1,
-		Parent = panel,
+		Parent = parent,
 	})
-	Ui.new("UIGridLayout", {
-		CellSize = UDim2.fromOffset(CARD_W, CARD_H),
-		CellPadding = UDim2.fromOffset(GAP, GAP),
+	local frame = Ui.card({ Name = "Card", Size = UDim2.fromScale(1, 1), Parent = slot })
+	local title = Ui.label({
+		Name = "Day",
+		Position = UDim2.fromOffset(12, 6),
+		Size = UDim2.new(1, -44, 0, 26),
+		Text = "",
+		TextSize = 20,
+		TextColor3 = C.ink,
+		Parent = frame,
+	})
+	local star = Ui.icon("Star", {
+		Name = "Bonus",
+		AnchorPoint = Vector2.new(1, 0),
+		Position = UDim2.new(1, -10, 0, 9),
+		Size = UDim2.fromOffset(20, 20),
+		Parent = frame,
+	})
+	local reward = Ui.new("Frame", {
+		Name = "Reward",
+		AnchorPoint = Vector2.new(0.5, 0.5),
+		Position = UDim2.fromScale(0.5, 0.51),
+		Size = UDim2.fromOffset(136, 48),
+		BackgroundTransparency = 1,
+		Parent = frame,
+	})
+	local pop = Ui.new("UIScale", { Parent = reward })
+	local iconHolder = Ui.new("Frame", {
+		Name = "IconHolder",
+		AnchorPoint = Vector2.new(0.5, 0.5),
+		Position = UDim2.fromOffset(28, 24),
+		Size = UDim2.fromOffset(48, 48),
+		BackgroundTransparency = 1,
+		Parent = reward,
+	})
+	local attention = Ui.new("UIScale", { Parent = iconHolder })
+	local icon = Ui.icon("Gem", { Name = "Icon", Size = UDim2.fromScale(1, 1), Parent = iconHolder })
+	local amount = Ui.label({
+		Name = "Amount",
+		Position = UDim2.fromOffset(58, 0),
+		Size = UDim2.fromOffset(78, 48),
+		Text = "",
+		TextSize = 28,
+		TextColor3 = C.ink,
+		Parent = reward,
+	})
+	local state = Ui.new("Frame", {
+		Name = "State",
+		AnchorPoint = Vector2.new(0.5, 1),
+		Position = UDim2.new(0.5, 0, 1, -7),
+		Size = UDim2.fromOffset(0, 22),
+		AutomaticSize = Enum.AutomaticSize.X,
+		BackgroundTransparency = 1,
+		Parent = frame,
+	}, {
+		Ui.new("UIListLayout", {
+			FillDirection = Enum.FillDirection.Horizontal,
+			VerticalAlignment = Enum.VerticalAlignment.Center,
+			Padding = UDim.new(0, 4),
+			SortOrder = Enum.SortOrder.LayoutOrder,
+		}),
+	})
+	local mark = Ui.icon("Clock", { Name = "Mark", Size = UDim2.fromOffset(18, 18), LayoutOrder = 1, Parent = state })
+	local status = Ui.label({
+		Name = "Status",
+		Size = UDim2.fromOffset(0, 22),
+		AutomaticSize = Enum.AutomaticSize.X,
+		Text = "",
+		TextSize = 16,
+		TextColor3 = C.inkSoft,
+		LayoutOrder = 2,
+		Parent = state,
+	})
+	return {
+		frame = frame,
+		title = title,
+		amount = amount,
+		icon = icon,
+		star = star,
+		mark = mark,
+		status = status,
+		ring = frame:FindFirstChild("Border") :: UIStroke,
+		attention = attention,
+		pop = pop,
+		today = false,
+	}
+end
+local function build()
+	local applyLayout: ((Ui.WindowLayout) -> ())? = nil
+	local currentWindow = Ui.window({
+		Name = "DailyGui",
+		Title = L("Daily.Title"),
+		Icon = "Gift",
+		Size = Vector2.new(760, 508),
+		Compact = Vector2.new(760, 468),
+		Narrow = Vector2.new(760, 448),
+		OnLayout = function(layout)
+			if applyLayout then
+				applyLayout(layout)
+			end
+		end,
+		OnOpen = refresh,
+	})
+	window = currentWindow
+	currentWindow.closeButton.Position = UDim2.new(1, -36, 0, 34)
+	local body = currentWindow.body
+	local hint = Ui.label({
+		Name = "Hint",
+		Position = UDim2.fromOffset(20, 8),
+		Size = UDim2.new(1, -220, 0, 40),
+		Text = L("Daily.Hint"),
+		TextSize = 16,
+		TextColor3 = C.inkSoft,
+		TextWrapped = true,
+		Parent = body,
+	})
+	local balance = Ui.currencyPill("Gem", {
+		Name = "Balance",
+		AnchorPoint = Vector2.new(1, 0),
+		Position = UDim2.new(1, -20, 0, 8),
+		Size = UDim2.fromOffset(0, 40),
+		Parent = body,
+	})
+	local function updateBalance()
+		local value = player:GetAttribute("Crystals")
+		balance.set(if typeof(value) == "number" then value else nil, currentWindow.isOpen())
+	end
+	player:GetAttributeChangedSignal("Crystals"):Connect(updateBalance)
+	updateBalance()
+	balance.frame:GetPropertyChangedSignal("AbsoluteSize"):Connect(function()
+		local scale = currentWindow.root:FindFirstChildOfClass("UIScale") :: UIScale
+		hint.Size = UDim2.new(1, -56 - balance.frame.AbsoluteSize.X / scale.Scale, 0, 40)
+	end)
+	local grid = Ui.new("Frame", { Name = "Days", BackgroundTransparency = 1, Parent = body })
+	local layout = Ui.new("UIGridLayout", {
+		CellSize = UDim2.fromOffset(169, 134),
+		CellPadding = UDim2.fromOffset(12, 12),
+		FillDirectionMaxCells = 4,
 		SortOrder = Enum.SortOrder.LayoutOrder,
 		Parent = grid,
 	})
 	for i = 1, Daily.Config.Window do
 		table.insert(cards, makeCard(grid, i))
 	end
-
-	-- Низ: сообщение, кнопка, отсчёт
-	message = Ui.label({
-		Name = "Message",
-		Position = UDim2.fromOffset(24, 90 + CARD_H * 2 + GAP + 6),
-		Size = UDim2.new(1, -48, 0, 24),
+	local footer = Ui.new("Frame", { Name = "Footer", BackgroundTransparency = 1, Parent = body })
+	statusIcon = Ui.icon("Gift", {
+		Name = "Icon",
+		Position = UDim2.fromOffset(0, 2),
+		Size = UDim2.fromOffset(24, 24),
+		Parent = footer,
+	})
+	statusLabel = Ui.label({
+		Name = "Status",
+		Position = UDim2.fromOffset(30, 0),
+		Size = UDim2.new(1, -350, 0, 28),
 		Text = "",
-		FontFace = Ui.Font.bold,
-		TextSize = 20,
-		TextColor3 = Ui.Color.ink,
-		TextXAlignment = Enum.TextXAlignment.Center,
-		Parent = panel,
+		TextSize = 18,
+		TextColor3 = C.ink,
+		Parent = footer,
+	})
+	timerLabel = Ui.label({
+		Name = "Timer",
+		Position = UDim2.fromOffset(0, 30),
+		Size = UDim2.new(1, -320, 0, 24),
+		Text = "",
+		TextSize = 16,
+		TextColor3 = C.inkSoft,
+		Parent = footer,
 	})
 	local button = Ui.button({
 		Name = "Claim",
-		Color = "green",
+		Kind = "primary",
+		Icon = "Gem",
+		IconSize = 32,
 		Text = "",
-		TextSize = 26,
-		Snow = true,
-		Radius = 20,
-		AnchorPoint = Vector2.new(0, 1),
-		Position = UDim2.new(0, 24, 1, -20),
-		Size = UDim2.fromOffset(280, 64),
-		Parent = panel,
+		TextSize = 24,
+		AnchorPoint = Vector2.new(1, 0),
+		Position = UDim2.fromScale(1, 0),
+		Size = UDim2.fromOffset(292, 64),
+		Parent = footer,
 	})
-	button.Activated:Connect(claim)
 	claimButton = button
-	footer = Ui.label({
-		Name = "Footer",
-		AnchorPoint = Vector2.new(1, 1),
-		Position = UDim2.new(1, -24, 1, -20),
-		Size = UDim2.new(1, -24 - 280 - 24 - 24, 0, 64),
-		Text = "",
-		FontFace = Ui.Font.bold,
-		TextSize = 20,
-		TextWrapped = true,
-		TextColor3 = Ui.Color.inkSoft,
-		TextXAlignment = Enum.TextXAlignment.Right,
-		Parent = panel,
-	})
-
-	-- Сегодняшняя карточка слегка пульсирует; отсчёт до полуночи UTC
-	local t = 0
-	RunService.Heartbeat:Connect(function(dt)
-		if not gui.Enabled then
-			return
-		end
-		t += dt
-		for _, card in cards do
-			card.pulse.Scale = if card.pulse:GetAttribute("Today") then 1 + 0.03 * math.sin(t * 4) else 1
-		end
-		local label = footer :: TextLabel
-		if ready() then
-			label.Text = L("Daily.Ready")
-		else
-			label.Text = L("Daily.NextIn", { time = formatTime(Daily.secondsToMidnight(workspace:GetServerTimeNow())) })
-		end
-	end)
-
+	button.Activated:Connect(claim)
+	local function fitLayout(mode: Ui.WindowLayout)
+		local normal = mode == "normal"
+		local height = if normal then 134 elseif mode == "compact" then 125 else 115
+		grid.Position = UDim2.fromOffset(24, if normal then 64 else 52)
+		grid.Size = UDim2.fromOffset(712, height * 2 + 12)
+		layout.CellSize = UDim2.fromOffset(169, height)
+		footer.Position = UDim2.new(0, 24, 1, if normal then -80 else -72)
+		footer.Size = UDim2.new(1, -48, 0, if normal then 64 else 60)
+		button.Size = UDim2.fromOffset(292, if normal then 64 else 60)
+	end
+	applyLayout = fitLayout
+	fitLayout(currentWindow.layout())
 	for _, name in { "DailyDay", "DailyClaimed", "DailyReady" } do
 		player:GetAttributeChangedSignal(name):Connect(refresh)
 	end
-	screen = gui
+	local elapsed, tickTime = 0, 0
+	RunService.Heartbeat:Connect(function(dt)
+		if not currentWindow.isOpen() then
+			return
+		end
+		elapsed += dt
+		tickTime += dt
+		for _, card in cards do
+			card.attention.Scale = if card.today
+					and not claiming
+					and not Ui.Motion.reduced()
+				then 1 + 0.04 * math.sin(elapsed * 3)
+				else 1
+		end
+		if tickTime >= 1 then
+			tickTime = 0
+			updateStatus()
+		end
+	end)
 	refresh()
 end
-
 function DailyGui.open()
-	if not screen then
+	if not window then
 		build()
 	end
-	local gui = screen :: ScreenGui
-	if gui.Enabled then
-		return
-	end
-	gui.Enabled = true
-	refresh()
-	local panel = gui:FindFirstChild("Panel") :: Frame
-	local pop = panel:FindFirstChildOfClass("UIScale") :: UIScale
-	local target = pop.Scale
-	pop.Scale = target * 0.9
-	TweenService:Create(pop, TweenInfo.new(0.15, Enum.EasingStyle.Back), { Scale = target }):Play()
-	-- Выбор кнопки — только для геймпада (без него Roblox считает выбор недопустимым и пишет предупреждение)
-	if UserInputService.GamepadEnabled then
-		GuiService.SelectedObject = if ready() then claimButton else closeButton
-	end
-	ContextActionService:BindActionAtPriority(CLOSE_ACTION, function(_, state)
-		if state == Enum.UserInputState.Begin then
-			DailyGui.close()
-		end
-		return Enum.ContextActionResult.Sink
-	end, false, Enum.ContextActionPriority.High.Value, Enum.KeyCode.ButtonB)
+	local currentWindow = window :: Ui.Window
+	currentWindow.open()
 end
-
 function DailyGui.close()
-	if screen and screen.Enabled then
-		screen.Enabled = false
-		ContextActionService:UnbindAction(CLOSE_ACTION)
-		local selected = GuiService.SelectedObject
-		if selected and selected:IsDescendantOf(screen) then
-			GuiService.SelectedObject = nil
-		end
+	if window then
+		window.close()
 	end
 end
-
 function DailyGui.toggle()
-	if screen and screen.Enabled then
-		DailyGui.close()
-	else
-		DailyGui.open()
+	if not window then
+		build()
 	end
+	local currentWindow = window :: Ui.Window
+	currentWindow.toggle()
 end
-
 return DailyGui

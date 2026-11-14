@@ -152,6 +152,8 @@ Numbers and lists are deliberately not repeated here: the source of truth is `Co
 - **Cash packs** (CashS/M/L) are `MatchOnly` since B1: Cash lives one match, so they are sold only in a match and their texts say "for this match only". A pack receipt in the lobby answers `NotProcessedYet` and is granted in the next match.
 - **Lobby:** `UpdateAsync` straight in the save, without a session lock. A fresh `Session` or `MatchOnly` → `NotProcessedYet`, and Roblox retries the receipt later. `LobbyCashServer` shows `Cash` and `BoostUntil` through attributes.
 - Window: on PC in the match the B key, because the mouse is locked in `LockFirstPerson`. A Modal button in the window frees it.
+- The shared `Shop.Gui` uses `Ui.window`, row tabs, cards and price buttons. Normal/compact layouts have two columns; narrow has one. Lobby products retain the `MatchOnly` filter; its single Snow Boost uses a featured card on desktop. The shared window manager handles mutual exclusion and gamepad B to close.
+- Price loading coalesces requests with the world pass signs; a failed lookup offers a retry. A purchase dialog closing does not confirm fulfillment: pending feedback observes the existing replicated pass/effect attributes, then gives a neutral delay notice after 15 seconds if no effect is seen. It never grants or acknowledges a receipt. `DebugShopState` is a labeled, prompt-blocking Studio/TestSave preview (see CLAUDE.md).
 - `[unverified]` Prices are set in the Creator Dashboard; the window gets them through `GetProductInfo`.
 
 ## Localization

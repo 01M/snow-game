@@ -442,10 +442,6 @@ end
 local hiddenHud = {}
 onOpen = function()
 	reopenGui.Enabled = false
-	local shop = playerGui:FindFirstChild("ShopGui")
-	if shop and shop:IsA("ScreenGui") then
-		shop.Enabled = false
-	end
 	for _, name in ipairs({ "GameHud", "ToolTouchGui" }) do
 		local gui = playerGui:FindFirstChild(name)
 		if gui and gui:IsA("ScreenGui") then
@@ -489,22 +485,6 @@ lobbyButton.Activated:Connect(function()
 		MatchAction:FireServer("lobby")
 	end
 end)
-
--- Магазин пока использует собственное окно. Его открытие сворачивает итоги, но не меняет личный выбор.
--- Кнопка возврата к итогам выше магазина; повторное открытие итогов закрывает магазин.
-local function watchShop(gui)
-	if gui.Name == "ShopGui" and gui:IsA("ScreenGui") then
-		gui:GetPropertyChangedSignal("Enabled"):Connect(function()
-			if gui.Enabled and window.isOpen() then
-				window.close()
-			end
-		end)
-	end
-end
-playerGui.ChildAdded:Connect(watchShop)
-for _, gui in ipairs(playerGui:GetChildren()) do
-	watchShop(gui)
-end
 
 local wasFinished = false
 local function onMatchState()

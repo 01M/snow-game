@@ -300,6 +300,38 @@ return {
 	["Chat.VipTag"] = { en = "[VIP]", ru = "[VIP]" },
 	["Shop.Section.Passes"] = { en = "Passes", ru = "Пропуски" },
 	["Shop.Section.Products"] = { en = "Items", ru = "Товары" },
+	["Shop.PassesHint"] = {
+		en = "Permanent benefits. Yours in every match.",
+		ru = "Постоянные бонусы. Действуют в каждом матче.",
+	},
+	["Shop.ProductsHint"] = {
+		en = "Cash packs and timed boosts. Buy whenever you need them.",
+		ru = "Пачки Cash и временные бусты. Покупай, когда нужны.",
+	},
+	["Shop.MatchItemsHint"] = {
+		en = "Cash packs and Blizzard are available during a match.",
+		ru = "Пачки Cash и Метель доступны во время матча.",
+	},
+	["Shop.SecureHint"] = {
+		en = "Purchases are confirmed in Roblox.",
+		ru = "Покупки подтверждаются в Roblox.",
+	},
+	["Shop.Loading"] = { en = "Loading price…", ru = "Загрузка цены…" },
+	["Shop.RetryPrice"] = { en = "Reload price", ru = "Загрузить цену" },
+	["Shop.Unavailable"] = { en = "Unavailable", ru = "Недоступно" },
+	["Shop.Pending"] = { en = "Please wait…", ru = "Подожди…" },
+	["Shop.Cancelled"] = { en = "Purchase cancelled", ru = "Покупка отменена" },
+	["Shop.Processing"] = { en = "Waiting for your item…", ru = "Ожидаем твой товар…" },
+	["Shop.Applied"] = { en = "Your item is ready!", ru = "Твой товар уже доступен!" },
+	["Shop.Delayed"] = { en = "Delivery may take longer", ru = "Доставка может занять время" },
+	["Shop.PurchaseError"] = {
+		en = "Could not open Roblox. Try again.",
+		ru = "Не удалось открыть Roblox. Попробуй ещё раз.",
+	},
+	["Shop.Preview"] = {
+		en = "UI preview · purchases disabled",
+		ru = "Предпросмотр UI · покупки отключены",
+	},
 	["Shop.ComingSoon"] = {
 		en = "The shop opens very soon!",
 		ru = "Магазин откроется совсем скоро!",

@@ -2,6 +2,7 @@
 - Code is managed by Rojo. NEVER create or edit scripts in Studio via MCP — Rojo will overwrite those edits. Edit files in src/ only.
 - Shared code for both places: src/shared/. Place-specific: src/lobby/, src/house/. Before adding a module, check whether it belongs in shared.
 - Serve: `rojo serve lobby.project.json` (port 34872), `rojo serve house.project.json` (port 34873).
+- Manage and check the Rojo server processes automatically; Oleg clicks Connect in Studio himself. Do not take computer control to connect Rojo.
 - Studio MCP is still fine for: map/models/terrain, running Play, reading Output.
 - After a change works in Studio: commit. Never publish places — the user publishes both, together.
 - Run StyLua before committing. Selene must report 0 warnings before commit; don't fix real warnings without asking (false positives: inline `-- selene: allow(rule)` with a reason).
@@ -118,6 +119,7 @@ Versions are pinned in `rokit.toml`: Rojo 7.7.1, StyLua 2.6.0, Selene 0.32.0, lu
 - `stylua src` (tabs, width 120), then `stylua --check src`. `[unverified]` Formatting may not stabilise in one pass.
 - `selene src` (`std = "roblox"`, `roblox_manual_fromscale_or_fromoffset` allowed). 0 warnings are required before commit, like in analyze. A false positive: `-- selene: allow(<rule>)` with the reason. Do not fix real warnings without asking.
 - `DebugWindowLayout` (a workspace attribute, both places, Studio only): `"compact"` or `"narrow"` makes every `Ui.window` use that phone layout on a big screen; without it the layout follows the viewport. It is read when a window opens, so it can be set during Play from the Client context. Remove the attribute after the test.
+- `DebugShopState` (workspace, Client context, Studio with `TestSave` only): `"unowned"`, `"loading"`, `"error"` or `"pending"` previews Shop UI states without changing ownership or saves. A visible preview notice appears and all purchase prompts are blocked. Remove it after the test.
 - `scripts/analyze.ps1` checks each place together with `src/shared` against a fresh sourcemap. Exit code 0 only with 0 errors. Generated files are in `.luau-lsp/` (not in git). Roblox types are pinned: `$typesVersion` in the script changes together with the luau-lsp version. Files without `--!strict` are checked in non-strict mode.
 
 **Before committing:**
@@ -125,7 +127,7 @@ Versions are pinned in `rokit.toml`: Rojo 7.7.1, StyLua 2.6.0, Selene 0.32.0, lu
 2. `stylua src`, then `stylua --check src`; if the check fails, repeat.
 3. `selene src` shows 0 warnings.
 4. `scripts/analyze.ps1` shows 0 errors.
-5. Debug attributes removed: `TestSave`, `TestSaveFutureSchema`, `TestSaveStats`, `StartCash`, `DebugDayOffset`, `DebugFinishZone`, `DebugGiveCrystals`, `DebugRejoin` and `DebugCollect` (player), `ForceLanguage`, `DebugSnowBlocks`, `DebugSnowDepth`, `DebugTouchButton`, `DebugFinds`, `DebugShovelFxOld`, `DebugShovelShake`, `DebugShovelLite`, `DebugUiSounds`, `DebugWindowLayout`.
+5. Debug attributes removed: `TestSave`, `TestSaveFutureSchema`, `TestSaveStats`, `StartCash`, `DebugDayOffset`, `DebugFinishZone`, `DebugGiveCrystals`, `DebugRejoin` and `DebugCollect` (player), `ForceLanguage`, `DebugSnowBlocks`, `DebugSnowDepth`, `DebugTouchButton`, `DebugFinds`, `DebugShovelFxOld`, `DebugShovelShake`, `DebugShovelLite`, `DebugUiSounds`, `DebugWindowLayout`, `DebugShopState`.
 
 ## Working rules
 

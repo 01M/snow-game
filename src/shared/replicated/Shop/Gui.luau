@@ -1,7 +1,5 @@
--- Shop.Gui: окно магазина за Robux (только клиент). Открывается кнопкой «Магазин» в лобби (LobbyHudClient) и тележкой в матче (GameHudClient).
--- Показывает товары из ReplicatedStorage.Shared.Shop с Id ~= 0 (MatchOnly — только в матче), цена — из GetProductInfo.
--- Слева вкладки «Пассы» и «Товары», справа карточки. Вид — общий Ui (ReplicatedStorage.Shared.Ui).
--- Покупку проверяет и выдаёт сервер (ShopServer), окно только запускает Prompt*Purchase. Общий модуль обоих мест.
+-- Robux shop presentation only. Catalog, prices, receipts and grants remain server/Roblox-owned.
+-- Shared window for the lobby HUD/stall and the match HUD/B. World pass signs use loadPassPrice.
 local MarketplaceService = game:GetService("MarketplaceService")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -10,401 +8,517 @@ local RunService = game:GetService("RunService")
 local Shop = require(script.Parent)
 local L = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Locale")).t
 local Ui = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Ui"))
-
 local player = Players.LocalPlayer
 local IS_MATCH = ReplicatedStorage:FindFirstChild("SnowGame") ~= nil
-
-local PANEL_W, PANEL_H = 820, 500
-local RAIL_W = 170
-local CARD_H = 160
-
+local CARD_H = 218
 local Gui = {}
+local window: Ui.Window? = nil
+local toast: Ui.Toasts? = nil
+local entries = {}
+local prices = {} -- [id] = price; only values returned by Roblox
+local requests = {} -- coalesce window and world-sign price requests
+local pending = nil
+local refresh = function() end
 
-local screen: ScreenGui? = nil
-local statusLabel: TextLabel? = nil
-local passButtons = {} -- [pass] = кнопка покупки
-local prices = {} -- [id] = цена в Robux
+local function preview(): string?
+	if RunService:IsStudio() and workspace:GetAttribute("TestSave") == true then
+		local state = workspace:GetAttribute("DebugShopState")
+		if state == "unowned" or state == "loading" or state == "error" or state == "pending" then
+			return state
+		end
+	end
+	return nil
+end
+
+local function notify(key: string, kind: Ui.ToastKind?, icon: string?)
+	if toast then
+		toast.show(L(key), kind, icon)
+	end
+end
+
+local function loadPrice(id: number, infoType: Enum.InfoType, onReady: (number?, string) -> ())
+	if prices[id] then
+		onReady(prices[id], "ready")
+		return
+	end
+	if requests[id] then
+		table.insert(requests[id], onReady)
+		return
+	end
+	requests[id] = { onReady }
+	task.spawn(function()
+		local ok, info = pcall(MarketplaceService.GetProductInfo, MarketplaceService, id, infoType)
+		local price = if ok and type(info) == "table" then info.PriceInRobux else nil
+		local state = "error"
+		if ok and type(info) == "table" and info.IsForSale == false then
+			state = "unavailable"
+		elseif type(price) == "number" and price >= 0 then
+			prices[id] = price
+			state = "ready"
+		end
+		local callbacks = requests[id]
+		requests[id] = nil
+		for _, callback in callbacks do
+			callback(prices[id], state)
+		end
+	end)
+end
+
+-- Preserve the world showcase API: its callback receives only a loaded numeric price.
+function Gui.loadPassPrice(pass, onReady: (number) -> ())
+	loadPrice(pass.Id, Enum.InfoType.GamePass, function(price)
+		if price ~= nil then
+			onReady(price)
+		end
+	end)
+end
+
+local function requestPrice(entry)
+	entry.priceState = "loading"
+	refresh()
+	loadPrice(
+		entry.item.Id,
+		if entry.isPass then Enum.InfoType.GamePass else Enum.InfoType.Product,
+		function(price, state)
+			entry.price = price
+			entry.priceState = state
+			refresh()
+		end
+	)
+end
+
+local function effectValue(entry): number
+	if entry.isPass then
+		return if Shop.hasPass(player, entry.item.Key) then 1 else 0
+	end
+	local item = entry.item
+	local value = if item.Cash
+		then player:GetAttribute("IapCash")
+		elseif item.BoostMinutes then player:GetAttribute("BoostUntil")
+		else workspace:GetAttribute("BlizzardUntil")
+	return if type(value) == "number" then value else 0
+end
+
+-- A closed Roblox dialog is NOT a receipt. Only existing replicated ownership/effect attributes
+-- can show an applied reward; no grant, receipt acknowledgement or saved-data write happens here.
+local function checkDelivery()
+	if not pending then
+		return
+	end
+	local entry = pending.entry
+	local ownBlizzard = not entry.item.BlizzardMinutes or workspace:GetAttribute("BlizzardBy") == player.DisplayName
+	pending.applied = ownBlizzard and effectValue(entry) > pending.before
+	if pending.applied and pending.phase == "delivery" then
+		pending = nil
+		notify("Shop.Applied", "reward", "Check")
+		refresh()
+	end
+end
+
+local function promptFinished(entry, purchased: boolean)
+	if not pending or pending.entry ~= entry or pending.phase ~= "prompt" then
+		return
+	end
+	if not purchased then
+		pending = nil
+		notify("Shop.Cancelled", "info", "Shop")
+		refresh()
+		return
+	end
+	pending.phase = "delivery"
+	checkDelivery()
+	if pending then
+		notify("Shop.Processing", "info", "Clock")
+		local request = pending
+		task.delay(15, function()
+			if pending == request then
+				pending = nil
+				notify("Shop.Delayed", "info", "Clock")
+				refresh()
+			end
+		end)
+	end
+	refresh()
+end
+
+local function buy(entry)
+	-- Studio previews are deliberately inert, including the unowned preview on the owner account.
+	local fixture = preview()
+	if fixture then
+		notify(
+			if fixture == "error"
+				then "Shop.PurchaseError"
+				elseif fixture == "pending" then "Shop.Processing"
+				else "Shop.Preview",
+			if fixture == "error" then "error" else "info",
+			"Shop"
+		)
+		return
+	end
+	if pending or (entry.isPass and Shop.hasPass(player, entry.item.Key)) then
+		return
+	end
+	if entry.priceState == "error" then
+		requestPrice(entry)
+		return
+	end
+	if entry.priceState ~= "ready" then
+		return
+	end
+	pending = { entry = entry, phase = "prompt", before = effectValue(entry), applied = false }
+	refresh()
+	local ok = pcall(function()
+		if entry.isPass then
+			MarketplaceService:PromptGamePassPurchase(player, entry.item.Id)
+		else
+			MarketplaceService:PromptProductPurchase(player, entry.item.Id)
+		end
+	end)
+	if not ok then
+		pending = nil
+		notify("Shop.PurchaseError", "error", "Close")
+		refresh()
+	end
+end
+
+MarketplaceService.PromptGamePassPurchaseFinished:Connect(function(who, id, purchased)
+	if who == player and pending and pending.entry.isPass and pending.entry.item.Id == id then
+		promptFinished(pending.entry, purchased)
+	end
+end)
+MarketplaceService.PromptProductPurchaseFinished:Connect(function(userId, id, purchased)
+	if userId == player.UserId and pending and not pending.entry.isPass and pending.entry.item.Id == id then
+		promptFinished(pending.entry, purchased)
+	end
+end)
+
+local function makeCard(parent: Instance, item, isPass: boolean, order: number)
+	local prefix = if isPass then "Shop.Pass." else "Shop.Product."
+	local card = Ui.card({ Name = item.Key, LayoutOrder = order, Parent = parent })
+	local tile = Ui.new("Frame", {
+		Name = "IconTile",
+		Position = UDim2.fromOffset(16, 16),
+		Size = UDim2.fromOffset(78, 78),
+		BackgroundColor3 = Ui.Color.nightRaised,
+		Parent = card,
+	}, { Ui.corner(Ui.Radius.card), Ui.border(2) })
+	Ui.icon(
+		item.Icon,
+		{ Name = "Icon", Position = UDim2.fromOffset(7, 7), Size = UDim2.fromOffset(64, 64), Parent = tile }
+	)
+	Ui.label({
+		Name = "Title",
+		Position = UDim2.fromOffset(110, 14),
+		Size = UDim2.new(1, -126, 0, 30),
+		Text = L(prefix .. item.Key .. ".Name"),
+		TextSize = 24,
+		TextColor3 = Ui.Color.ink,
+		TextScaled = true,
+		Parent = card,
+	}, { Ui.new("UITextSizeConstraint", { MaxTextSize = 24, MinTextSize = 20 }) })
+	Ui.label({
+		Name = "Description",
+		Position = UDim2.fromOffset(110, 50),
+		Size = UDim2.new(1, -126, 0, 76),
+		Text = L(prefix .. item.Key .. ".Desc"),
+		FontFace = Ui.Font.bold,
+		TextSize = 18,
+		TextWrapped = true,
+		TextYAlignment = Enum.TextYAlignment.Top,
+		TextColor3 = Ui.Color.inkSoft,
+		Parent = card,
+	})
+	local price = Ui.priceButton("Robux", {
+		Name = "Buy",
+		Kind = "primary",
+		Text = L("Shop.Loading"),
+		TextSize = 22,
+		IconSize = 30,
+		AnchorPoint = Vector2.new(0.5, 1),
+		Position = UDim2.new(0.5, 0, 1, -16),
+		Size = UDim2.new(1, -32, 0, 60),
+		Parent = card,
+	})
+	local entry =
+		{ item = item, isPass = isPass, card = card, tile = tile, priceButton = price, priceState = "loading" }
+	table.insert(entries, entry)
+	price.button.Activated:Connect(function()
+		buy(entry)
+	end)
+	return entry
+end
+
+local function makeGrid(parent: Instance, name: string)
+	local scroll = Ui.new("ScrollingFrame", {
+		Name = name,
+		BackgroundTransparency = 1,
+		BorderSizePixel = 0,
+		Position = UDim2.fromOffset(20, 88),
+		Size = UDim2.new(1, -40, 1, -136),
+		ScrollBarThickness = 6,
+		ScrollBarImageColor3 = Ui.Color.inkSoft,
+		ScrollingDirection = Enum.ScrollingDirection.Y,
+		AutomaticCanvasSize = Enum.AutomaticSize.Y,
+		CanvasSize = UDim2.new(),
+		Visible = false,
+		Parent = parent,
+	})
+	-- UIGridLayout does not measure outer UIStrokes. This gutter belongs to the scroll viewport,
+	-- not an arbitrary child offset: keep full card borders and the final row inside the clip rect.
+	Ui.new("UIPadding", {
+		PaddingLeft = UDim.new(0, 6),
+		PaddingRight = UDim.new(0, 12),
+		PaddingTop = UDim.new(0, 6),
+		PaddingBottom = UDim.new(0, 8),
+		Parent = scroll,
+	})
+	local grid = Ui.new("UIGridLayout", {
+		CellSize = UDim2.new(0.5, -14, 0, CARD_H),
+		CellPadding = UDim2.fromOffset(16, 16),
+		SortOrder = Enum.SortOrder.LayoutOrder,
+		Parent = scroll,
+	})
+	return scroll, grid
+end
 
 local function formatTime(seconds: number): string
 	seconds = math.max(0, math.floor(seconds))
 	return string.format("%02d:%02d", seconds // 60, seconds % 60)
 end
 
--- Цена подгружается из Roblox один раз на товар
-local function loadPrice(id: number, infoType: Enum.InfoType, onReady: (number) -> ())
-	if prices[id] then
-		onReady(prices[id])
-		return
-	end
-	task.spawn(function()
-		local ok, info = pcall(MarketplaceService.GetProductInfo, MarketplaceService, id, infoType)
-		if ok and type(info) == "table" and info.PriceInRobux then
-			prices[id] = info.PriceInRobux
-			onReady(info.PriceInRobux)
-		end
-	end)
-end
-
--- Цена пасса для витрины в мире (PassShowcaseClient)
-function Gui.loadPassPrice(pass, onReady: (number) -> ())
-	loadPrice(pass.Id, Enum.InfoType.GamePass, onReady)
-end
-
--- Кнопка покупки: иконка Robux + цена; купленный пасс — бумажная «Куплено»
-local function setPrice(button: TextButton, price: number?)
-	local text = button:FindFirstChild("Text") :: TextLabel
-	local icon = button:FindFirstChild("Icon") :: ImageLabel
-	icon.Visible = true
-	Ui.setIcon(icon, "Robux")
-	Ui.paint(button, "green")
-	text.Text = if price then tostring(price) else "…"
-	button.AutoButtonColor = true
-end
-
-local function refreshPasses()
-	for pass, button in passButtons do
-		if Shop.hasPass(player, pass.Key) then
-			local text = button:FindFirstChild("Text") :: TextLabel
-			Ui.setIcon(button:FindFirstChild("Icon") :: ImageLabel, "Check")
-			Ui.paint(button, "paper")
-			text.Text = L("Shop.Owned")
-		else
-			setPrice(button, prices[pass.Id])
-		end
-	end
-end
-
-local function makeCard(parent: Instance, order: number, icon: string, name: string, desc: string): TextButton
-	local card = Ui.new("Frame", {
-		Name = name,
-		LayoutOrder = order,
-		BackgroundColor3 = Ui.Color.white,
-		Parent = parent,
-	}, { Ui.corner(18), Ui.border(3) })
-	Ui.new("Frame", {
-		Name = "IconTile",
-		Position = UDim2.fromOffset(12, 12),
-		Size = UDim2.fromOffset(82, 82),
-		BackgroundColor3 = Ui.Color.night,
-		Parent = card,
-	}, {
-		Ui.corner(16),
-		Ui.border(3),
-		Ui.icon(icon, { Size = UDim2.fromScale(0.78, 0.78), Position = UDim2.fromScale(0.11, 0.11) }),
-	})
-	Ui.label({
-		Name = "Title",
-		Position = UDim2.fromOffset(106, 10),
-		Size = UDim2.new(1, -116, 0, 28),
-		Text = name,
-		TextScaled = true,
-		TextColor3 = Ui.Color.ink,
-		Parent = card,
-	}, { Ui.new("UITextSizeConstraint", { MaxTextSize = 22 }) })
-	Ui.label({
-		Name = "Desc",
-		Position = UDim2.fromOffset(106, 40),
-		Size = UDim2.new(1, -116, 0, 54),
-		Text = desc,
-		FontFace = Ui.Font.bold,
-		TextSize = 15,
-		TextWrapped = true,
-		TextYAlignment = Enum.TextYAlignment.Top,
-		TextColor3 = Ui.Color.inkSoft,
-		Parent = card,
-	})
-	return Ui.button({
-		Name = "Buy",
-		Color = "green",
-		Icon = "Robux",
-		IconSize = 26,
-		Text = "…",
-		TextSize = 20,
-		Radius = 14,
-		AnchorPoint = Vector2.new(0, 1),
-		Position = UDim2.new(0, 12, 1, -12),
-		Size = UDim2.new(1, -24, 0, 42),
-		Parent = card,
-	})
-end
-
-local function makeGrid(parent: Instance): ScrollingFrame
-	local grid = Ui.new("ScrollingFrame", {
-		Size = UDim2.fromScale(1, 1),
-		BackgroundTransparency = 1,
-		BorderSizePixel = 0,
-		ScrollBarThickness = 6,
-		ScrollBarImageColor3 = Ui.Color.inkSoft,
-		AutomaticCanvasSize = Enum.AutomaticSize.Y,
-		CanvasSize = UDim2.new(),
-		Visible = false,
-		Parent = parent,
-	})
-	Ui.new("UIGridLayout", {
-		CellSize = UDim2.new(0.5, -8, 0, CARD_H),
-		CellPadding = UDim2.fromOffset(12, 12),
-		SortOrder = Enum.SortOrder.LayoutOrder,
-		Parent = grid,
-	})
-	Ui.new("UIPadding", {
-		PaddingTop = UDim.new(0, 4),
-		PaddingLeft = UDim.new(0, 2),
-		PaddingRight = UDim.new(0, 10),
-		PaddingBottom = UDim.new(0, 6),
-		Parent = grid,
-	})
-	return grid
-end
-
 local function build()
-	local gui = Ui.new("ScreenGui", {
+	local applyLayout = function() end
+	local updateStatus = function() end
+	window = Ui.window({
 		Name = "ShopGui",
-		ResetOnSpawn = false,
-		IgnoreGuiInset = true,
-		DisplayOrder = 20,
-		Enabled = false,
-		ZIndexBehavior = Enum.ZIndexBehavior.Sibling,
-		Parent = player:WaitForChild("PlayerGui"),
+		Title = L("Shop.Title"),
+		Icon = "Shop",
+		Size = Vector2.new(1060, 698),
+		Compact = Vector2.new(1060, 468),
+		Narrow = Vector2.new(820, 448),
+		OnLayout = function()
+			applyLayout()
+		end,
+		OnOpen = function()
+			refresh()
+			updateStatus()
+		end,
 	})
-
-	-- Modal освобождает мышь при LockFirstPerson в матче
-	Ui.new(
-		"TextButton",
-		{ Size = UDim2.fromOffset(0, 0), BackgroundTransparency = 1, Text = "", Modal = true, Parent = gui }
-	)
-
-	Ui.new("Frame", {
-		Size = UDim2.fromScale(1, 1),
-		BackgroundColor3 = Ui.Color.outline,
-		BackgroundTransparency = 0.4,
-		BorderSizePixel = 0,
-		Parent = gui,
+	local shopWindow = window :: Ui.Window
+	shopWindow.closeButton.Position = UDim2.new(1, -38, 0, 34)
+	-- The window fits with 12 px at each viewport edge. Keep the snow's overhang within that margin.
+	local snow = shopWindow.root:FindFirstChild("SnowCap") :: ImageLabel
+	snow.Position = UDim2.new(0.5, 0, 0, -8)
+	snow.Size = UDim2.new(1, 8, 0, 22)
+	local body = shopWindow.body
+	local passScroll, passGrid = makeGrid(body, "Passes")
+	local productScroll, productGrid = makeGrid(body, "Products")
+	local hint = Ui.label({
+		Name = "SectionHint",
+		Position = UDim2.fromOffset(492, 12),
+		Size = UDim2.new(1, -520, 0, 64),
+		TextSize = 18,
+		FontFace = Ui.Font.bold,
+		TextColor3 = Ui.Color.inkSoft,
+		TextWrapped = true,
+		Parent = body,
 	})
-
-	local panel = Ui.new("Frame", {
-		Name = "Panel",
-		AnchorPoint = Vector2.new(0.5, 0.5),
-		Position = UDim2.fromScale(0.5, 0.5),
-		Size = UDim2.fromOffset(PANEL_W, PANEL_H),
-		BackgroundColor3 = Ui.Color.paper,
-		Parent = gui,
-	}, { Ui.corner(26), Ui.border(4) })
-	local scale = Ui.new("UIScale", { Parent = panel })
-	local function fit()
-		local vp = workspace.CurrentCamera.ViewportSize
-		scale.Scale = math.min(1.2, (vp.X - 30) / PANEL_W, (vp.Y - 30) / PANEL_H)
-	end
-	fit()
-	workspace.CurrentCamera:GetPropertyChangedSignal("ViewportSize"):Connect(fit)
-
-	-- Шапка: тёмная полоса, иконка, заголовок, снег сверху
-	local header = Ui.new("Frame", {
-		Name = "Header",
-		Size = UDim2.new(1, 0, 0, 68),
-		BackgroundColor3 = Ui.Color.night,
-		Parent = panel,
-	}, { Ui.corner(22) })
-	-- нижние углы шапки прямые: перекрываем их полосой того же цвета
-	Ui.new("Frame", {
-		AnchorPoint = Vector2.new(0, 1),
-		Position = UDim2.fromScale(0, 1),
-		Size = UDim2.new(1, 0, 0, 22),
-		BackgroundColor3 = Ui.Color.night,
-		BorderSizePixel = 0,
-		Parent = header,
-	})
-	Ui.new("Frame", {
-		AnchorPoint = Vector2.new(0, 1),
-		Position = UDim2.fromScale(0, 1),
-		Size = UDim2.new(1, 0, 0, 4),
-		BackgroundColor3 = Ui.Color.outline,
-		BorderSizePixel = 0,
-		ZIndex = 2,
-		Parent = header,
-	})
-	Ui.icon("Shop", { Position = UDim2.fromOffset(18, 10), Size = UDim2.fromOffset(46, 46), Parent = header })
-	Ui.label({
-		Position = UDim2.fromOffset(74, 0),
-		Size = UDim2.new(1, -160, 1, -4),
-		Text = L("Shop.Title"),
-		TextSize = 32,
-		Parent = header,
-	})
-	Ui.snowCap(panel, false, 30)
-
-	local close = Ui.button({
-		Name = "Close",
-		Color = "red",
-		Icon = "Close",
-		Radius = 18,
-		AnchorPoint = Vector2.new(0.5, 0.5),
-		Position = UDim2.new(1, -8, 0, 8),
-		Size = UDim2.fromOffset(60, 60),
-		Parent = panel,
-	})
-	close.ZIndex = 5
-	close.Activated:Connect(function()
-		Gui.close()
+	local tabs = Ui.tabs(body, {
+		{ Id = "Passes", Text = L("Shop.Section.Passes"), Icon = "Vip" },
+		{ Id = "Products", Text = L("Shop.Section.Products"), Icon = "Shop" },
+	}, function(id)
+		passScroll.Visible = id == "Passes"
+		productScroll.Visible = id == "Products"
+		hint.Text = L(if id == "Passes" then "Shop.PassesHint" else "Shop.ProductsHint")
+		applyLayout()
 	end)
-
-	-- Левая колонка: вкладки и строка статуса (буст, метель)
-	local rail = Ui.new("Frame", {
-		Name = "Rail",
-		Position = UDim2.fromOffset(20, 88),
-		Size = UDim2.new(0, RAIL_W, 1, -108),
-		BackgroundTransparency = 1,
-		Parent = panel,
-	})
-	Ui.new("UIListLayout", { Padding = UDim.new(0, 10), SortOrder = Enum.SortOrder.LayoutOrder, Parent = rail })
-
-	local body = Ui.new("Frame", {
-		Name = "Body",
-		Position = UDim2.fromOffset(20 + RAIL_W + 16, 88),
-		Size = UDim2.new(1, -(20 + RAIL_W + 16 + 16), 1, -104),
-		BackgroundTransparency = 1,
-		Parent = panel,
-	})
-
-	local tabs = {}
-	local function addTab(order: number, title: string, grid: ScrollingFrame)
-		local tab = Ui.button({
-			Name = "Tab" .. order,
-			Color = "paper",
-			Text = title,
-			TextSize = 18,
-			Radius = 16,
-			Size = UDim2.new(1, 0, 0, 54),
-			LayoutOrder = order,
-			Parent = rail,
-		})
-		table.insert(tabs, { button = tab, grid = grid })
-		tab.Activated:Connect(function()
-			for _, t in tabs do
-				t.grid.Visible = t.button == tab
-				Ui.paint(t.button, if t.button == tab then "amber" else "paper")
-			end
-		end)
-	end
-
-	local passGrid = makeGrid(body)
-	local anyPass = false
+	tabs.setMode("row")
+	tabs.frame.Position = UDim2.fromOffset(26, 12)
+	shopWindow.setDefaultSelection(tabs.buttons.Passes)
 	for i, pass in Shop.Passes do
 		if pass.Id ~= 0 then
-			anyPass = true
-			local buy = makeCard(
-				passGrid,
-				i,
-				pass.Icon,
-				L("Shop.Pass." .. pass.Key .. ".Name"),
-				L("Shop.Pass." .. pass.Key .. ".Desc")
-			)
-			passButtons[pass] = buy
-			loadPrice(pass.Id, Enum.InfoType.GamePass, refreshPasses)
-			buy.Activated:Connect(function()
-				if not Shop.hasPass(player, pass.Key) then
-					MarketplaceService:PromptGamePassPurchase(player, pass.Id)
-				end
+			makeCard(passScroll, pass, true, i)
+			player:GetAttributeChangedSignal("Pass_" .. pass.Key):Connect(function()
+				checkDelivery()
+				refresh()
 			end)
-			player:GetAttributeChangedSignal("Pass_" .. pass.Key):Connect(refreshPasses)
 		end
 	end
-
-	local productGrid = makeGrid(body)
-	local anyProduct = false
+	local products = 0
 	for i, product in Shop.Products do
 		if product.Id ~= 0 and (IS_MATCH or not product.MatchOnly) then
-			anyProduct = true
-			local buy = makeCard(
-				productGrid,
-				i,
-				product.Icon,
-				L("Shop.Product." .. product.Key .. ".Name"),
-				L("Shop.Product." .. product.Key .. ".Desc")
-			)
-			loadPrice(product.Id, Enum.InfoType.Product, function(price)
-				setPrice(buy, price)
-			end)
-			buy.Activated:Connect(function()
-				MarketplaceService:PromptProductPurchase(player, product.Id)
-			end)
+			products += 1
+			makeCard(productScroll, product, false, i)
 		end
 	end
-
-	if anyPass then
-		addTab(1, L("Shop.Section.Passes"), passGrid)
-	end
-	if anyProduct then
-		addTab(2, L("Shop.Section.Products"), productGrid)
-	end
-	if #tabs > 0 then
-		tabs[1].grid.Visible = true
-		Ui.paint(tabs[1].button, "amber")
-	else
-		Ui.label({
-			Size = UDim2.fromScale(1, 1),
-			Text = L("Shop.ComingSoon"),
-			TextSize = 26,
-			TextWrapped = true,
-			TextColor3 = Ui.Color.ink,
-			TextXAlignment = Enum.TextXAlignment.Center,
-			Parent = body,
-		})
-	end
-	refreshPasses()
-
+	local lobbyHint = Ui.label({
+		Name = "MatchItemsHint",
+		Position = UDim2.fromOffset(22, CARD_H + 34),
+		Size = UDim2.new(1, -50, 0, 64),
+		Text = L("Shop.MatchItemsHint"),
+		TextSize = 20,
+		TextColor3 = Ui.Color.inkSoft,
+		FontFace = Ui.Font.bold,
+		TextWrapped = true,
+		Visible = not IS_MATCH,
+		Parent = body,
+	})
 	local status = Ui.label({
 		Name = "Status",
-		LayoutOrder = 10,
-		Size = UDim2.new(1, 0, 0, 0),
-		AutomaticSize = Enum.AutomaticSize.Y,
-		Text = "",
-		FontFace = Ui.Font.bold,
+		AnchorPoint = Vector2.new(0, 1),
+		Position = UDim2.new(0, 28, 1, -8),
+		Size = UDim2.new(1, -56, 0, 32),
 		TextSize = 16,
+		FontFace = Ui.Font.bold,
+		TextColor3 = Ui.Color.inkSoft,
 		TextWrapped = true,
-		TextColor3 = Ui.Color.amberDark,
-		Parent = rail,
+		Parent = body,
 	})
-	statusLabel = status
-
-	-- Строка статуса: сколько осталось буста и «Метели»
-	RunService.Heartbeat:Connect(function()
-		if not gui.Enabled then
-			return
+	local toastGui = Ui.new("ScreenGui", {
+		Name = "ShopToasts",
+		ResetOnSpawn = false,
+		IgnoreGuiInset = true,
+		DisplayOrder = 40,
+		Parent = player:WaitForChild("PlayerGui"),
+	})
+	toast = Ui.toasts(toastGui)
+	applyLayout = function()
+		local columns = if shopWindow.layout() == "narrow" then 1 else 2
+		passGrid.CellSize = UDim2.new(1 / columns, -(16 * (columns - 1) + 12) / columns, 0, CARD_H)
+		local productColumns = if products == 1 then 1 else columns
+		productGrid.CellSize =
+			UDim2.new(1 / productColumns, -(16 * (productColumns - 1) + 12) / productColumns, 0, CARD_H)
+		-- The lobby has only one eligible product. Present it as a feature instead of an empty grid.
+		local featured = not IS_MATCH and products == 1 and shopWindow.layout() == "normal"
+		lobbyHint.Visible = featured
+		for _, entry in entries do
+			if not entry.isPass and products == 1 then
+				local card = entry.card
+				local title = card:FindFirstChild("Title")
+				local desc = card:FindFirstChild("Description")
+				local icon = entry.tile:FindFirstChild("Icon")
+				productGrid.CellSize = UDim2.new(1, -12, 0, if featured then CARD_H * 2 + 16 else CARD_H)
+				entry.tile.Position = if featured then UDim2.fromOffset(40, 84) else UDim2.fromOffset(16, 16)
+				entry.tile.Size = UDim2.fromOffset(if featured then 218 else 78, if featured then 218 else 78)
+				icon.Position = UDim2.fromScale(0.09, 0.09)
+				icon.Size = UDim2.fromScale(0.82, 0.82)
+				title.Position = UDim2.fromOffset(if featured then 300 else 110, if featured then 70 else 14)
+				title.Size = UDim2.new(1, if featured then -334 else -126, 0, if featured then 46 else 30)
+				title.UITextSizeConstraint.MaxTextSize = if featured then 32 else 24
+				desc.Position = UDim2.fromOffset(if featured then 300 else 110, if featured then 132 else 50)
+				desc.Size = UDim2.new(1, if featured then -334 else -126, 0, 76)
+				desc.TextSize = if featured then 24 else 18
+				entry.priceButton.button.Position =
+					UDim2.new(0.5, if featured then 133 else 0, 1, if featured then -34 else -16)
+				entry.priceButton.button.Size = UDim2.new(1, if featured then -334 else -32, 0, 60)
+				lobbyHint.Parent = card
+				lobbyHint.Position = UDim2.fromOffset(300, 222)
+				lobbyHint.Size = UDim2.new(1, -334, 0, 92)
+			end
 		end
-		local parts = {}
-		local boost = Shop.boostLeft(player)
-		if boost > 0 then
-			table.insert(parts, L("Shop.BoostActive", { time = formatTime(boost) }))
+	end
+	local previousStatus = ""
+	updateStatus = function()
+		local text = L("Shop.SecureHint")
+		if preview() then
+			text = L("Shop.Preview")
+		elseif pending then
+			text = L(if pending.phase == "prompt" then "Shop.Pending" else "Shop.Processing")
+		else
+			local active = {}
+			local boost, blizzard = Shop.boostLeft(player), Shop.blizzardLeft()
+			if boost > 0 then
+				table.insert(active, L("Shop.BoostActive", { time = formatTime(boost) }))
+			end
+			if blizzard > 0 then
+				table.insert(active, L("Shop.BlizzardActive", { time = formatTime(blizzard) }))
+			end
+			if #active > 0 then
+				text = table.concat(active, "   ·   ")
+			end
 		end
-		local blizzard = Shop.blizzardLeft()
-		if blizzard > 0 then
-			table.insert(parts, L("Shop.BlizzardActive", { time = formatTime(blizzard) }))
+		if text ~= previousStatus then
+			status.Text = text
+			status.TextColor3 = if preview() then Ui.Color.amberDark else Ui.Color.inkSoft
+			previousStatus = text
 		end
-		(statusLabel :: TextLabel).Text = table.concat(parts, "\n")
+	end
+	refresh = function()
+		local fixture = preview()
+		for _, entry in entries do
+			local owned = entry.isPass and not fixture and Shop.hasPass(player, entry.item.Key)
+			local state = if fixture and fixture ~= "unowned" then fixture else entry.priceState
+			local button = entry.priceButton.button
+			Ui.setCardState(entry.card, if owned then "done" else "normal")
+			if owned then
+				entry.priceButton.set("owned", L("Shop.Owned"))
+			elseif (pending and pending.entry == entry) or state == "pending" then
+				entry.priceButton.set("locked", L("Shop.Pending"))
+				Ui.setIcon(button:FindFirstChild("Icon"), "Clock")
+			elseif state == "ready" then
+				entry.priceButton.set("buy", Ui.number(entry.price))
+			elseif state == "error" then
+				entry.priceButton.set("need", L("Shop.RetryPrice"))
+				Ui.setKind(button, "secondary")
+				Ui.setIcon(button:FindFirstChild("Icon"), "Robux")
+			else
+				entry.priceButton.set(
+					"locked",
+					L(if state == "unavailable" then "Shop.Unavailable" else "Shop.Loading")
+				)
+				if state ~= "unavailable" then
+					Ui.setIcon(button:FindFirstChild("Icon"), "Clock")
+				end
+			end
+			-- One Roblox request at a time: other prices remain readable but look inactive too.
+			if pending and pending.entry ~= entry and not owned then
+				Ui.setKind(button, "disabled")
+			end
+			button.Selectable = not owned
+		end
+		applyLayout()
+		updateStatus()
+	end
+	tabs.select("Passes")
+	passScroll.Visible = true
+	hint.Text = L("Shop.PassesHint")
+	for _, entry in entries do
+		requestPrice(entry)
+	end
+	for _, attr in { "IapCash", "BoostUntil" } do
+		player:GetAttributeChangedSignal(attr):Connect(checkDelivery)
+	end
+	workspace:GetAttributeChangedSignal("BlizzardUntil"):Connect(checkDelivery)
+	workspace:GetAttributeChangedSignal("BlizzardBy"):Connect(checkDelivery)
+	workspace:GetAttributeChangedSignal("DebugShopState"):Connect(refresh)
+	local elapsed = 0
+	RunService.Heartbeat:Connect(function(dt)
+		elapsed += dt
+		if elapsed >= 1 then
+			elapsed = 0
+			if shopWindow.isOpen() then
+				updateStatus()
+			end
+		end
 	end)
-
-	screen = gui
 end
 
 function Gui.open()
-	if not screen then
+	if not window then
 		build()
 	end
-	(screen :: ScreenGui).Enabled = true
+	(window :: Ui.Window).open()
 end
-
 function Gui.close()
-	if screen then
-		screen.Enabled = false
+	if window then
+		window.close()
 	end
 end
-
 function Gui.toggle()
-	if screen and screen.Enabled then
-		Gui.close()
-	else
-		Gui.open()
+	if not window then
+		build()
 	end
+	(window :: Ui.Window).toggle()
 end
 
 return Gui

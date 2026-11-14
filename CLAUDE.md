@@ -10,6 +10,7 @@
 - New .luau files start with `--!strict`. Don't convert existing files.
 - If behavior in Play doesn't match the code in the file, suspect a Rojo desync first: compare that one script in Studio with the file; if they differ, restart `rojo serve` (re-saving alone isn't reliable), then reconnect the Rojo plugin in Studio.
 - `PlayerData_v1` is read-only from MCP/Command Bar. To test money, use `TestSave`.
+- UI verification is desktop-first and risk-based: follow "Proportionate UI validation" below, not routine device/language test matrices from older plans.
 
 # Snow Cleaning Simulator
 
@@ -131,10 +132,15 @@ Versions are pinned in `rokit.toml`: Rojo 7.7.1, StyLua 2.6.0, Selene 0.32.0, lu
 
 ### Proportionate UI validation
 
-- Reuse completed findings and representative screenshots for unchanged UI. When review adds value, prefer one or two focused, parallel, read-only reviewers; share the same Play captures rather than starting a separate session per reviewer.
-- Use a representative visual pass based on the changed behavior. Check desktop and phone landscape when responsive geometry changes, and cover RU/EN text risks without repeating every language/device/state combination. Capture the changed UI in actual Play; code and hierarchy checks do not replace screenshots.
-- Repeat visual checks only for an actual defect, a subsequent relevant change or an unresolved risk. Numerical review scores are advisory, not a reason for endless cycles. Report remaining visual and functional limitations candidly.
-- This changes the scope of redundant reviews, not safety or code-quality gates: the Before committing checklist, Play plus Output requirement, debug cleanup, TestSave isolation, purchase restrictions and no-push/no-publish rules still apply.
+This policy (updated 2026-11-14) takes precedence over older testing instructions in the UI plan and copied project notes. Small-screen scale tables are design references, not a required test matrix.
+
+- Prioritize a polished desktop experience, followed by reasonable modern phone landscape support. For routine UI work, one focused desktop Play covering the changed interactions, reading Output, and 1–2 critically reviewed real Play screenshots are normally sufficient. Inspect composition, proportions, text readability, spacing, overlap and UIStroke clipping. Code and hierarchy checks do not replace visual validation.
+- Test one representative modern phone landscape profile only when a mobile-specific layout change or a concrete mobile risk justifies it; state that reason before adding the check. Do not routinely test iPhone 7 or other legacy/small profiles, force every layout breakpoint, or run device sweeps. A legacy profile needs an explicit user request or a specific bug that requires that profile.
+- Preserve RU/EN localization. English may be the primary verification language. Do not run a separate language pass for every screen or device; add a targeted language check only for a specific text-layout concern, such as a long translated label. Use the existing Play session when practical instead of multiplying language/device/state permutations.
+- Reuse completed checks, findings and representative screenshots for unchanged UI. Continue the current implementation without restarting or discarding work when the workflow changes; a workflow correction alone is not a reason to repeat completed tests.
+- When an independent review adds value, use one or two focused, read-only reviewers sharing the same captures and findings. Reviewers should not start duplicate Play sessions. Numerical review scores are advisory, not a target for repeated iterations.
+- Add another visual check only for a concrete defect, a relevant subsequent change or a specific unresolved risk. Use the smallest meaningful check; do not repeat the entire flow for a small fix or merely to increase coverage. Stop when the relevant behavior and visuals are adequately verified, and report remaining limitations candidly.
+- All mandatory code and safety gates remain unchanged: the Before committing checklist, StyLua and its check, Selene 0 warnings, fresh both-place analyze 0 errors, Play plus Output for code changes, debug cleanup, TestSave isolation, purchase restrictions, PlayerData_v1 protection and no-push/no-publish rules. The existing documentation-only Play exception still applies.
 
 ## Working rules
 

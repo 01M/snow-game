@@ -129,6 +129,13 @@ Versions are pinned in `rokit.toml`: Rojo 7.7.1, StyLua 2.6.0, Selene 0.32.0, lu
 4. `scripts/analyze.ps1` shows 0 errors.
 5. Debug attributes removed: `TestSave`, `TestSaveFutureSchema`, `TestSaveStats`, `StartCash`, `DebugDayOffset`, `DebugFinishZone`, `DebugGiveCrystals`, `DebugRejoin` and `DebugCollect` (player), `ForceLanguage`, `DebugSnowBlocks`, `DebugSnowDepth`, `DebugTouchButton`, `DebugFinds`, `DebugShovelFxOld`, `DebugShovelShake`, `DebugShovelLite`, `DebugUiSounds`, `DebugWindowLayout`, `DebugShopState`.
 
+### Proportionate UI validation
+
+- Reuse completed findings and representative screenshots for unchanged UI. When review adds value, prefer one or two focused, parallel, read-only reviewers; share the same Play captures rather than starting a separate session per reviewer.
+- Use a representative visual pass based on the changed behavior. Check desktop and phone landscape when responsive geometry changes, and cover RU/EN text risks without repeating every language/device/state combination. Capture the changed UI in actual Play; code and hierarchy checks do not replace screenshots.
+- Repeat visual checks only for an actual defect, a subsequent relevant change or an unresolved risk. Numerical review scores are advisory, not a reason for endless cycles. Report remaining visual and functional limitations candidly.
+- This changes the scope of redundant reviews, not safety or code-quality gates: the Before committing checklist, Play plus Output requirement, debug cleanup, TestSave isolation, purchase restrictions and no-push/no-publish rules still apply.
+
 ## Working rules
 
 - A module moves to `src/shared` when a second place needs it. Don't move it in advance, don't copy between places.

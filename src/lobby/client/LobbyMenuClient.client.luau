@@ -1,5 +1,5 @@
--- Host menu: QueueState owns membership, settings and deadlines. Only QueueAction requests change the queue.
--- X / ButtonB dismiss; Leave and jumping leave the pad. Invite is a Roblox game invite, not a pad reservation.
+-- Party manifest: real QueueState members first, compact match settings, then departure.
+-- Presentation only: the existing QueueAction requests and server queue remain authoritative.
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local SocialService = game:GetService("SocialService")
@@ -14,11 +14,9 @@ local L = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Locale"
 local Ui = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Ui"))
 local C = Ui.Color
 local myState, myPad = nil, nil
-local inviteState = "checking"
-local inviteBusy = false
+local inviteState, inviteBusy = "checking", false
 local joinToken = 0
 local notice, noticeUntil = nil, 0
-local activePage = "Settings"
 local window, applyLayout, refresh
 local dockGui = Ui.new("ScreenGui", {
 	Name = "LobbyQueueDock",
@@ -52,11 +50,11 @@ local function updateDock()
 end
 window = Ui.window({
 	Name = "LobbyMenu",
-	Title = L("Lobby.Menu.Title"),
+	Title = L("Lobby.Menu.Party", { count = 0, max = Maps.MaxPlayers }),
 	Icon = "Invite",
-	Size = Vector2.new(880, 500),
-	Compact = Vector2.new(880, 468),
-	Narrow = Vector2.new(760, 448),
+	Size = Vector2.new(720, 480),
+	Compact = Vector2.new(960, 420),
+	Narrow = Vector2.new(820, 448),
 	OnLayout = function(mode)
 		if applyLayout then
 			applyLayout(mode)
@@ -76,51 +74,158 @@ window = Ui.window({
 	end,
 })
 window.closeButton.Position = UDim2.new(1, -36, 0, 34)
-local body = window.body
-local party = Ui.label({
-	Name = "Party",
-	Position = UDim2.fromOffset(24, 6),
-	Size = UDim2.new(1, -308, 0, 28),
-	Text = "",
-	TextSize = 24,
-	TextColor3 = C.ink,
-	Parent = body,
-})
-local host = Ui.label({
-	Name = "Host",
-	Position = UDim2.fromOffset(24, 34),
-	Size = UDim2.new(1, -308, 0, 22),
-	Text = "",
-	TextSize = 16,
-	TextColor3 = C.inkSoft,
-	TextTruncate = Enum.TextTruncate.AtEnd,
-	Parent = body,
-})
+local header = window.root.Header
+header.Title.Size = UDim2.new(1, -400, 1, -4)
 local timer = Ui.pill({
 	Name = "Timer",
 	AnchorPoint = Vector2.new(1, 0),
-	Position = UDim2.new(1, -24, 0, 10),
-	Size = UDim2.fromOffset(252, 40),
-	Parent = body,
+	Position = UDim2.new(1, -84, 0, 14),
+	Size = UDim2.fromOffset(228, 40),
+	Parent = header,
 })
-Ui.icon("Clock", { Size = UDim2.fromOffset(28, 28), Position = UDim2.fromOffset(8, 6), Parent = timer })
+Ui.icon("Clock", { Size = UDim2.fromOffset(26, 26), Position = UDim2.fromOffset(8, 7), Parent = timer })
 local timerText = Ui.label({
 	Name = "Text",
-	Position = UDim2.fromOffset(42, 0),
-	Size = UDim2.new(1, -50, 1, 0),
+	Position = UDim2.fromOffset(40, 0),
+	Size = UDim2.new(1, -48, 1, 0),
 	Text = "",
 	TextSize = 18,
 	Parent = timer,
 })
-local settings = Ui.new("Frame", { Name = "Settings", BackgroundTransparency = 1, Parent = body })
-local settingsTitle =
-	Ui.label({ Text = "", Size = UDim2.new(1, 0, 0, 28), TextSize = 22, TextColor3 = C.ink, Parent = settings })
-local capacity =
-	Ui.new("Frame", { Name = "Capacity", Size = UDim2.new(1, 0, 0, 60), BackgroundTransparency = 1, Parent = settings })
+local body = window.body
+local main =
+	Ui.new("Frame", { Name = "Manifest", Size = UDim2.fromScale(1, 1), BackgroundTransparency = 1, Parent = body })
+local roster = Ui.new("Frame", { Name = "Roster", BackgroundTransparency = 1, Parent = main })
+local membersPane = Ui.new("Frame", { Name = "Members", BackgroundTransparency = 1, Parent = roster })
+local slots = {}
+local thumbnails = {}
+local function thumbnail(slot, userId)
+	if thumbnails[userId] then
+		slot.portrait.Image = thumbnails[userId]
+		slot.fallback.Visible = false
+		return
+	end
+	task.spawn(function()
+		local ok, content, ready = pcall(
+			Players.GetUserThumbnailAsync,
+			Players,
+			userId,
+			Enum.ThumbnailType.HeadShot,
+			Enum.ThumbnailSize.Size100x100
+		)
+		if ok and ready then
+			thumbnails[userId] = content
+			if slot.userId == userId then
+				slot.portrait.Image = content
+				slot.fallback.Visible = false
+			end
+		end
+	end)
+end
+for i = 1, Maps.MaxPlayers do
+	local frame = Ui.card({ Name = "Slot" .. i, Parent = membersPane })
+	frame.Border.Thickness = 2
+	local fallback = Ui.icon(
+		"Invite",
+		{ Name = "Fallback", Position = UDim2.fromOffset(8, 8), Size = UDim2.fromOffset(32, 32), Parent = frame }
+	)
+	local portrait = Ui.new("ImageLabel", {
+		Name = "Avatar",
+		Position = UDim2.fromOffset(8, 8),
+		Size = UDim2.fromOffset(32, 32),
+		BackgroundTransparency = 1,
+		BorderSizePixel = 0,
+		Image = "",
+		Parent = frame,
+	}, { Ui.corner("full") })
+	local name = Ui.label({
+		Name = "PlayerName",
+		Position = UDim2.fromOffset(48, 2),
+		Size = UDim2.new(1, -56, 0, 25),
+		Text = "",
+		TextSize = 20,
+		TextColor3 = C.ink,
+		TextTruncate = Enum.TextTruncate.AtEnd,
+		Parent = frame,
+	})
+	local role = Ui.label({
+		Name = "Role",
+		Position = UDim2.fromOffset(48, 26),
+		Size = UDim2.new(1, -56, 0, 20),
+		Text = "",
+		TextSize = 16,
+		TextColor3 = C.inkSoft,
+		TextTruncate = Enum.TextTruncate.AtEnd,
+		Parent = frame,
+	})
+	slots[i] = { frame = frame, fallback = fallback, portrait = portrait, name = name, role = role, userId = nil }
+end
+local invite = Ui.button({
+	Name = "Invite",
+	Kind = "secondary",
+	Icon = "Invite",
+	IconSize = 28,
+	Text = "",
+	TextSize = 20,
+	Size = UDim2.fromOffset(176, 60),
+	AnchorPoint = Vector2.new(1, 0),
+	Position = UDim2.fromScale(1, 0),
+	Parent = roster,
+})
+local inviteHint = Ui.label({
+	Name = "InviteHint",
+	AnchorPoint = Vector2.new(1, 0),
+	Position = UDim2.new(1, 0, 0, 68),
+	Size = UDim2.fromOffset(176, 36),
+	Text = "",
+	TextSize = 16,
+	TextColor3 = C.inkSoft,
+	TextWrapped = true,
+	Parent = roster,
+})
+local match = Ui.new("Frame", { Name = "Match", BackgroundTransparency = 1, Parent = main })
+local mapControl = Ui.card({ Name = "Map", Size = UDim2.fromOffset(320, 72), Parent = match }, true)
+mapControl.Border.Thickness = 2
+local mapPicture = Ui.new("ImageLabel", {
+	Name = "Picture",
+	Position = UDim2.fromOffset(12, 12),
+	Size = UDim2.fromOffset(80, 48),
+	BackgroundColor3 = C.surface,
+	BorderSizePixel = 0,
+	Image = "",
+	ScaleType = Enum.ScaleType.Crop,
+	Parent = mapControl,
+}, { Ui.corner(8) })
+local mapCaption = Ui.label({
+	Text = "",
+	Position = UDim2.fromOffset(104, 6),
+	Size = UDim2.new(1, -148, 0, 22),
+	TextSize = 16,
+	TextColor3 = C.inkSoft,
+	Parent = mapControl,
+})
+local mapName = Ui.label({
+	Name = "MapName",
+	Text = "",
+	Position = UDim2.fromOffset(104, 29),
+	Size = UDim2.new(1, -148, 0, 32),
+	TextSize = 22,
+	TextColor3 = C.ink,
+	TextTruncate = Enum.TextTruncate.AtEnd,
+	Parent = mapControl,
+})
+local mapMark = Ui.icon("Check", {
+	Name = "Mark",
+	AnchorPoint = Vector2.new(1, 0.5),
+	Position = UDim2.new(1, -12, 0.5, 0),
+	Size = UDim2.fromOffset(24, 24),
+	Parent = mapControl,
+})
+local capacity = Ui.new("Frame", { Name = "Capacity", BackgroundTransparency = 1, Parent = match })
 local capacityLabel = Ui.label({
 	Name = "Label",
 	Text = "",
-	Size = UDim2.new(1, -228, 1, 0),
+	Size = UDim2.new(1, -224, 1, 0),
 	TextSize = 20,
 	TextColor3 = C.ink,
 	TextWrapped = true,
@@ -128,85 +233,124 @@ local capacityLabel = Ui.label({
 })
 local stepper = Ui.new("Frame", {
 	Name = "Stepper",
-	AnchorPoint = Vector2.new(1, 0),
-	Position = UDim2.fromScale(1, 0),
+	AnchorPoint = Vector2.new(1, 0.5),
+	Position = UDim2.fromScale(1, 0.5),
 	Size = UDim2.fromOffset(212, 60),
 	BackgroundTransparency = 1,
 	Parent = capacity,
 })
 local minus = Ui.button({
 	Name = "Minus",
-	Kind = "secondary",
+	Kind = "neutral",
 	Text = "−",
-	TextSize = 32,
+	TextSize = 30,
 	Size = UDim2.fromOffset(60, 60),
 	Parent = stepper,
 })
 local countBox =
-	Ui.card({ Name = "Count", Position = UDim2.fromOffset(68, 0), Size = UDim2.fromOffset(76, 60), Parent = stepper })
+	Ui.card({ Name = "Count", Position = UDim2.fromOffset(68, 0), Size = UDim2.fromOffset(68, 60), Parent = stepper })
 local countText = Ui.label({
 	Text = "",
 	Size = UDim2.fromScale(1, 1),
-	TextSize = 28,
+	TextSize = 26,
 	TextColor3 = C.ink,
 	TextXAlignment = Enum.TextXAlignment.Center,
 	Parent = countBox,
 })
 local plus = Ui.button({
 	Name = "Plus",
-	Kind = "secondary",
+	Kind = "neutral",
 	Text = "+",
-	TextSize = 32,
-	Position = UDim2.fromOffset(152, 0),
+	TextSize = 30,
+	Position = UDim2.fromOffset(144, 0),
 	Size = UDim2.fromOffset(60, 60),
 	Parent = stepper,
 })
+local access = Ui.new("Frame", { Name = "Access", BackgroundTransparency = 1, Parent = main })
 local friends = Ui.button({
 	Name = "Friends",
 	Kind = "neutral",
 	Icon = "Lock",
 	IconSize = 28,
 	Text = "",
-	TextSize = 18,
-	Size = UDim2.fromOffset(240, 64),
-	Parent = settings,
-})
-local invite = Ui.button({
-	Name = "Invite",
-	Kind = "secondary",
-	Icon = "Invite",
-	IconSize = 28,
-	Text = "",
-	TextSize = 18,
-	Size = UDim2.fromOffset(240, 64),
-	Parent = settings,
+	TextSize = 20,
+	Size = UDim2.fromOffset(280, 60),
+	Parent = access,
 })
 local privacy = Ui.label({
 	Name = "PrivacyHint",
 	Text = "",
-	TextSize = 16,
+	TextSize = 18,
 	TextColor3 = C.inkSoft,
 	TextWrapped = true,
-	Parent = settings,
+	Parent = access,
 })
-local mapsPane = Ui.new("Frame", { Name = "Maps", BackgroundTransparency = 1, Parent = body })
-local mapsTitle =
-	Ui.label({ Text = "", Size = UDim2.new(1, 0, 0, 28), TextSize = 22, TextColor3 = C.ink, Parent = mapsPane })
+local leave = Ui.button({
+	Name = "Leave",
+	Kind = "neutral",
+	Icon = "Leave",
+	IconSize = 26,
+	Text = "",
+	TextSize = 20,
+	Size = UDim2.fromOffset(128, 64),
+	Parent = main,
+})
+local start = Ui.button({
+	Name = "Start",
+	Kind = "primary",
+	Icon = "Play",
+	IconSize = 32,
+	Text = "",
+	TextSize = 24,
+	AnchorPoint = Vector2.new(1, 0),
+	Size = UDim2.fromOffset(520, 64),
+	Parent = main,
+})
+local footnote = Ui.label({
+	Name = "Footnote",
+	Text = "",
+	TextSize = 16,
+	TextColor3 = C.inkSoft,
+	TextXAlignment = Enum.TextXAlignment.Center,
+	Parent = main,
+})
+-- Future catalog selection is local disclosure, not a separate queue or a new map.
+local mapPicker = Ui.new(
+	"Frame",
+	{ Name = "MapPicker", Size = UDim2.fromScale(1, 1), BackgroundTransparency = 1, Visible = false, Parent = body }
+)
+local back = Ui.button({
+	Name = "Back",
+	Kind = "neutral",
+	Text = "",
+	TextSize = 20,
+	Position = UDim2.fromOffset(20, 12),
+	Size = UDim2.fromOffset(176, 60),
+	Parent = mapPicker,
+})
+local pickerTitle = Ui.label({
+	Text = "",
+	Position = UDim2.fromOffset(220, 12),
+	Size = UDim2.new(1, -244, 0, 60),
+	TextSize = 24,
+	TextColor3 = C.ink,
+	Parent = mapPicker,
+})
 local list = Ui.new("ScrollingFrame", {
-	Name = "List",
+	Name = "Maps",
+	Position = UDim2.fromOffset(20, 84),
+	Size = UDim2.new(1, -40, 1, -104),
 	BackgroundTransparency = 1,
 	BorderSizePixel = 0,
-	ScrollBarThickness = if #Maps.List > 1 then 4 else 0,
-	ScrollingEnabled = #Maps.List > 1,
-	ScrollBarImageColor3 = C.inkSoft,
 	AutomaticCanvasSize = Enum.AutomaticSize.Y,
 	CanvasSize = UDim2.new(),
 	ScrollingDirection = Enum.ScrollingDirection.Y,
-	Parent = mapsPane,
+	ScrollBarThickness = 4,
+	Parent = mapPicker,
 }, {
 	Ui.new("UIPadding", {
 		PaddingTop = UDim.new(0, 4),
-		PaddingBottom = UDim.new(0, 6),
+		PaddingBottom = UDim.new(0, 8),
 		PaddingLeft = UDim.new(0, 4),
 		PaddingRight = UDim.new(0, 8),
 	}),
@@ -217,96 +361,45 @@ local function canEdit()
 	return myState and myState.ownerUserId == player.UserId and myState.phase == "setup"
 end
 for i, map in Maps.List do
-	local card = Ui.card({ Name = map.Id, LayoutOrder = i, Size = UDim2.new(1, -8, 0, 202), Parent = list }, true)
-	local picture = Ui.new("ImageLabel", {
-		Name = "Picture",
+	local card = Ui.card({ Name = map.Id, Size = UDim2.new(1, -8, 0, 72), LayoutOrder = i, Parent = list }, true)
+	Ui.new("ImageLabel", {
+		Position = UDim2.fromOffset(12, 12),
+		Size = UDim2.fromOffset(80, 48),
 		BackgroundColor3 = C.surface,
 		BorderSizePixel = 0,
 		Image = map.Image or "",
 		ScaleType = Enum.ScaleType.Crop,
-		Position = UDim2.fromOffset(8, 8),
-		Size = UDim2.new(1, -16, 0, 158),
 		Parent = card,
-	}, { Ui.corner(12) })
-	if not map.Image then
-		Ui.icon("Map", {
-			AnchorPoint = Vector2.new(0.5, 0.5),
-			Position = UDim2.fromScale(0.5, 0.5),
-			Size = UDim2.fromOffset(64, 64),
-			Parent = picture,
-		})
-	end
-	local name = Ui.label({ Name = "Name", Text = "", TextSize = 22, TextColor3 = C.ink, Parent = card })
-	local check = Ui.icon("Check", { Name = "Selected", Size = UDim2.fromOffset(28, 28), Parent = card })
-	local selectedLabel =
-		Ui.label({ Name = "Selection", Text = "", TextSize = 16, TextColor3 = C.inkSoft, Parent = card })
-	mapCards[map.Id] = { frame = card, picture = picture, name = name, check = check, selectedLabel = selectedLabel }
+	}, { Ui.corner(8) })
+	local name = Ui.label({
+		Text = "",
+		Position = UDim2.fromOffset(108, 0),
+		Size = UDim2.new(1, -156, 1, 0),
+		TextSize = 22,
+		TextColor3 = C.ink,
+		TextTruncate = Enum.TextTruncate.AtEnd,
+		Parent = card,
+	})
+	local check = Ui.icon("Check", {
+		AnchorPoint = Vector2.new(1, 0.5),
+		Position = UDim2.new(1, -12, 0.5, 0),
+		Size = UDim2.fromOffset(28, 28),
+		Parent = card,
+	})
+	mapCards[map.Id] = { frame = card, name = name, check = check }
 	card.Activated:Connect(function()
-		if canEdit() then
-			QueueAction:FireServer("setMap", map.Id)
+		if not canEdit() then
+			return
+		end
+		QueueAction:FireServer("setMap", map.Id)
+		mapPicker.Visible = false
+		main.Visible = true
+		refresh()
+		if UserInputService.GamepadEnabled then
+			GuiService.SelectedObject = mapControl
 		end
 	end)
 end
-local leave = Ui.button({
-	Name = "Leave",
-	Kind = "danger",
-	Icon = "Leave",
-	IconSize = 32,
-	Text = "",
-	TextSize = 22,
-	Size = UDim2.fromOffset(192, 64),
-	Parent = body,
-})
-local start = Ui.button({
-	Name = "Start",
-	Kind = "primary",
-	Icon = "Play",
-	IconSize = 32,
-	Text = "",
-	TextSize = 22,
-	AnchorPoint = Vector2.new(1, 0),
-	Size = UDim2.fromOffset(256, 64),
-	Parent = body,
-})
-local role = Ui.label({
-	Name = "Role",
-	Text = "",
-	TextSize = 16,
-	TextColor3 = C.inkSoft,
-	TextWrapped = true,
-	TextXAlignment = Enum.TextXAlignment.Center,
-	Parent = body,
-})
-local footnote = Ui.label({
-	Name = "Footnote",
-	Text = "",
-	TextSize = 16,
-	TextColor3 = C.inkSoft,
-	TextXAlignment = Enum.TextXAlignment.Center,
-	Parent = body,
-})
-local tabs
-tabs = Ui.tabs(body, {
-	{ Id = "Settings", Text = L("Lobby.Menu.Settings"), Icon = "Gear" },
-	{ Id = "Maps", Text = L("Lobby.Menu.MapSelect"), Icon = "Map" },
-}, function(id)
-	activePage = id
-	applyLayout(window.layout())
-	local selected = GuiService.SelectedObject
-	if
-		selected
-		and (
-			(not settings.Visible and selected:IsDescendantOf(settings))
-			or (not mapsPane.Visible and selected:IsDescendantOf(mapsPane))
-		)
-	then
-		GuiService.SelectedObject = tabs.buttons[id]
-	end
-end)
-tabs.setMode("row")
-tabs.frame.AnchorPoint = Vector2.new(0.5, 0)
-tabs.frame.Position = UDim2.new(0.5, 0, 0, 44)
-tabs.select("Settings")
 local function setText(button, text)
 	button:FindFirstChild("Text").Text = text
 end
@@ -320,6 +413,30 @@ local function showNotice(key)
 		end
 	end)
 end
+local function membersLayout(mode)
+	local compact = mode == "compact"
+	local max = myState and myState.maxPlayers or Maps.MaxPlayers
+	local columns = if compact then max elseif max == 1 then 1 else 2
+	local rows = math.ceil(max / columns)
+	local paneWidth = if mode == "normal" then 488 elseif compact then 728 else 588
+	local h = if compact or rows == 1 then 60 else 48
+	local width = (paneWidth - (columns - 1) * 12) / columns
+	for i, slot in slots do
+		slot.frame.Visible = i <= max
+		slot.frame.Size = UDim2.fromOffset(width, h)
+		slot.frame.Position =
+			UDim2.fromOffset((i - 1) % columns * (width + 12), math.floor((i - 1) / columns) * (h + 8))
+		local avatarSize = if compact then 40 else 32
+		slot.fallback.Size = UDim2.fromOffset(avatarSize, avatarSize)
+		slot.portrait.Size = slot.fallback.Size
+		slot.fallback.Position = UDim2.fromOffset(8, (h - avatarSize) / 2)
+		slot.portrait.Position = slot.fallback.Position
+		slot.name.Position = UDim2.fromOffset(avatarSize + 16, h / 2 - (if slot.userId then 23 else 12))
+		slot.name.Size = UDim2.new(1, -avatarSize - 24, 0, 25)
+		slot.role.Position = UDim2.fromOffset(avatarSize + 16, h / 2 + 2)
+		slot.role.Size = UDim2.new(1, -avatarSize - 24, 0, 20)
+	end
+end
 refresh = function()
 	local s = myState
 	if not s then
@@ -329,23 +446,43 @@ refresh = function()
 	end
 	local edit = canEdit()
 	local teleporting = s.phase == "teleporting"
-	local owner = Players:GetPlayerByUserId(s.ownerUserId)
-	party.Text = L("Lobby.Menu.Party", { count = #s.players, max = s.maxPlayers })
-	host.Text = L("Lobby.Menu.Host", { name = owner and owner.DisplayName or L("Lobby.Menu.HostFallback") })
+	if not edit then
+		mapPicker.Visible = false
+	end
+	main.Visible = not mapPicker.Visible
+	header.Title.Text = L("Lobby.Menu.Party", { count = #s.players, max = s.maxPlayers })
 	timerText.Text = if s.phase == "setup"
 		then L("Lobby.Menu.AutoStart", { n = s.timeLeft })
 		elseif s.phase == "starting" then L("Lobby.Menu.DepartsIn", { n = s.timeLeft })
 		else L("Lobby.Teleporting")
-	window.root.Header.Title.Text = L("Lobby.Menu.Title")
-	settingsTitle.Text = L("Lobby.Menu.Settings")
-	mapsTitle.Text = L("Lobby.Menu.MapSelect")
-	capacityLabel.Text = L("Lobby.Menu.MaxPlayers")
-	countText.Text = tostring(s.maxPlayers)
-	Ui.setKind(minus, if edit and s.maxPlayers > math.max(1, #s.players) then "secondary" else "disabled")
-	Ui.setKind(plus, if edit and s.maxPlayers < Maps.MaxPlayers then "secondary" else "disabled")
-	Ui.setKind(friends, if not edit then "disabled" elseif s.friendsOnly then "reward" else "neutral")
-	setText(friends, L("Lobby.Menu.FriendsState", { state = L(if s.friendsOnly then "Common.On" else "Common.Off") }))
-	privacy.Text = L(if s.friendsOnly then "Lobby.Menu.FriendsOnlyHint" else "Lobby.Menu.AnyoneHint")
+	for i, slot in slots do
+		local id = s.players[i]
+		if slot.userId ~= id then
+			slot.userId = id
+			slot.portrait.Image = ""
+			slot.fallback.Visible = true
+			if id then
+				thumbnail(slot, id)
+			end
+		end
+		slot.frame.BackgroundColor3 = if id then C.card else C.surface
+		slot.frame.Border.Color = if id == s.ownerUserId then C.goldDark else C.surfaceLine
+		local member = id and Players:GetPlayerByUserId(id)
+		slot.name.Text = if id
+			then (member and member.DisplayName or L("Lobby.Menu.Player"))
+			else L("Lobby.Menu.OpenSlot")
+		slot.name.TextColor3 = if id then C.ink else C.inkSoft
+		slot.role.Visible = id ~= nil
+		slot.role.Text = if not id
+			then ""
+			elseif id == s.ownerUserId then L(
+				if id == player.UserId then "Lobby.Menu.HostYou" else "Lobby.Menu.HostFallback"
+			)
+			else L(if id == player.UserId then "Lobby.Menu.You" else "Lobby.Menu.Member")
+		slot.portrait.Visible = id ~= nil
+		slot.fallback.ImageTransparency = if id then 0 else 0.55
+	end
+	membersLayout(window.layout())
 	Ui.setKind(
 		invite,
 		if inviteState == "ready" and not inviteBusy and not teleporting then "secondary" else "disabled"
@@ -359,18 +496,31 @@ refresh = function()
 				else "Lobby.Menu.Invite"
 		)
 	)
-	for id, c in mapCards do
-		local selected = id == s.mapId
-		Ui.setCardState(c.frame, "normal")
-		c.frame.BackgroundColor3 = if selected then C.goldLight else C.card
-		c.frame.Border.Color = if selected then C.goldDark else C.surfaceLine
-		c.name.Text = L("Map." .. id)
-		c.check.Visible = selected
-		c.selectedLabel.Text = L(if selected then "Lobby.Menu.SelectedMap" else "Lobby.Menu.ChooseMap")
-		c.frame.Selectable = edit
-	end
-	Ui.setKind(leave, if teleporting then "disabled" else "danger")
+	inviteHint.Text = L(if notice and noticeUntil > os.clock() then notice else "Lobby.Menu.InviteGameHint")
+	inviteHint.TextColor3 = if notice and noticeUntil > os.clock() then C.redDark else C.inkSoft
+	local map = Maps.ById[s.mapId]
+	mapName.Text = map and L("Map." .. map.Id) or ""
+	mapPicture.Image = map and map.Image or ""
+	mapCaption.Text = L("Lobby.Menu.MapLabel")
+	Ui.setIcon(mapMark, if #Maps.List > 1 then "Map" else "Check")
+	mapControl.Selectable = edit and #Maps.List > 1
+	capacityLabel.Text = L("Lobby.Menu.MaxPlayers")
+	countText.Text = tostring(s.maxPlayers)
+	Ui.setKind(minus, if edit and s.maxPlayers > math.max(1, #s.players) then "neutral" else "disabled")
+	Ui.setKind(plus, if edit and s.maxPlayers < Maps.MaxPlayers then "neutral" else "disabled")
+	Ui.setKind(friends, if not edit then "disabled" elseif s.friendsOnly then "reward" else "neutral")
+	setText(friends, L("Lobby.Menu.FriendsState", { state = L(if s.friendsOnly then "Common.On" else "Common.Off") }))
+	privacy.Text = L(
+		if s.phase == "starting"
+			then "Lobby.Menu.SettingsLocked"
+			elseif not edit and not teleporting then "Lobby.Menu.HostControls"
+			elseif teleporting then "Lobby.Teleporting"
+			elseif s.friendsOnly then "Lobby.Menu.FriendsOnlyHint"
+			else "Lobby.Menu.AnyoneHint"
+	)
+	Ui.setKind(leave, if teleporting then "disabled" else "neutral")
 	setText(leave, L("Lobby.Menu.Leave"))
+	leave:FindFirstChild("Text").TextColor3 = C.redDark
 	Ui.setKind(start, if edit then "primary" else "disabled")
 	setText(
 		start,
@@ -379,104 +529,96 @@ refresh = function()
 				then "Lobby.Menu.DepartsIn"
 				elseif teleporting then "Lobby.Teleporting"
 				elseif not edit then "Lobby.Menu.WaitingHost"
-				else "Lobby.Menu.Start",
+				else "Lobby.Menu.StartMatch",
 			{ n = s.timeLeft }
 		)
 	)
-	role.Text = L(
-		if teleporting
-			then "Lobby.Teleporting"
-			elseif edit then "Lobby.Menu.YouHost"
-			elseif s.phase == "starting" then "Lobby.Menu.SettingsLocked"
-			else "Lobby.Menu.HostControls"
-	)
-	footnote.Text = L(if notice and noticeUntil > os.clock() then notice else "Lobby.Menu.CloseHint")
-	footnote.TextColor3 = if notice and noticeUntil > os.clock() then C.redDark else C.inkSoft
-	local map = Maps.ById[s.mapId]
+	footnote.Text = L("Lobby.Menu.CloseHint")
+	setText(back, L("Lobby.Menu.BackToParty"))
+	pickerTitle.Text = L("Lobby.Menu.MapSelect")
+	for id, c in mapCards do
+		c.name.Text = L("Map." .. id)
+		c.check.Visible = id == s.mapId
+		Ui.setCardState(c.frame, if id == s.mapId then "selected" else "normal")
+		c.frame.Selectable = edit
+	end
 	setText(
 		dock,
 		L("Lobby.Menu.Reopen", { map = map and L("Map." .. map.Id) or "", count = #s.players, max = s.maxPlayers })
 	)
-	window.setDefaultSelection(if edit then start elseif not teleporting then leave else window.closeButton)
+	window.setDefaultSelection(
+		if mapPicker.Visible then back elseif edit then start elseif not teleporting then leave else window.closeButton
+	)
 	local chosen = GuiService.SelectedObject
 	if
 		chosen
 		and chosen:IsDescendantOf(window.gui)
-		and (chosen:GetAttribute("Disabled") == true or not chosen.Selectable)
+		and (
+			chosen:GetAttribute("Disabled")
+			or not chosen.Selectable
+			or (mapPicker.Visible and chosen:IsDescendantOf(main))
+			or (not mapPicker.Visible and chosen:IsDescendantOf(mapPicker))
+		)
 	then
-		GuiService.SelectedObject = if not teleporting then leave else window.closeButton
-	end
-	for id, b in tabs.buttons do
-		b:FindFirstChild("Label").Text = L(if id == "Settings" then "Lobby.Menu.Settings" else "Lobby.Menu.MapSelect")
+		GuiService.SelectedObject = if mapPicker.Visible
+			then back
+			elseif not teleporting then leave
+			else window.closeButton
 	end
 	updateDock()
 end
 applyLayout = function(mode)
 	local normal = mode == "normal"
-	local narrow = mode == "narrow"
-	tabs.frame.Visible = narrow
-	settings.Visible = not narrow or activePage == "Settings"
-	mapsPane.Visible = not narrow or activePage == "Maps"
-	local y = if narrow then 116 elseif normal then 60 else 52
-	local height = if narrow then 164 elseif normal then 244 else 220
-	mapsPane.Position = UDim2.fromOffset(20, y)
-	mapsPane.Size = if narrow then UDim2.new(1, -40, 0, height) else UDim2.fromOffset(312, height)
-	settings.Position = if narrow then UDim2.fromOffset(24, y) else UDim2.fromOffset(348, y)
-	settings.Size = if narrow then UDim2.new(1, -48, 0, height) else UDim2.new(1, -372, 0, height)
-	settingsTitle.Visible = not narrow
-	mapsTitle.Visible = not narrow
-	capacity.Position = UDim2.fromOffset(0, if narrow then 0 else 36)
-	friends.Position = UDim2.fromOffset(0, if narrow then 72 else 112)
-	-- Wide buttons need room for Ui.button's hover scale and both navy outlines.
-	friends.Size = UDim2.new(0.5, -12, 0, if narrow then 60 else 64)
-	invite.Position = UDim2.new(0.5, 12, 0, if narrow then 72 else 112)
-	invite.Size = friends.Size
-	privacy.Position = UDim2.fromOffset(0, if narrow then 138 else 188)
-	privacy.Size = UDim2.new(1, 0, 0, if narrow then 24 else 36)
-	party.Position = UDim2.fromOffset(24, if narrow then 0 else 6)
-	host.Position = UDim2.fromOffset(24, if narrow then 24 else 34)
-	host.Size = UDim2.new(1, -308, 0, if narrow then 18 else 22)
-	timer.Position = UDim2.new(1, -24, 0, if narrow then 2 else 10)
-	list.Position = UDim2.fromOffset(0, if narrow then 0 else 32)
-	list.Size = UDim2.new(1, 0, 1, if narrow then 0 else -32)
-	for _, c in mapCards do
-		local h = if narrow then 152 elseif normal then 202 else 178
-		c.frame.Size = UDim2.new(1, -8, 0, h)
-		c.picture.Position = UDim2.fromOffset(8, 8)
-		c.picture.Size = if narrow
-			then UDim2.fromOffset(240, 136)
-			else UDim2.new(1, -16, 0, if normal then 158 else 134)
-		c.name.Position = if narrow then UDim2.fromOffset(268, 32) else UDim2.fromOffset(12, h - 34)
-		c.name.Size = if narrow then UDim2.new(1, -320, 0, 36) else UDim2.new(1, -56, 0, 30)
-		c.check.Position = if narrow then UDim2.new(1, -44, 0, 36) else UDim2.new(1, -40, 1, -34)
-		c.selectedLabel.Visible = narrow
-		c.selectedLabel.Position = UDim2.fromOffset(268, 76)
-		c.selectedLabel.Size = UDim2.new(1, -292, 0, 24)
-	end
-	local footerY = if narrow then 292 elseif normal then 328 else 304
-	leave.Position = UDim2.fromOffset(24, footerY)
-	start.Position = UDim2.new(1, -24, 0, footerY)
-	leave.Size = UDim2.fromOffset(192, if narrow then 60 else 64)
-	start.Size = UDim2.fromOffset(256, if narrow then 60 else 64)
-	role.Position = UDim2.fromOffset(228, footerY)
-	role.Size = UDim2.new(1, -520, 0, if narrow then 60 else 64)
-	footnote.Position = UDim2.new(0, 16, 1, -28)
-	footnote.Size = UDim2.new(1, -32, 0, 24)
-	local selected = GuiService.SelectedObject
-	if
-		selected
-		and (
-			(not settings.Visible and selected:IsDescendantOf(settings))
-			or (not mapsPane.Visible and selected:IsDescendantOf(mapsPane))
-		)
-	then
-		GuiService.SelectedObject = if canEdit()
-			then start
-			elseif myState and myState.phase ~= "teleporting" then leave
-			else window.closeButton
-	end
+	local compact = mode == "compact"
+	local w = if normal then 680 elseif compact then 920 else 780
+	roster.Position = UDim2.fromOffset(20, if normal then 16 else 12)
+	roster.Size = UDim2.fromOffset(w, if compact then 84 else 104)
+	membersPane.Size = UDim2.fromOffset(w - 192, if compact then 60 else 104)
+	inviteHint.Position = UDim2.new(1, 0, 0, if compact then 64 else 68)
+	inviteHint.Size = UDim2.fromOffset(176, if compact then 24 else 36)
+	match.Position = UDim2.fromOffset(20, if normal then 136 elseif compact then 112 else 132)
+	match.Size = UDim2.fromOffset(w, 72)
+	local mapWidth = if normal then 320 else 280
+	mapControl.Size = UDim2.fromOffset(mapWidth, 72)
+	capacity.Position = UDim2.fromOffset(mapWidth + 16, 0)
+	capacity.Size = UDim2.fromOffset(if normal then 344 else 280, 72)
+	stepper.Size = UDim2.fromOffset(if normal then 212 else 188, 60)
+	countBox.Size = UDim2.fromOffset(if normal then 68 else 52, 60)
+	plus.Position = UDim2.fromOffset(if normal then 144 else 128, 0)
+	capacityLabel.Size = UDim2.new(1, if normal then -224 else -196, 1, 0)
+	access.Position = UDim2.fromOffset(20, if normal then 220 elseif compact then 112 else 132)
+	access.Size = UDim2.fromOffset(w, if normal then 60 else 112)
+	friends.Position = if normal then UDim2.new() else UDim2.fromOffset(592, 6)
+	friends.Size = UDim2.fromOffset(if normal then 280 else w - 592, 60)
+	privacy.Position = if normal then UDim2.fromOffset(304, 0) else UDim2.fromOffset(592, 76)
+	privacy.Size = if normal then UDim2.fromOffset(w - 304, 60) else UDim2.fromOffset(w - 592, 44)
+	local footerY = if normal then 300 elseif compact then 240 else 272
+	leave.Position = UDim2.fromOffset(20, footerY)
+	start.Position = UDim2.new(1, -20, 0, footerY)
+	start.Size = UDim2.fromOffset(w - 160, 64)
+	footnote.Position = UDim2.fromOffset(20, if normal then 376 elseif compact then 316 else 344)
+	footnote.Size = UDim2.fromOffset(w, 24)
+	membersLayout(mode)
 end
 applyLayout(window.layout())
+mapControl.Activated:Connect(function()
+	if canEdit() and #Maps.List > 1 then
+		mapPicker.Visible = true
+		main.Visible = false
+		refresh()
+		if UserInputService.GamepadEnabled then
+			GuiService.SelectedObject = back
+		end
+	end
+end)
+back.Activated:Connect(function()
+	mapPicker.Visible = false
+	main.Visible = true
+	refresh()
+	if UserInputService.GamepadEnabled then
+		GuiService.SelectedObject = mapControl
+	end
+end)
 dock.Activated:Connect(function()
 	if myState then
 		window.open()
@@ -547,8 +689,7 @@ QueueState.OnClientEvent:Connect(function(padIndex, state)
 		joinToken += 1
 		local token = joinToken
 		inviteState, inviteBusy = "checking", false
-		activePage = "Settings"
-		tabs.select(activePage)
+		mapPicker.Visible = false
 		applyLayout(window.layout())
 		task.spawn(function()
 			local ok, can = pcall(SocialService.CanSendGameInviteAsync, SocialService, player)
@@ -576,3 +717,9 @@ if player.Character then
 	onCharacter(player.Character)
 end
 player.CharacterAdded:Connect(onCharacter)
+
+Players.PlayerAdded:Connect(function()
+	if myState then
+		refresh()
+	end
+end)

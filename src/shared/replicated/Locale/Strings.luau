@@ -476,11 +476,20 @@ return {
 
 	-- Меню хозяина площадки (LobbyMenuClient)
 	["Lobby.Menu.Title"] = { en = "Ready your crew", ru = "Собери команду" },
+	["Lobby.Menu.Player"] = { en = "Player", ru = "Игрок" },
+	["Lobby.Menu.OpenSlot"] = { en = "Open spot", ru = "Свободно" },
+	["Lobby.Menu.HostYou"] = { en = "Host · You", ru = "Хозяин · Ты" },
+	["Lobby.Menu.You"] = { en = "You", ru = "Ты" },
+	["Lobby.Menu.Member"] = { en = "Crew member", ru = "Участник" },
+	["Lobby.Menu.MapLabel"] = { en = "Map", ru = "Карта" },
+	["Lobby.Menu.StartMatch"] = { en = "Start match", ru = "Начать матч" },
+	["Lobby.Menu.BackToParty"] = { en = "Back to crew", ru = "К команде" },
+	["Lobby.Menu.InviteGameHint"] = { en = "Roblox game invite", ru = "Приглашение в игру" },
 	["Lobby.Menu.Party"] = { en = "Your crew · {count}/{max}", ru = "Команда · {count}/{max}" },
 	["Lobby.Menu.Host"] = { en = "Host: {name}", ru = "Хозяин: {name}" },
 	["Lobby.Menu.HostFallback"] = { en = "Party host", ru = "Хозяин группы" },
 	["Lobby.Menu.Settings"] = { en = "Party settings", ru = "Настройки группы" },
-	["Lobby.Menu.MaxPlayers"] = { en = "Party size", ru = "Размер группы" },
+	["Lobby.Menu.MaxPlayers"] = { en = "Max players", ru = "Лимит игроков" },
 	["Lobby.Menu.FriendsState"] = { en = "Friends only · {state}", ru = "Только друзья · {state}" },
 	["Lobby.Menu.Checking"] = { en = "Checking invites…", ru = "Проверка приглашений…" },
 	["Lobby.Menu.InviteUnavailable"] = {

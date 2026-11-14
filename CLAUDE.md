@@ -54,7 +54,7 @@ What lives where:
 | What to change | File |
 |---|---|
 | Products, ids, bonuses | `src/shared/replicated/Shop/init.luau` |
-| Shop window | `src/shared/replicated/Shop/Gui.luau` |
+| Shop controller and presentation | `src/shared/replicated/Shop/Gui.luau`, `Shop/View.luau` |
 | Names and descriptions | `src/shared/replicated/Locale/Strings.luau` (`Shop.*`) |
 | Granting in the lobby (straight into the DataStore) | `src/lobby/server/ShopServer.server.luau` |
 | Granting in the match (through PlayerData) | `src/house/server/SnowGame/ShopServer.server.luau`, `PlayerData.grantReceipt` |
@@ -119,7 +119,7 @@ Versions are pinned in `rokit.toml`: Rojo 7.7.1, StyLua 2.6.0, Selene 0.32.0, lu
 - `stylua src` (tabs, width 120), then `stylua --check src`. `[unverified]` Formatting may not stabilise in one pass.
 - `selene src` (`std = "roblox"`, `roblox_manual_fromscale_or_fromoffset` allowed). 0 warnings are required before commit, like in analyze. A false positive: `-- selene: allow(<rule>)` with the reason. Do not fix real warnings without asking.
 - `DebugWindowLayout` (a workspace attribute, both places, Studio only): `"compact"` or `"narrow"` makes every `Ui.window` use that phone layout on a big screen; without it the layout follows the viewport. It is read when a window opens, so it can be set during Play from the Client context. Remove the attribute after the test.
-- `DebugShopState` (workspace, Client context, Studio with `TestSave` only): `"unowned"`, `"loading"`, `"error"` or `"pending"` previews Shop UI states without changing ownership or saves. A visible preview notice appears and all purchase prompts are blocked. Remove it after the test.
+- `DebugShopState` (workspace, Client context, Studio with `TestSave` only): `"unowned"`, `"loading"`, `"error"`, `"pending"`, `"unavailable"` or `"delayed"` previews Shop UI states without changing ownership or saves. A visible preview label appears and all purchase prompts are blocked. Remove it after the test.
 - `scripts/analyze.ps1` checks each place together with `src/shared` against a fresh sourcemap. Exit code 0 only with 0 errors. Generated files are in `.luau-lsp/` (not in git). Roblox types are pinned: `$typesVersion` in the script changes together with the luau-lsp version. Files without `--!strict` are checked in non-strict mode.
 
 **Before committing:**
@@ -157,5 +157,5 @@ Found during the cleanup on 2026-10-31, not yet changed in the code.
 
 - `Config.luau`: `SnowCellFolder`, `CellSize`, `GridStep`, `ParticleLifetime` are unused.
 - `BlowServer`: nobody reads the zone attributes `DisplayName` and `Order` (nor the field `ZoneConfig.DisplayName` that exists for them); with `MATCH_MODE = true` `startRegen` is not called, and with it `RegenDelay`, `RegenDuration` are not needed.
-- Nobody reads the workspace attribute `BlizzardBy` (match `ShopServer`) or the string `Shop.BlizzardBy`.
+- The localization string `Shop.BlizzardBy` is unused. The workspace attribute `BlizzardBy` is read by Shop purchase feedback.
 - Old copies in ServerStorage: House Map `_Backup_BeforeTools`, `_Candidates`, `_OldBaseplateTexture`, `_OldCollector`, `_OldSnowblower`, `_OldSnowmelter`, `_OldSunsetSky`, `_OldToolModels`, `_OldUpgradeShop`, `_OldHouse`, `_OldPineUnions`, `_OldFencePillars`, `_OldFenceCaps`, `_OldNeighbors`, `_OldLamps`, and since then `_ShovelCandidates`, `_OldShovel`; Lobby `_Candidates`, `_OldBaseplateTexture`, `_OldSky`, and since then `_OldLobby`, `_OldPlazaStone` (checked in Studio 2026-11-09).

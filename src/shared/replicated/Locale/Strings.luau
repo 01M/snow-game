@@ -300,6 +300,40 @@ return {
 	["Chat.VipTag"] = { en = "[VIP]", ru = "[VIP]" },
 	["Shop.Section.Passes"] = { en = "Passes", ru = "Пропуски" },
 	["Shop.Section.Products"] = { en = "Items", ru = "Товары" },
+	["Shop.Permanent"] = { en = "Permanent", ru = "Навсегда" },
+	["Shop.ThisMatch"] = { en = "This match", ru = "На матч" },
+	["Shop.Minutes"] = { en = "{n} min", ru = "{n} мин" },
+	["Shop.PassesShort"] = { en = "Permanent benefits", ru = "Постоянные бонусы" },
+	["Shop.ProductsShort"] = { en = "Cash and timed boosts", ru = "Cash и временные бусты" },
+	["Shop.BoostShort"] = { en = "A timed boost", ru = "Временный буст" },
+	["Shop.PreviewShort"] = { en = "UI · purchases off", ru = "UI · покупки выкл." },
+	["Shop.LobbyTimingHint"] = {
+		en = "Boost time starts immediately. Cash packs and Blizzard are sold in a match.",
+		ru = "Таймер буста идёт сразу. Пачки Cash и Метель — в матче.",
+	},
+	["Shop.TimingHint"] = {
+		en = "Boosts start immediately. Buying an active boost again adds time.",
+		ru = "Бусты включаются сразу. Повторная покупка добавляет время.",
+	},
+	["Shop.PriceError"] = {
+		en = "Price unavailable. Reload the price on the item.",
+		ru = "Цена не загрузилась. Обнови её на карточке товара.",
+	},
+	["Shop.UnavailableHint"] = {
+		en = "This item is not available from Roblox right now.",
+		ru = "Сейчас этот товар недоступен в Roblox.",
+	},
+	["Shop.AlreadyOwned"] = { en = "Already yours: {name}", ru = "Уже куплено: {name}" },
+	["Shop.PromptNamed"] = { en = "{name}: waiting for Roblox…", ru = "{name}: ожидаем Roblox…" },
+	["Shop.ProcessingNamed"] = {
+		en = "Waiting for {name} to be confirmed…",
+		ru = "Ожидаем подтверждение: {name}…",
+	},
+	["Shop.AppliedNamed"] = { en = "Ready: {name}", ru = "Уже доступно: {name}" },
+	["Shop.DelayedNamed"] = {
+		en = "{name} is still unconfirmed. Please check before buying again.",
+		ru = "{name} ещё не подтверждено. Не спеши покупать повторно.",
+	},
 	["Shop.PassesHint"] = {
 		en = "Permanent benefits. Yours in every match.",
 		ru = "Постоянные бонусы. Действуют в каждом матче.",
@@ -367,25 +401,25 @@ return {
 	["Shop.Pass.VIP.Desc"] = { en = "[VIP] chat tag and +10% Cash", ru = "Метка [VIP] в чате и +10% Cash" },
 	["Shop.Product.CashS.Name"] = { en = "300 Cash", ru = "300 Cash" },
 	["Shop.Product.CashS.Desc"] = {
-		en = "A handful of Cash for this match only",
-		ru = "Горстка Cash только на этот матч",
+		en = "Cash for this match only",
+		ru = "Cash только на этот матч",
 	},
 	["Shop.Product.CashM.Name"] = { en = "1,100 Cash", ru = "1 100 Cash" },
 	["Shop.Product.CashM.Desc"] = {
-		en = "A bag of Cash for this match only",
-		ru = "Мешок Cash только на этот матч",
+		en = "Cash for this match only",
+		ru = "Cash только на этот матч",
 	},
 	["Shop.Product.CashL.Name"] = { en = "3,600 Cash", ru = "3 600 Cash" },
 	["Shop.Product.CashL.Desc"] = {
-		en = "A whole vault of Cash for this match only",
-		ru = "Целый сейф Cash только на этот матч",
+		en = "Cash for this match only",
+		ru = "Cash только на этот матч",
 	},
 	["Shop.Product.Boost.Name"] = { en = "Snow Boost", ru = "Снежный буст" },
-	["Shop.Product.Boost.Desc"] = { en = "x2 Cash for 15 minutes", ru = "×2 Cash на 15 минут" },
+	["Shop.Product.Boost.Desc"] = { en = "Double Cash from snow", ru = "Вдвое больше Cash за снег" },
 	["Shop.Product.Blizzard.Name"] = { en = "Blizzard for Everyone", ru = "Метель для всех" },
 	["Shop.Product.Blizzard.Desc"] = {
-		en = "x2 Cash for everyone in the match for 10 minutes",
-		ru = "×2 Cash всем в матче на 10 минут",
+		en = "Double Cash for everyone in the match",
+		ru = "Вдвое больше Cash всем в матче",
 	},
 
 	-- Надписи в мире House Map (тег Localized, атрибут LocaleKey — их ставит LocaleClient)

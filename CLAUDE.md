@@ -142,6 +142,14 @@ This policy (updated 2026-11-14) takes precedence over older testing instruction
 - Add another visual check only for a concrete defect, a relevant subsequent change or a specific unresolved risk. Use the smallest meaningful check; do not repeat the entire flow for a small fix or merely to increase coverage. Stop when the relevant behavior and visuals are adequately verified, and report remaining limitations candidly.
 - All mandatory code and safety gates remain unchanged: the Before committing checklist, StyLua and its check, Selene 0 warnings, fresh both-place analyze 0 errors, Play plus Output for code changes, debug cleanup, TestSave isolation, purchase restrictions, PlayerData_v1 protection and no-push/no-publish rules. The existing documentation-only Play exception still applies.
 
+### Critical UI quality review
+
+- Assess UI independently and critically; do not automatically agree with the user, another agent or a previous positive review. Explain conclusions with concrete evidence, including disagreements.
+- Evaluate visual styling separately from composition, spacing, proportions, hierarchy, readability and usability. Consistent colours and icons do not make a layout good.
+- Inspect actual screenshots before assigning scores. State which screen/state each score covers and identify weaknesses even when implementation and tests are technically complete. Passing checks is not proof of design quality.
+- Proactively correct substantial design defects within the approved scope, rather than only reporting or cosmetically polishing them. Choose layouts around the player's journey and available data.
+- Apply the risk-based validation policy above: share existing captures with focused reviewers, avoid duplicate Play sessions and unnecessary device/localization permutations, and report unverified behavior honestly.
+
 ## Working rules
 
 - A module moves to `src/shared` when a second place needs it. Don't move it in advance, don't copy between places.

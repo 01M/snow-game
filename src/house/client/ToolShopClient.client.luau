@@ -1,5 +1,5 @@
--- ToolShopClient: у каждого игрока свои надписи на полках сарая: цена (зелёная, если хватает Cash)
--- или «Куплено ✓»; у купленного инструмента промпт «Купить» выключен (только у этого игрока).
+-- ToolShopClient: персональная локализованная печать на физических ценниках полок сарая.
+-- Цена и состояние обновляются от Cash/OwnedTools; у купленного инструмента промпт выключен только локально.
 -- Покупку проверяет сервер (ToolShopServer → ToolServer.buyTool).
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -34,11 +34,7 @@ end
 local function refresh()
 	for _, entry in entries do
 		local have = owns(entry.tool.Id)
-		if entry.prototype then
-			entry.prototype(L("Tool." .. entry.tool.Id), entry.tool.Price, have, cash() >= entry.tool.Price)
-		else
-			WorldUi.purchase(entry.sign, entry.tool.Price, have, cash() >= entry.tool.Price)
-		end
+		entry.print(L("Tool." .. entry.tool.Id), entry.tool.Price, have, cash() >= entry.tool.Price)
 		entry.prompt.Enabled = not have
 	end
 end
@@ -82,20 +78,14 @@ local function consider(inst: Instance)
 			pending[anchor] = nil
 			return
 		end
-		-- Fixed plates on the shelf fronts keep tall tools and shelf boards clear of the text.
+		-- Keep the legacy billboard for rollback; each shelf now has its own imported enamel plaque.
 		old.Enabled = false
-		if tool.Id == "Shovel" then
-			-- One production prototype only; the other shelves retain Commit 15's presentation.
-			local rail = anchor.Parent:WaitForChild("Board", 5)
-			if not rail or not rail:IsA("BasePart") or not anchor:IsDescendantOf(shop) then
-				pending[anchor] = nil
-				return
-			end
-			entries[anchor] = { tool = tool, prompt = prompt, prototype = ShedPricePlaque.create(anchor, rail) }
-		else
-			local labels = WorldUi.plate(anchor, Vector2.new(3.4, 1.05), CFrame.new(0, -2.1, -0.1))
-			entries[anchor] = { tool = tool, prompt = prompt, sign = WorldUi.sign(labels, L("Tool." .. tool.Id), "") }
+		local rail = anchor.Parent:WaitForChild("Board", 5)
+		if not rail or not rail:IsA("BasePart") or not anchor:IsDescendantOf(shop) then
+			pending[anchor] = nil
+			return
 		end
+		entries[anchor] = { tool = tool, prompt = prompt, print = ShedPricePlaque.create(anchor, rail) }
 		pending[anchor] = nil
 		WorldUi.prompt(prompt)
 		refresh()

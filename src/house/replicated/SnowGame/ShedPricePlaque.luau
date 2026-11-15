@@ -1,5 +1,5 @@
 --!strict
--- Ink only for ONE imported shelf plaque. Geometry stays in the place, outside Rojo.
+-- Localized ink for imported shelf plaques. Geometry stays in the place, outside Rojo.
 -- The client owns the localized print; ToolShopClient still owns the existing purchase prompt.
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local shared = ReplicatedStorage:WaitForChild("Shared")

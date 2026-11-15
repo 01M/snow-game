@@ -1,0 +1,184 @@
+{
+  "baseline": "aaf7c0c",
+  "captureResolution": [1920, 948],
+  "scope": "Three Shed tool shelves only; approved plaque geometry and print layout unchanged",
+  "geometry": {
+    "export": "ShedPricePlaques_AllShelves.rbxm",
+    "bytes": 18736,
+    "roundTrip": true,
+    "meshes": 15,
+    "newMeshes": 10,
+    "existingPartsUnchanged": true,
+    "plaques": [
+      {
+        "relativePivot": [
+          0,
+          -0.9000000953674316,
+          0.7900009155273438,
+          -1,
+          0,
+          -8.742277657347586e-8,
+          0,
+          1,
+          0,
+          8.742277657347586e-8,
+          0,
+          -1
+        ],
+        "physicalMatches": true,
+        "model": "Workspace.ToolShop.Shelves.Shelf_Shovel.ShedPricePlaque_ArtPrototype",
+        "id": "Shovel",
+        "shelfWidth": 4.199999809265137,
+        "plaqueWidth": 3.0399999618530273,
+        "meshCount": 5
+      },
+      {
+        "relativePivot": [
+          0,
+          -0.9000000953674316,
+          0.7900009155273438,
+          -1,
+          0,
+          -8.742277657347586e-8,
+          0,
+          1,
+          0,
+          8.742277657347586e-8,
+          0,
+          -1
+        ],
+        "physicalMatches": true,
+        "model": "Workspace.ToolShop.Shelves.Shelf_Blower.ShedPricePlaque_ArtPrototype",
+        "id": "Blower",
+        "shelfWidth": 4.199999809265137,
+        "plaqueWidth": 3.0399999618530273,
+        "meshCount": 5
+      },
+      {
+        "relativePivot": [
+          0,
+          -0.9000000953674316,
+          0.7900009155273438,
+          -1,
+          0,
+          -8.742277657347586e-8,
+          0,
+          1,
+          0,
+          8.742277657347586e-8,
+          0,
+          -1
+        ],
+        "physicalMatches": true,
+        "model": "Workspace.ToolShop.Shelves.Shelf_Vacuum.ShedPricePlaque_ArtPrototype",
+        "id": "Vacuum",
+        "shelfWidth": 4.199999809265137,
+        "plaqueWidth": 3.0399999618530273,
+        "meshCount": 5
+      }
+    ],
+    "localeClean": true,
+    "debugClean": true
+  },
+  "restoration": {
+    "container": "ShedPricePlaques",
+    "instructions": "Each Shelf_<Id> export folder contains ShedPricePlaque_ArtPrototype. Move only the model to the matching existing Workspace.ToolShop.Shelves.Shelf_<Id>; do not insert duplicates or replace the shelves/tools."
+  },
+  "products": [
+    {
+      "id": "Shovel",
+      "en": "Shovel",
+      "ru": "Лопата",
+      "price": 8
+    },
+    {
+      "id": "Blower",
+      "en": "Snow Pusher",
+      "ru": "Движок",
+      "price": 30
+    },
+    {
+      "id": "Vacuum",
+      "en": "Snowblower",
+      "ru": "Снегоуборщик",
+      "price": 100
+    }
+  ],
+  "verification": {
+    "playSessions": 1,
+    "TestSave": true,
+    "startCash": 38,
+    "purchases": [
+      {
+        "id": "Blower",
+        "before": 38,
+        "after": 8
+      },
+      {
+        "id": "Vacuum",
+        "before": 100,
+        "after": 0
+      },
+      {
+        "id": "Shovel",
+        "before": 8,
+        "after": 0
+      }
+    ],
+    "purchaseInput": "Native E with existing 0.3s proximity prompts; TestSave Cash was set to the stated initial amounts for the second and third purchases",
+    "finalOwnership": "Hand,Shovel,Blower,Vacuum",
+    "onePrintPerShelf": true,
+    "legacyBillboardsRetainedAndDisabledLocally": true,
+    "oldRuntimePlates": 0,
+    "liveLocalization": "EN overview; RU angled shot on actual shelves, all Title/State TextFits true",
+    "debugClean": true,
+    "checks": {
+      "stylua": "passed; check passed",
+      "selene": "0 errors, 0 warnings, 0 parse errors",
+      "analyze": "fresh sourcemaps both places; 0 errors"
+    },
+    "output": "No plaque errors. Known Rojo notification-sound asset 203785492 warnings; scriptable camera reset message. Test Cash injections generated expected economy-source analytics."
+  },
+  "cameras": {
+    "wide": {
+      "position": [
+        -19.5,
+        6.46,
+        -42.7
+      ],
+      "target": [
+        -19.5,
+        5.3,
+        -50
+      ],
+      "fov": 70,
+      "language": "en",
+      "file": "01-shed-all-three-wide-en.jpg"
+    },
+    "angled": {
+      "position": [
+        -13.5,
+        6.46,
+        -42.5
+      ],
+      "target": [
+        -19.3,
+        5,
+        -50
+      ],
+      "fov": 70,
+      "language": "ru",
+      "file": "02-shed-all-three-angled-ru.jpg"
+    }
+  },
+  "safety": {
+    "studioScriptsEdited": false,
+    "serverOrPurchaseLogicChanged": false,
+    "BlenderSourceChanged": false,
+    "uploaded": false,
+    "cloudSaved": false,
+    "published": false,
+    "pushed": false,
+    "Commit16": false
+  }
+}

@@ -1,0 +1,476 @@
+{
+  "before": {
+    "pivot": [
+      -21.905569076538086,
+      9.49001407623291,
+      -19.114736557006836,
+      1,
+      0,
+      0,
+      0,
+      1,
+      0,
+      0,
+      0,
+      1
+    ],
+    "path": "Workspace.shed_price_plaque_v1",
+    "name": "shed_price_plaque_v1",
+    "parts": [
+      {
+        "materialValue": 256,
+        "reflectance": 0,
+        "canCollide": true,
+        "color": [
+          0.6392157077789307,
+          0.6352941393852234,
+          0.6470588445663452
+        ],
+        "meshId": "rbxassetid://94674409394053",
+        "canTouch": true,
+        "textureId": "",
+        "class": "MeshPart",
+        "material": "Plastic",
+        "name": "Plaque_ClipSteel",
+        "canQuery": true,
+        "anchored": false,
+        "cframe": [
+          -21.905569076538086,
+          10.285013198852539,
+          -18.859737396240234,
+          1,
+          0,
+          0,
+          0,
+          1,
+          0,
+          0,
+          0,
+          1
+        ],
+        "castShadow": true,
+        "size": [
+          2.5199999809265137,
+          0.5900000333786011,
+          0.4100000262260437
+        ]
+      },
+      {
+        "materialValue": 256,
+        "reflectance": 0,
+        "canCollide": true,
+        "color": [
+          0.6392157077789307,
+          0.6352941393852234,
+          0.6470588445663452
+        ],
+        "meshId": "rbxassetid://113517064245196",
+        "canTouch": true,
+        "textureId": "",
+        "class": "MeshPart",
+        "material": "Plastic",
+        "name": "Plaque_CreamEnamel",
+        "canQuery": true,
+        "anchored": false,
+        "cframe": [
+          -21.905569076538086,
+          9.490013122558594,
+          -19.20223617553711,
+          1,
+          0,
+          0,
+          0,
+          1,
+          0,
+          0,
+          0,
+          1
+        ],
+        "castShadow": true,
+        "size": [
+          2.6500000953674316,
+          0.75,
+          0.07500000298023224
+        ]
+      },
+      {
+        "materialValue": 256,
+        "reflectance": 0,
+        "canCollide": true,
+        "color": [
+          0.6392157077789307,
+          0.6352941393852234,
+          0.6470588445663452
+        ],
+        "meshId": "rbxassetid://97929934426194",
+        "canTouch": true,
+        "textureId": "",
+        "class": "MeshPart",
+        "material": "Plastic",
+        "name": "Plaque_DullBrass",
+        "canQuery": true,
+        "anchored": false,
+        "cframe": [
+          -21.905569076538086,
+          10.030012130737305,
+          -19.162736892700195,
+          1,
+          0,
+          0,
+          0,
+          1,
+          0,
+          0,
+          0,
+          1
+        ],
+        "castShadow": true,
+        "size": [
+          2.4699997901916504,
+          0.11000001430511475,
+          0.025000005960464478
+        ]
+      },
+      {
+        "materialValue": 256,
+        "reflectance": 0,
+        "canCollide": true,
+        "color": [
+          0.6392157077789307,
+          0.6352941393852234,
+          0.6470588445663452
+        ],
+        "meshId": "rbxassetid://123963609200176",
+        "canTouch": true,
+        "textureId": "",
+        "class": "MeshPart",
+        "material": "Plastic",
+        "name": "Plaque_PaintedSteel",
+        "canQuery": true,
+        "anchored": false,
+        "cframe": [
+          -21.905569076538086,
+          9.537262916564941,
+          -19.197237014770508,
+          1,
+          0,
+          0,
+          0,
+          1,
+          0,
+          0,
+          0,
+          1
+        ],
+        "castShadow": true,
+        "size": [
+          2.799999952316284,
+          0.9944999814033508,
+          0.11500000208616257
+        ]
+      },
+      {
+        "materialValue": 256,
+        "reflectance": 0,
+        "canCollide": true,
+        "color": [
+          0.6392157077789307,
+          0.6352941393852234,
+          0.6470588445663452
+        ],
+        "meshId": "rbxassetid://80840474289499",
+        "canTouch": true,
+        "textureId": "",
+        "class": "MeshPart",
+        "material": "Plastic",
+        "name": "Plaque_WarmWood",
+        "canQuery": true,
+        "anchored": false,
+        "cframe": [
+          -21.905569076538086,
+          9.570013046264648,
+          -19.054737091064453,
+          1,
+          0,
+          0,
+          0,
+          1,
+          0,
+          0,
+          0,
+          1
+        ],
+        "castShadow": true,
+        "size": [
+          3.0399999618530273,
+          1.1399999856948853,
+          0.18000000715255737
+        ]
+      }
+    ]
+  },
+  "after": {
+    "pivot": [
+      -24.100000381469727,
+      3.299999713897705,
+      -49.40999984741211,
+      -1,
+      0,
+      -8.742277657347586e-8,
+      0,
+      1,
+      0,
+      8.742277657347586e-8,
+      0,
+      -1
+    ],
+    "path": "Workspace.ToolShop.Shelves.Shelf_Shovel.ShedPricePlaque_ArtPrototype",
+    "name": "ShedPricePlaque_ArtPrototype",
+    "parts": [
+      {
+        "materialValue": 1088,
+        "reflectance": 0.03500000014901161,
+        "canCollide": false,
+        "color": [
+          0.48235294222831726,
+          0.5098039507865906,
+          0.5215686559677124
+        ],
+        "meshId": "rbxassetid://94674409394053",
+        "canTouch": false,
+        "textureId": "",
+        "class": "MeshPart",
+        "material": "Metal",
+        "name": "Plaque_ClipSteel",
+        "canQuery": false,
+        "anchored": true,
+        "cframe": [
+          -24.100000381469727,
+          4.094998836517334,
+          -49.665000915527344,
+          -1,
+          0,
+          -8.742277657347586e-8,
+          0,
+          1,
+          0,
+          8.742277657347586e-8,
+          0,
+          -1
+        ],
+        "castShadow": true,
+        "size": [
+          2.5199999809265137,
+          0.5900000333786011,
+          0.4100000262260437
+        ]
+      },
+      {
+        "materialValue": 272,
+        "reflectance": 0.02500000037252903,
+        "canCollide": false,
+        "color": [
+          0.95686274766922,
+          0.9215686321258545,
+          0.8274509906768799
+        ],
+        "meshId": "rbxassetid://113517064245196",
+        "canTouch": false,
+        "textureId": "",
+        "class": "MeshPart",
+        "material": "SmoothPlastic",
+        "name": "Plaque_CreamEnamel",
+        "canQuery": false,
+        "anchored": true,
+        "cframe": [
+          -24.100000381469727,
+          3.2999987602233887,
+          -49.32250213623047,
+          -1,
+          0,
+          -8.742277657347586e-8,
+          0,
+          1,
+          0,
+          8.742277657347586e-8,
+          0,
+          -1
+        ],
+        "castShadow": true,
+        "size": [
+          2.6500000953674316,
+          0.75,
+          0.07500000298023224
+        ]
+      },
+      {
+        "materialValue": 1088,
+        "reflectance": 0.019999999552965164,
+        "canCollide": false,
+        "color": [
+          0.6941176652908325,
+          0.5490196347236633,
+          0.30980393290519714
+        ],
+        "meshId": "rbxassetid://97929934426194",
+        "canTouch": false,
+        "textureId": "",
+        "class": "MeshPart",
+        "material": "Metal",
+        "name": "Plaque_DullBrass",
+        "canQuery": false,
+        "anchored": true,
+        "cframe": [
+          -24.100000381469727,
+          3.8399977684020996,
+          -49.36199951171875,
+          -1,
+          0,
+          -8.742277657347586e-8,
+          0,
+          1,
+          0,
+          8.742277657347586e-8,
+          0,
+          -1
+        ],
+        "castShadow": true,
+        "size": [
+          2.4699997901916504,
+          0.11000001430511475,
+          0.025000005960464478
+        ]
+      },
+      {
+        "materialValue": 1088,
+        "reflectance": 0.014999999664723873,
+        "canCollide": false,
+        "color": [
+          0.24705882370471954,
+          0.2862745225429535,
+          0.32156863808631897
+        ],
+        "meshId": "rbxassetid://123963609200176",
+        "canTouch": false,
+        "textureId": "",
+        "class": "MeshPart",
+        "material": "Metal",
+        "name": "Plaque_PaintedSteel",
+        "canQuery": false,
+        "anchored": true,
+        "cframe": [
+          -24.100000381469727,
+          3.3472485542297363,
+          -49.32749938964844,
+          -1,
+          0,
+          -8.742277657347586e-8,
+          0,
+          1,
+          0,
+          8.742277657347586e-8,
+          0,
+          -1
+        ],
+        "castShadow": true,
+        "size": [
+          2.799999952316284,
+          0.9944999814033508,
+          0.11500000208616257
+        ]
+      },
+      {
+        "materialValue": 512,
+        "reflectance": 0,
+        "canCollide": false,
+        "color": [
+          0.5921568870544434,
+          0.3764705955982208,
+          0.2078431397676468
+        ],
+        "meshId": "rbxassetid://80840474289499",
+        "canTouch": false,
+        "textureId": "",
+        "class": "MeshPart",
+        "material": "Wood",
+        "name": "Plaque_WarmWood",
+        "canQuery": false,
+        "anchored": true,
+        "cframe": [
+          -24.100000381469727,
+          3.3799986839294434,
+          -49.470001220703125,
+          -1,
+          0,
+          -8.742277657347586e-8,
+          0,
+          1,
+          0,
+          8.742277657347586e-8,
+          0,
+          -1
+        ],
+        "castShadow": true,
+        "size": [
+          3.0399999618530273,
+          1.1399999856948853,
+          0.18000000715255737
+        ]
+      }
+    ]
+  },
+  "gameScriptsChanged": false,
+  "shelfCFrame": [
+    -24.100000381469727,
+    4.199999809265137,
+    -50.20000076293945,
+    1,
+    0,
+    0,
+    0,
+    1,
+    0,
+    0,
+    0,
+    1
+  ],
+  "shelf": "Workspace.ToolShop.Shelves.Shelf_Shovel.Board",
+  "backup": "ServerStorage._ShedPlaqueBeforeStaging",
+  "shelfSize": [
+    4.199999809265137,
+    0.30000001192092896,
+    1.399999976158142
+  ],
+  "status": "One imported art prototype staged in House Map Edit; awaiting visual approval. No Play or code changes.",
+  "date": "2026-11-15",
+  "pending": "Dynamic SurfaceGui not connected; original runtime primitive plaque is still generated by existing code during Play.",
+  "captures": {
+    "normal": {
+      "camera": [
+        -21.2,
+        6.36,
+        -43.03
+      ],
+      "lookAt": [
+        -24.1,
+        3.3,
+        -49.41
+      ],
+      "fov": 70,
+      "distanceStuds": 7.647090950158759
+    },
+    "detail": {
+      "camera": [
+        -25.6,
+        5.15,
+        -46.6
+      ],
+      "lookAt": [
+        -24.1,
+        3.65,
+        -49.5
+      ],
+      "fov": 70
+    }
+  }
+}

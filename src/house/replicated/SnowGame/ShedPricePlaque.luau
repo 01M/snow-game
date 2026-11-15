@@ -1,7 +1,6 @@
 --!strict
--- Concept A prototype for ONE shelf. Six primitive Parts: rim, enamel face and two two-piece clips.
--- Fixed geometry is needed for the shelf attachment/silhouette; a Billboard cannot supply that depth.
--- Everything is client-only and non-interactive. ToolShopClient still owns the existing purchase prompt.
+-- Ink only for ONE imported shelf plaque. Geometry stays in the place, outside Rojo.
+-- The client owns the localized print; ToolShopClient still owns the existing purchase prompt.
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local shared = ReplicatedStorage:WaitForChild("Shared")
 local Ui = require(shared:WaitForChild("Ui"))
@@ -10,80 +9,65 @@ local L = require(shared:WaitForChild("Locale")).t
 local Plaque = {}
 export type Update = (name: string, price: number, owned: boolean, affordable: boolean) -> ()
 
-local ENAMEL = Color3.fromRGB(244, 234, 211)
-local CLIP = Color3.fromRGB(133, 139, 145)
-
-local function part(name: string, size: Vector3, cf: CFrame, color: Color3, material: Enum.Material): Part
-	return Ui.new("Part", {
-		Name = name,
-		Size = size,
-		CFrame = cf,
-		Color = color,
-		Material = material,
-		Anchored = true,
-		CanCollide = false,
-		CanTouch = false,
-		CanQuery = false,
-		CastShadow = true,
-		TopSurface = Enum.SurfaceType.Smooth,
-		BottomSurface = Enum.SurfaceType.Smooth,
-	})
-end
-
 function Plaque.create(anchor: BasePart, rail: BasePart): Update
-	-- Use the actual shelf rail as the datum, not absolute map coordinates.
-	local origin = rail.CFrame * CFrame.new(0, -0.9, rail.Size.Z / 2 + 0.1)
-	local rim =
-		part("ShedPlaquePrototype", Vector3.new(2.94, 1.03, 0.12), origin, Ui.Color.outline, Enum.Material.Metal)
-	local face = part(
-		"Enamel",
-		Vector3.new(2.82, 0.91, 0.04),
-		origin * CFrame.new(0, 0, 0.075),
-		ENAMEL,
-		Enum.Material.SmoothPlastic
-	)
-	face.Reflectance = 0.025
-	face.Parent = rim
-	for _, x in { -0.95, 0.95 } do
-		local stem =
-			part("ClipFront", Vector3.new(0.16, 0.7, 0.06), origin * CFrame.new(x, 0.7, 0.1), CLIP, Enum.Material.Metal)
-		stem.Parent = rim
-		local cap = part(
-			"ClipTop",
-			Vector3.new(0.16, 0.06, 0.56),
-			rail.CFrame * CFrame.new(x, rail.Size.Y / 2 + 0.03, rail.Size.Z / 2 - 0.05),
-			CLIP,
-			Enum.Material.Metal
-		)
-		cap.Parent = rim
-	end
-
-	-- Only the ink/icons are UI. The cream face, rim and clips are actual geometry.
+	-- 200 pixels/stud; inset the ink horizontally from the enamel's clipped corners.
+	-- Parent the print to the existing anchor so it survives the mesh streaming out independently.
 	local gui = Ui.new("SurfaceGui", {
 		Name = "Print",
-		Face = Enum.NormalId.Back,
+		Face = Enum.NormalId.Front,
 		SizingMode = Enum.SurfaceGuiSizingMode.FixedSize,
-		CanvasSize = Vector2.new(564, 182),
+		CanvasSize = Vector2.new(530, 150),
 		AlwaysOnTop = false,
-		LightInfluence = 0.15,
+		LightInfluence = 0.5,
 		Brightness = 1,
 		MaxDistance = 40,
-		Parent = face,
+		Enabled = false,
+		Parent = anchor,
 	})
+	local shelf = rail.Parent
+	assert(shelf, "Shelf rail has no parent")
+	local function bindFace(inst: Instance)
+		local model = inst.Parent
+		if
+			inst:IsA("BasePart")
+			and inst.Name == "Plaque_CreamEnamel"
+			and model
+			and model.Name == "ShedPricePlaque_ArtPrototype"
+			and model.Parent == shelf
+		then
+			gui.Adornee = inst
+			gui.Enabled = true
+		end
+	end
+	local added = shelf.DescendantAdded:Connect(bindFace)
+	local removing = shelf.DescendantRemoving:Connect(function(inst: Instance)
+		if gui.Adornee == inst then
+			gui.Enabled = false
+			gui.Adornee = nil
+		end
+	end)
+	gui.Destroying:Once(function()
+		added:Disconnect()
+		removing:Disconnect()
+	end)
+	for _, inst in shelf:GetDescendants() do
+		bindFace(inst)
+	end
+
 	local title = Ui.label({
 		Name = "Title",
-		Position = UDim2.fromOffset(30, 6),
-		Size = UDim2.fromOffset(504, 74),
+		Position = UDim2.fromOffset(35, 8),
+		Size = UDim2.fromOffset(460, 62),
 		Text = "",
 		TextScaled = true,
 		TextColor3 = Ui.Color.ink,
 		TextXAlignment = Enum.TextXAlignment.Center,
 		Parent = gui,
-	}, { Ui.new("UITextSizeConstraint", { MaxTextSize = 72 }) })
+	}, { Ui.new("UITextSizeConstraint", { MaxTextSize = 60 }) })
 	local row = Ui.new("Frame", {
 		Name = "PriceRow",
-		Position = UDim2.fromOffset(30, 90),
-		Size = UDim2.fromOffset(504, 76),
+		Position = UDim2.fromOffset(35, 76),
+		Size = UDim2.fromOffset(460, 62),
 		BackgroundTransparency = 1,
 		Parent = gui,
 	}, {
@@ -92,15 +76,15 @@ function Plaque.create(anchor: BasePart, rail: BasePart): Update
 			HorizontalAlignment = Enum.HorizontalAlignment.Center,
 			VerticalAlignment = Enum.VerticalAlignment.Center,
 			SortOrder = Enum.SortOrder.LayoutOrder,
-			Padding = UDim.new(0, 12),
+			Padding = UDim.new(0, 10),
 		}),
 	})
-	local mark = Ui.icon("Cash", { Name = "Mark", Size = UDim2.fromOffset(64, 64), LayoutOrder = 1, Parent = row })
+	local mark = Ui.icon("Cash", { Name = "Mark", Size = UDim2.fromOffset(52, 52), LayoutOrder = 1, Parent = row })
 	local shortage = Ui.new("Frame", {
 		Name = "CashShortage",
 		AnchorPoint = Vector2.new(1, 1),
-		Position = UDim2.new(1, 3, 1, 3),
-		Size = UDim2.fromOffset(24, 24),
+		Position = UDim2.new(1, 2, 1, 2),
+		Size = UDim2.fromOffset(16, 16),
 		BackgroundColor3 = Ui.Color.redDark,
 		BorderSizePixel = 0,
 		Parent = mark,
@@ -109,23 +93,21 @@ function Plaque.create(anchor: BasePart, rail: BasePart): Update
 		Ui.new("Frame", {
 			AnchorPoint = Vector2.new(0.5, 0.5),
 			Position = UDim2.fromScale(0.5, 0.5),
-			Size = UDim2.fromOffset(14, 4),
+			Size = UDim2.fromOffset(10, 3),
 			BackgroundColor3 = Ui.Color.white,
 			BorderSizePixel = 0,
 		}),
 	})
 	local detail = Ui.label({
 		Name = "Price",
-		Size = UDim2.fromOffset(0, 76),
+		Size = UDim2.fromOffset(0, 62),
 		AutomaticSize = Enum.AutomaticSize.X,
 		Text = "",
-		TextSize = 68,
+		TextSize = 64,
 		TextColor3 = Ui.Color.ink,
 		LayoutOrder = 2,
 		Parent = row,
 	})
-	rim.Parent = anchor
-
 	return function(name: string, price: number, owned: boolean, affordable: boolean)
 		title.Text = name
 		detail.Text = if owned then L("Shop.Owned") else L("Shop.CashPrice", { price = Ui.number(price) })

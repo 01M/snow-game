@@ -1,0 +1,341 @@
+{
+  "name": "ShedPricePlaque_ArtPrototype",
+  "parts": [
+    {
+      "render": 0,
+      "canQuery": false,
+      "color": [
+        0.48235294222831726,
+        0.5098039507865906,
+        0.5215686559677124
+      ],
+      "anchored": true,
+      "materialValue": 1088,
+      "meshSize": [
+        2.5199999809265137,
+        0.5900000333786011,
+        0.4100000262260437
+      ],
+      "cframe": [
+        -24.100000381469727,
+        4.094998836517334,
+        -49.665000915527344,
+        -1,
+        0,
+        -8.742277657347586e-8,
+        0,
+        1,
+        0,
+        8.742277657347586e-8,
+        0,
+        -1
+      ],
+      "collision": 0,
+      "size": [
+        2.5199999809265137,
+        0.5900000333786011,
+        0.4100000262260437
+      ],
+      "canCollide": false,
+      "meshId": "rbxassetid://94674409394053",
+      "canTouch": false,
+      "textureId": "",
+      "name": "Plaque_ClipSteel",
+      "reflectance": 0.03500000014901161,
+      "castShadow": true,
+      "pivotOffset": [
+        0,
+        -0.7950000166893005,
+        -0.2549999952316284,
+        1,
+        1.2246468525851679e-16,
+        -1.2246468525851679e-16,
+        -1.2246468525851679e-16,
+        1,
+        -1.2246468525851679e-16,
+        1.2246468525851679e-16,
+        1.2246468525851679e-16,
+        1
+      ]
+    },
+    {
+      "render": 0,
+      "canQuery": false,
+      "color": [
+        0.9372549057006836,
+        0.8784313797950745,
+        0.7568627595901489
+      ],
+      "anchored": true,
+      "materialValue": 272,
+      "meshSize": [
+        2.6500000953674316,
+        0.75,
+        0.07500000298023224
+      ],
+      "cframe": [
+        -24.100000381469727,
+        3.2999987602233887,
+        -49.32250213623047,
+        -1,
+        0,
+        -8.742277657347586e-8,
+        0,
+        1,
+        0,
+        8.742277657347586e-8,
+        0,
+        -1
+      ],
+      "collision": 0,
+      "size": [
+        2.6500000953674316,
+        0.75,
+        0.07500000298023224
+      ],
+      "canCollide": false,
+      "meshId": "rbxassetid://113517064245196",
+      "canTouch": false,
+      "textureId": "",
+      "name": "Plaque_CreamEnamel",
+      "reflectance": 0,
+      "castShadow": true,
+      "pivotOffset": [
+        0,
+        0,
+        0.08749999850988388,
+        1,
+        1.2246468525851679e-16,
+        -1.2246468525851679e-16,
+        -1.2246468525851679e-16,
+        1,
+        -1.2246468525851679e-16,
+        1.2246468525851679e-16,
+        1.2246468525851679e-16,
+        1
+      ]
+    },
+    {
+      "render": 0,
+      "canQuery": false,
+      "color": [
+        0.6941176652908325,
+        0.5490196347236633,
+        0.30980393290519714
+      ],
+      "anchored": true,
+      "materialValue": 1088,
+      "meshSize": [
+        2.4699997901916504,
+        0.11000001430511475,
+        0.025000005960464478
+      ],
+      "cframe": [
+        -24.100000381469727,
+        3.8399977684020996,
+        -49.36199951171875,
+        -1,
+        0,
+        -8.742277657347586e-8,
+        0,
+        1,
+        0,
+        8.742277657347586e-8,
+        0,
+        -1
+      ],
+      "collision": 0,
+      "size": [
+        2.4699997901916504,
+        0.11000001430511475,
+        0.025000005960464478
+      ],
+      "canCollide": false,
+      "meshId": "rbxassetid://97929934426194",
+      "canTouch": false,
+      "textureId": "",
+      "name": "Plaque_DullBrass",
+      "reflectance": 0.019999999552965164,
+      "castShadow": true,
+      "pivotOffset": [
+        0,
+        -0.5400000214576721,
+        0.04800000041723251,
+        1,
+        1.2246468525851679e-16,
+        -1.2246468525851679e-16,
+        -1.2246468525851679e-16,
+        1,
+        -1.2246468525851679e-16,
+        1.2246468525851679e-16,
+        1.2246468525851679e-16,
+        1
+      ]
+    },
+    {
+      "render": 0,
+      "canQuery": false,
+      "color": [
+        0.24705882370471954,
+        0.2862745225429535,
+        0.32156863808631897
+      ],
+      "anchored": true,
+      "materialValue": 1088,
+      "meshSize": [
+        2.799999952316284,
+        0.9944999814033508,
+        0.11500000208616257
+      ],
+      "cframe": [
+        -24.100000381469727,
+        3.3472485542297363,
+        -49.32749938964844,
+        -1,
+        0,
+        -8.742277657347586e-8,
+        0,
+        1,
+        0,
+        8.742277657347586e-8,
+        0,
+        -1
+      ],
+      "collision": 0,
+      "size": [
+        2.799999952316284,
+        0.9944999814033508,
+        0.11500000208616257
+      ],
+      "canCollide": false,
+      "meshId": "rbxassetid://123963609200176",
+      "canTouch": false,
+      "textureId": "",
+      "name": "Plaque_PaintedSteel",
+      "reflectance": 0.014999999664723873,
+      "castShadow": true,
+      "pivotOffset": [
+        0,
+        -0.04725000262260437,
+        0.08250000327825546,
+        1,
+        1.2246468525851679e-16,
+        -1.2246468525851679e-16,
+        -1.2246468525851679e-16,
+        1,
+        -1.2246468525851679e-16,
+        1.2246468525851679e-16,
+        1.2246468525851679e-16,
+        1
+      ]
+    },
+    {
+      "render": 0,
+      "canQuery": false,
+      "color": [
+        0.7450980544090271,
+        0.5921568870544434,
+        0.4117647111415863
+      ],
+      "anchored": true,
+      "materialValue": 512,
+      "meshSize": [
+        3.0399999618530273,
+        1.1399999856948853,
+        0.18000000715255737
+      ],
+      "cframe": [
+        -24.100000381469727,
+        3.3799986839294434,
+        -49.470001220703125,
+        -1,
+        0,
+        -8.742277657347586e-8,
+        0,
+        1,
+        0,
+        8.742277657347586e-8,
+        0,
+        -1
+      ],
+      "collision": 0,
+      "size": [
+        3.0399999618530273,
+        1.1399999856948853,
+        0.18000000715255737
+      ],
+      "canCollide": false,
+      "meshId": "rbxassetid://80840474289499",
+      "canTouch": false,
+      "textureId": "",
+      "name": "Plaque_WarmWood",
+      "reflectance": 0,
+      "castShadow": true,
+      "pivotOffset": [
+        0,
+        -0.07999998331069946,
+        -0.06000000238418579,
+        1,
+        1.2246468525851679e-16,
+        -1.2246468525851679e-16,
+        -1.2246468525851679e-16,
+        1,
+        -1.2246468525851679e-16,
+        1.2246468525851679e-16,
+        1.2246468525851679e-16,
+        1
+      ]
+    }
+  ],
+  "modelAttributes": {
+    "RBX_ReimportId": "467b2cbf-55d3-455a-9487-1542cd1db2f6",
+    "ArtPrototype": true
+  },
+  "pivot": [
+    -24.100000381469727,
+    3.299999713897705,
+    -49.40999984741211,
+    -1,
+    0,
+    -8.742277657347586e-8,
+    0,
+    1,
+    0,
+    8.742277657347586e-8,
+    0,
+    -1
+  ],
+  "synced": true,
+  "status": "Playable Shovel prototype; awaiting complete sign visual approval",
+  "verification": {
+    "houseMapPlaySessions": 1,
+    "normalDistanceStuds": 7.7435,
+    "closeDistanceStuds": 5.1195,
+    "TestSave": true,
+    "insufficient": {
+      "cash": 5,
+      "price": 8,
+      "nativePromptCount": 1,
+      "owned": "Hand"
+    },
+    "affordable": {
+      "cash": 10,
+      "greenPrice": true,
+      "shortage": false
+    },
+    "purchased": {
+      "cash": 2,
+      "owned": "Hand,Shovel",
+      "nativePromptCount": 2,
+      "stateRu": "Куплено",
+      "promptDisabled": true
+    },
+    "oldPrimitiveCount": 0,
+    "printCount": 1,
+    "faceRebindPassed": true,
+    "geometryPartsUnchanged": 5,
+    "debugAttributesRemoved": true,
+    "codeChecks": "StyLua, Selene 0 errors/0 warnings, fresh both-place analyze 0 errors",
+    "typography": "Final title/price sizes adjusted in source and live SurfaceGui within the same Play; no second Play."
+  }
+}

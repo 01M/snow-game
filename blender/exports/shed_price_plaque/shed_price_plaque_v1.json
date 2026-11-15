@@ -1,0 +1,78 @@
+{
+  "status": "art prototype, awaiting approval; not imported into Roblox",
+  "units": "1 Blender unit = 1 stud; Z up, front -Y",
+  "fbx_axes": {
+    "forward": "-Z",
+    "up": "Y",
+    "scale": "FBX_SCALE_ALL"
+  },
+  "wood_backing_bounds": {
+    "width": 3.04,
+    "height": 1.14,
+    "depth": 0.18
+  },
+  "shelf_context": {
+    "width": 4.2,
+    "depth": 1.4,
+    "thickness": 0.3
+  },
+  "print_surface": {
+    "plane_y": -0.125,
+    "normal": [
+      0,
+      -1,
+      0
+    ],
+    "safe_width": 2.3,
+    "safe_height": 0.53
+  },
+  "meshes": [
+    {
+      "name": "Plaque_WarmWood",
+      "material": "SCS_PlaqueA_WarmWood",
+      "triangles": 556
+    },
+    {
+      "name": "Plaque_CreamEnamel",
+      "material": "SCS_PlaqueA_CreamEnamel",
+      "triangles": 220
+    },
+    {
+      "name": "Plaque_PaintedSteel",
+      "material": "SCS_PlaqueA_PaintedSteel",
+      "triangles": 472
+    },
+    {
+      "name": "Plaque_ClipSteel",
+      "material": "SCS_PlaqueA_ClipSteel",
+      "triangles": 552
+    },
+    {
+      "name": "Plaque_DullBrass",
+      "material": "SCS_PlaqueA_DullBrass",
+      "triangles": 184
+    }
+  ],
+  "triangles_total": 1984,
+  "excluded": [
+    "reference shelf and wall",
+    "cameras and lights",
+    "preview text",
+    "original scene objects"
+  ],
+  "materials_note": "Editable procedural wood/coat shaders are in .blend. FBX has base material colors; no grain baked yet.",
+  "text_note": "Preview ink is flat Arial Bold, not final Nunito. All dynamic text/price/state belongs in SurfaceGui.",
+  "gameplay_camera": {
+    "position": [
+      2.9,
+      -6.38,
+      3.06
+    ],
+    "target": [
+      0,
+      0,
+      0
+    ],
+    "vertical_fov_deg": 70
+  }
+}

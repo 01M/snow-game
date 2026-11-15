@@ -6,8 +6,10 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local config = require(ReplicatedStorage:WaitForChild("SnowGame"):WaitForChild("Config"))
 local WorldUi = require(ReplicatedStorage:WaitForChild("SnowGame"):WaitForChild("WorldUi"))
+local ShedPricePlaque = require(ReplicatedStorage:WaitForChild("SnowGame"):WaitForChild("ShedPricePlaque"))
 local Ui = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Ui"))
-local L = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Locale")).t
+local localeModule = ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Locale")
+local L = require(localeModule).t
 local player = Players.LocalPlayer
 local shop = workspace:WaitForChild("ToolShop")
 
@@ -32,7 +34,11 @@ end
 local function refresh()
 	for _, entry in entries do
 		local have = owns(entry.tool.Id)
-		WorldUi.purchase(entry.sign, entry.tool.Price, have, cash() >= entry.tool.Price)
+		if entry.prototype then
+			entry.prototype(L("Tool." .. entry.tool.Id), entry.tool.Price, have, cash() >= entry.tool.Price)
+		else
+			WorldUi.purchase(entry.sign, entry.tool.Price, have, cash() >= entry.tool.Price)
+		end
 		entry.prompt.Enabled = not have
 	end
 end
@@ -72,14 +78,25 @@ local function consider(inst: Instance)
 	task.spawn(function()
 		local old = anchor:WaitForChild("PriceBillboard", 5)
 		local prompt = anchor:WaitForChild("BuyPrompt", 5)
-		pending[anchor] = nil
 		if not old or not prompt or not anchor:IsDescendantOf(shop) then
+			pending[anchor] = nil
 			return
 		end
 		-- Fixed plates on the shelf fronts keep tall tools and shelf boards clear of the text.
 		old.Enabled = false
-		local labels = WorldUi.plate(anchor, Vector2.new(3.4, 1.05), CFrame.new(0, -2.1, -0.1))
-		entries[anchor] = { tool = tool, prompt = prompt, sign = WorldUi.sign(labels, L("Tool." .. tool.Id), "") }
+		if tool.Id == "Shovel" then
+			-- One production prototype only; the other shelves retain Commit 15's presentation.
+			local rail = anchor.Parent:WaitForChild("Board", 5)
+			if not rail or not rail:IsA("BasePart") or not anchor:IsDescendantOf(shop) then
+				pending[anchor] = nil
+				return
+			end
+			entries[anchor] = { tool = tool, prompt = prompt, prototype = ShedPricePlaque.create(anchor, rail) }
+		else
+			local labels = WorldUi.plate(anchor, Vector2.new(3.4, 1.05), CFrame.new(0, -2.1, -0.1))
+			entries[anchor] = { tool = tool, prompt = prompt, sign = WorldUi.sign(labels, L("Tool." .. tool.Id), "") }
+		end
+		pending[anchor] = nil
 		WorldUi.prompt(prompt)
 		refresh()
 	end)
@@ -95,6 +112,7 @@ for _, inst in shop:GetDescendants() do
 end
 
 player:GetAttributeChangedSignal("OwnedTools"):Connect(refresh)
+localeModule:GetAttributeChangedSignal("ForceLanguage"):Connect(refresh)
 task.spawn(function()
 	local ls = player:WaitForChild("leaderstats")
 	ls:WaitForChild("Cash").Changed:Connect(refresh)

@@ -9,11 +9,13 @@ local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local shared = ReplicatedStorage:WaitForChild("Shared")
-local L = require(shared:WaitForChild("Locale")).t
+local localeModule = shared:WaitForChild("Locale")
+local L = require(localeModule).t
 local Shop = require(shared:WaitForChild("Shop"))
 local ShopGui = require(shared:WaitForChild("Shop"):WaitForChild("Gui"))
 local Ui = require(shared:WaitForChild("Ui"))
 local WorldUi = require(ReplicatedStorage:WaitForChild("SnowGame"):WaitForChild("WorldUi"))
+local StallSigns = require(ReplicatedStorage:WaitForChild("SnowGame"):WaitForChild("UpgradeStallSigns"))
 
 local player = Players.LocalPlayer
 
@@ -44,7 +46,9 @@ local function refresh(anchor: Instance)
 	local sign = signs[anchor]
 	if sign then
 		sign.title.Text = L("Shop.Pass." .. pass.Key .. ".Name")
-		sign.detail.TextColor3 = owned and Ui.Color.greenLight or Ui.Color.goldLight
+		sign.detail.TextColor3 = if pass.Key == "BigBackpack"
+			then Ui.Color.ink
+			else owned and Ui.Color.greenLight or Ui.Color.goldLight
 		sign.detail.Text = owned and L("Shop.Owned") or L("Shop.PassOnly")
 		Ui.setIcon(sign.mark, owned and "Check" or "Robux")
 		if not owned and pass.Id ~= 0 then
@@ -90,7 +94,17 @@ local function hook(anchor: Instance)
 			then anchor:WaitForChild("PassBillboard", 5)
 			else anchor:FindFirstChild("PassBillboard")
 	) :: BillboardGui?
-	if pass and billboard then
+	if pass and pass.Key == "BigBackpack" and anchor:IsA("BasePart") then
+		if billboard then
+			billboard.Enabled = false
+		end
+		signs[anchor] = StallSigns.productTag(anchor)
+		localeModule:GetAttributeChangedSignal("ForceLanguage"):Connect(function()
+			if anchor.Parent then
+				refresh(anchor)
+			end
+		end)
+	elseif pass and billboard then
 		WorldUi.billboard(billboard, Vector2.new(2.8, 0.95), Vector3.new(0, 1.1, 0), 14)
 		local sign = WorldUi.sign(billboard, "", "")
 		sign.title.Size = UDim2.fromScale(0.9, 0.42)

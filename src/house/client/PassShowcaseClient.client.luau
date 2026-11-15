@@ -1,7 +1,7 @@
 --!strict
 -- PassShowcaseClient: пропуска в мире (Workspace.PassShowcase) и табличка ×2 Cash у снегоплавилки.
 -- Деталь с тегом ShopPass и атрибутом ShopPassKey (ключ в Shop.Passes) несёт PassPrompt; промпт открывает окно покупки Roblox.
--- PassBillboard.Status — «Только по пропуску» с ценой или «Куплено ✓», SignGui.Status — табличка ВКЛ/ВЫКЛ, зелёная, когда пасс есть.
+-- WorldUi рисует компактные подписи с ценой или «Куплено», SignGui.Status — табличка ВКЛ/ВЫКЛ.
 -- Покупку и атрибут Pass_<Key> обрабатывает ShopServer. Тег, а не обход папки: Workspace подгружается по частям (StreamingEnabled).
 local CollectionService = game:GetService("CollectionService")
 local MarketplaceService = game:GetService("MarketplaceService")
@@ -12,14 +12,13 @@ local shared = ReplicatedStorage:WaitForChild("Shared")
 local L = require(shared:WaitForChild("Locale")).t
 local Shop = require(shared:WaitForChild("Shop"))
 local ShopGui = require(shared:WaitForChild("Shop"):WaitForChild("Gui"))
+local Ui = require(shared:WaitForChild("Ui"))
+local WorldUi = require(ReplicatedStorage:WaitForChild("SnowGame"):WaitForChild("WorldUi"))
 
 local player = Players.LocalPlayer
 
 local TAG = "ShopPass"
-local GOLD = Color3.fromRGB(255, 215, 90)
-local ICE = Color3.fromRGB(190, 225, 255)
-local SIGN_ON = Color3.fromRGB(60, 180, 90)
-local SIGN_OFF = Color3.fromRGB(70, 80, 100)
+local signs: { [Instance]: WorldUi.Sign } = {}
 
 local function findPass(key: any)
 	for _, pass in Shop.Passes do
@@ -42,24 +41,28 @@ local function refresh(anchor: Instance)
 		prompt.Enabled = not owned and pass.Id ~= 0
 	end
 
-	local billboard = anchor:FindFirstChild("PassBillboard")
-	local status = billboard and billboard:FindFirstChild("Status") :: TextLabel?
-	if status then
-		status.TextColor3 = owned and GOLD or ICE
-		status.Text = owned and L("Shop.Owned") or L("Shop.PassOnly")
+	local sign = signs[anchor]
+	if sign then
+		sign.title.Text = L("Shop.Pass." .. pass.Key .. ".Name")
+		sign.detail.TextColor3 = owned and Ui.Color.greenLight or Ui.Color.goldLight
+		sign.detail.Text = owned and L("Shop.Owned") or L("Shop.PassOnly")
+		Ui.setIcon(sign.mark, owned and "Check" or "Robux")
 		if not owned and pass.Id ~= 0 then
 			ShopGui.loadPassPrice(pass, function(price: number)
-				if not Shop.hasPass(player, pass.Key) then
-					status.Text = L("Shop.PassOnlyPrice", { price = price })
+				if anchor.Parent and not Shop.hasPass(player, pass.Key) then
+					sign.detail.Text = L("Shop.Price", { price = Ui.number(price) })
 				end
 			end)
 		end
 	end
 
-	local sign = anchor:FindFirstChild("SignGui")
-	local signStatus = sign and sign:FindFirstChild("Status") :: TextLabel?
+	local surface = anchor:FindFirstChild("SignGui")
+	local signStatus = surface and surface:FindFirstChild("Status") :: TextLabel?
 	if signStatus then
-		signStatus.BackgroundColor3 = owned and SIGN_ON or SIGN_OFF
+		signStatus.BackgroundColor3 = owned and Ui.Color.greenLight or Ui.Color.surface
+		signStatus.TextColor3 = Ui.Color.ink
+		signStatus.FontFace = Ui.Font.heavy
+		signStatus.TextStrokeTransparency = 1
 		signStatus.Text = L(owned and "Shop.X2Sign.On" or "Shop.X2Sign.Off")
 	end
 end
@@ -67,7 +70,54 @@ end
 local function hook(anchor: Instance)
 	local pass = findPass(anchor:GetAttribute("ShopPassKey"))
 	local prompt = anchor:WaitForChild("PassPrompt", 5) :: ProximityPrompt?
+	local model = anchor.Parent
+	if model then
+		-- The coin's short x2 inscription is part of the showcase too.
+		for _, label in model:GetDescendants() do
+			if label:IsA("TextLabel") and label:FindFirstAncestorWhichIsA("SurfaceGui") then
+				label.FontFace = Ui.Font.heavy
+				label.TextStrokeColor3 = Ui.Color.outline
+				for _, child in label:GetChildren() do
+					if child:IsA("UIStroke") then
+						child.Color = Ui.Color.outline
+					end
+				end
+			end
+		end
+	end
+	local billboard = (
+		if anchor.Name == "PassAnchor"
+			then anchor:WaitForChild("PassBillboard", 5)
+			else anchor:FindFirstChild("PassBillboard")
+	) :: BillboardGui?
+	if pass and billboard then
+		WorldUi.billboard(billboard, Vector2.new(2.8, 0.95), Vector3.new(0, 1.1, 0), 14)
+		local sign = WorldUi.sign(billboard, "", "")
+		sign.title.Size = UDim2.fromScale(0.9, 0.42)
+		sign.detail.Position = UDim2.fromScale(0.25, 0.53)
+		sign.detail.Size = UDim2.fromScale(0.67, 0.37)
+		sign.mark.Position = UDim2.fromScale(0.08, 0.56)
+		sign.mark.Size = UDim2.fromScale(0.14, 0.3)
+		sign.status.Visible = false
+		signs[anchor] = sign
+	end
+	local surface = anchor:FindFirstChild("SignGui") :: SurfaceGui?
+	if surface then
+		surface.LightInfluence = 0
+		surface.CanvasSize = Vector2.new(540, 150)
+		local label = surface:FindFirstChild("Status") :: TextLabel?
+		if label then
+			for _, child in label:GetChildren() do
+				if child:IsA("UIStroke") then
+					child:Destroy()
+				end
+			end
+			Ui.border(Ui.Stroke.chip).Parent = label
+		end
+	end
 	if pass and prompt then
+		-- Some placed prompts have locale attributes but were missing the Localized tag.
+		WorldUi.prompt(prompt)
 		prompt.Triggered:Connect(function()
 			MarketplaceService:PromptGamePassPurchase(player, pass.Id)
 		end)
@@ -81,6 +131,9 @@ local function hook(anchor: Instance)
 end
 
 CollectionService:GetInstanceAddedSignal(TAG):Connect(hook)
+CollectionService:GetInstanceRemovedSignal(TAG):Connect(function(anchor)
+	signs[anchor] = nil
+end)
 for _, anchor in CollectionService:GetTagged(TAG) do
 	task.spawn(hook, anchor)
 end

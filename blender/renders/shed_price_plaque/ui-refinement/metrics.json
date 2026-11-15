@@ -1,0 +1,122 @@
+{
+  "status": "UI-only refinement; preview states on one unchanged plaque",
+  "baselineCommit": "429f03c",
+  "sourceModule": "src/house/replicated/SnowGame/ShedPricePlaque.luau",
+  "preview": "Real Roblox captures of the same face; long-name and Owned examples are UI previews, not new purchases or copies to other shelves.",
+  "font": {
+    "allItemNames": 80,
+    "priceNumerals": 88,
+    "currency": 40,
+    "owned": 64,
+    "shortage": 36
+  },
+  "cameras": {
+    "frontPreview": {
+      "position": [
+        -24.1,
+        3.3,
+        -45.9
+      ],
+      "lookAt": [
+        -24.1,
+        3.3,
+        -49.3225
+      ],
+      "fov": 70
+    },
+    "normal": {
+      "position": [
+        -22.92,
+        6.46,
+        -42.35
+      ],
+      "lookAt": [
+        -24.1,
+        3.3,
+        -49.3225
+      ],
+      "fov": 70
+    }
+  },
+  "cases": [
+    {
+      "key": "Pusher",
+      "statusHeight": 69.84000396728516,
+      "priceWidth": 157.60000610351562,
+      "titleFits": true,
+      "statusVisible": false,
+      "price": 30,
+      "status": "Need more Cash",
+      "statusFits": true,
+      "titleSpace": 470,
+      "ink": {
+        "1": 0.10588235408067703,
+        "2": 0.16470588743686676,
+        "3": 0.3607843220233917
+      },
+      "ownedMarkVisible": false,
+      "titleWidth": 376.8000183105469,
+      "priceSpace": 460,
+      "display": "30 Cash",
+      "name": "Snow Pusher",
+      "tool": "Blower",
+      "titleFont": 80
+    },
+    {
+      "key": "Vacuum",
+      "statusHeight": 69.84000396728516,
+      "priceWidth": 196.8000030517578,
+      "titleFits": true,
+      "statusVisible": true,
+      "price": 100,
+      "status": "Не хватает Cash",
+      "statusFits": true,
+      "titleSpace": 470,
+      "ink": {
+        "1": 0.10588235408067703,
+        "2": 0.16470588743686676,
+        "3": 0.3607843220233917
+      },
+      "ownedMarkVisible": false,
+      "titleWidth": 447.20001220703125,
+      "priceSpace": 250,
+      "display": "100 Cash",
+      "name": "Снегоуборщик",
+      "tool": "Vacuum",
+      "titleFont": 80
+    },
+    {
+      "key": "Owned",
+      "statusHeight": 69.84000396728516,
+      "priceWidth": 257.6000061035156,
+      "titleFits": true,
+      "statusVisible": false,
+      "price": 8,
+      "status": "Не хватает Cash",
+      "statusFits": true,
+      "titleSpace": 470,
+      "ink": {
+        "1": 0.10588235408067703,
+        "2": 0.16470588743686676,
+        "3": 0.3607843220233917
+      },
+      "ownedMarkVisible": true,
+      "titleWidth": 219.1999969482422,
+      "priceSpace": 460,
+      "display": "Куплено",
+      "name": "Лопата",
+      "tool": "Shovel",
+      "titleFont": 80
+    }
+  ],
+  "verification": {
+    "playSessions": 1,
+    "TestSave": true,
+    "startCash": 5,
+    "purchasesRepeated": false,
+    "originalPurchaseChecks": "Reused 429f03c; purchase/controller/server code unchanged.",
+    "sourceGeometryAndMaterialChanges": false,
+    "temporaryGuiAndLocaleAttributesCleaned": true,
+    "mandatoryChecks": "StyLua, Selene 0 errors/0 warnings, fresh both-place analyze 0 errors"
+  }
+}

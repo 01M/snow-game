@@ -1,4 +1,4 @@
--- Party manifest: real QueueState members first, compact match settings, then departure.
+-- Party and match settings: two coherent groups, followed by one departure row.
 -- Presentation only: the existing QueueAction requests and server queue remain authoritative.
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -52,9 +52,9 @@ window = Ui.window({
 	Name = "LobbyMenu",
 	Title = L("Lobby.Menu.Party", { count = 0, max = Maps.MaxPlayers }),
 	Icon = "Invite",
-	Size = Vector2.new(720, 480),
-	Compact = Vector2.new(960, 420),
-	Narrow = Vector2.new(820, 448),
+	Size = Vector2.new(800, 500),
+	Compact = Vector2.new(860, 432),
+	Narrow = Vector2.new(760, 500),
 	OnLayout = function(mode)
 		if applyLayout then
 			applyLayout(mode)
@@ -96,6 +96,7 @@ local body = window.body
 local main =
 	Ui.new("Frame", { Name = "Manifest", Size = UDim2.fromScale(1, 1), BackgroundTransparency = 1, Parent = body })
 local roster = Ui.new("Frame", { Name = "Roster", BackgroundTransparency = 1, Parent = main })
+local partyHeading = Ui.label({ Text = "", TextColor3 = C.inkSoft, Parent = roster })
 local membersPane = Ui.new("Frame", { Name = "Members", BackgroundTransparency = 1, Parent = roster })
 local slots = {}
 local thumbnails = {}
@@ -168,15 +169,10 @@ local invite = Ui.button({
 	Text = "",
 	TextSize = 20,
 	Size = UDim2.fromOffset(176, 60),
-	AnchorPoint = Vector2.new(1, 0),
-	Position = UDim2.fromScale(1, 0),
 	Parent = roster,
 })
 local inviteHint = Ui.label({
 	Name = "InviteHint",
-	AnchorPoint = Vector2.new(1, 0),
-	Position = UDim2.new(1, 0, 0, 68),
-	Size = UDim2.fromOffset(176, 36),
 	Text = "",
 	TextSize = 16,
 	TextColor3 = C.inkSoft,
@@ -184,8 +180,11 @@ local inviteHint = Ui.label({
 	Parent = roster,
 })
 local match = Ui.new("Frame", { Name = "Match", BackgroundTransparency = 1, Parent = main })
-local mapControl = Ui.card({ Name = "Map", Size = UDim2.fromOffset(320, 72), Parent = match }, true)
-mapControl.Border.Thickness = 2
+local settingsHeading = Ui.label({ Text = "", TextColor3 = C.inkSoft, Parent = match })
+local settingsCard = Ui.card({ Name = "SettingsCard", Parent = match })
+local mapControl = Ui.card({ Name = "Map", BackgroundTransparency = 1, Parent = settingsCard }, true)
+mapControl.BackgroundTransparency = 1
+mapControl.Border.Enabled = false
 local mapPicture = Ui.new("ImageLabel", {
 	Name = "Picture",
 	Position = UDim2.fromOffset(12, 12),
@@ -196,14 +195,6 @@ local mapPicture = Ui.new("ImageLabel", {
 	ScaleType = Enum.ScaleType.Crop,
 	Parent = mapControl,
 }, { Ui.corner(8) })
-local mapCaption = Ui.label({
-	Text = "",
-	Position = UDim2.fromOffset(104, 6),
-	Size = UDim2.new(1, -148, 0, 22),
-	TextSize = 16,
-	TextColor3 = C.inkSoft,
-	Parent = mapControl,
-})
 local mapName = Ui.label({
 	Name = "MapName",
 	Text = "",
@@ -221,7 +212,12 @@ local mapMark = Ui.icon("Check", {
 	Size = UDim2.fromOffset(24, 24),
 	Parent = mapControl,
 })
-local capacity = Ui.new("Frame", { Name = "Capacity", BackgroundTransparency = 1, Parent = match })
+local function divider(parent)
+	return Ui.new("Frame", { BackgroundColor3 = C.surfaceLine, BorderSizePixel = 0, Parent = parent })
+end
+local mapDivider = divider(settingsCard)
+local capacityDivider = divider(settingsCard)
+local capacity = Ui.new("Frame", { Name = "Capacity", BackgroundTransparency = 1, Parent = settingsCard })
 local capacityLabel = Ui.label({
 	Name = "Label",
 	Text = "",
@@ -266,7 +262,7 @@ local plus = Ui.button({
 	Size = UDim2.fromOffset(60, 60),
 	Parent = stepper,
 })
-local access = Ui.new("Frame", { Name = "Access", BackgroundTransparency = 1, Parent = main })
+local access = Ui.new("Frame", { Name = "Access", BackgroundTransparency = 1, Parent = settingsCard })
 local friends = Ui.button({
 	Name = "Friends",
 	Kind = "neutral",
@@ -314,6 +310,7 @@ local footnote = Ui.label({
 	TextXAlignment = Enum.TextXAlignment.Center,
 	Parent = main,
 })
+local actionDivider = divider(main)
 -- Future catalog selection is local disclosure, not a separate queue or a new map.
 local mapPicker = Ui.new(
 	"Frame",
@@ -415,24 +412,19 @@ local function showNotice(key)
 end
 local function membersLayout(mode)
 	local compact = mode == "compact"
-	local max = myState and myState.maxPlayers or Maps.MaxPlayers
-	local columns = if compact then max elseif max == 1 then 1 else 2
-	local rows = math.ceil(max / columns)
-	local paneWidth = if mode == "normal" then 488 elseif compact then 728 else 588
-	local h = if compact or rows == 1 then 60 else 48
-	local width = (paneWidth - (columns - 1) * 12) / columns
+	local h = if compact then 60 else 72
+	local width = (membersPane.Size.X.Offset - 10) / 2
 	for i, slot in slots do
-		slot.frame.Visible = i <= max
 		slot.frame.Size = UDim2.fromOffset(width, h)
-		slot.frame.Position =
-			UDim2.fromOffset((i - 1) % columns * (width + 12), math.floor((i - 1) / columns) * (h + 8))
-		local avatarSize = if compact then 40 else 32
+		slot.frame.Position = UDim2.fromOffset((i - 1) % 2 * (width + 10), math.floor((i - 1) / 2) * (h + 8))
+		local avatarSize = if compact then 32 else 36
 		slot.fallback.Size = UDim2.fromOffset(avatarSize, avatarSize)
 		slot.portrait.Size = slot.fallback.Size
 		slot.fallback.Position = UDim2.fromOffset(8, (h - avatarSize) / 2)
 		slot.portrait.Position = slot.fallback.Position
 		slot.name.Position = UDim2.fromOffset(avatarSize + 16, h / 2 - (if slot.userId then 23 else 12))
 		slot.name.Size = UDim2.new(1, -avatarSize - 24, 0, 25)
+		slot.name.TextSize = if compact then 22 else 20
 		slot.role.Position = UDim2.fromOffset(avatarSize + 16, h / 2 + 2)
 		slot.role.Size = UDim2.new(1, -avatarSize - 24, 0, if compact then 24 else 20)
 		slot.role.TextSize = if compact then 18 else 16
@@ -451,6 +443,8 @@ refresh = function()
 		mapPicker.Visible = false
 	end
 	main.Visible = not mapPicker.Visible
+	partyHeading.Text = L("Lobby.Menu.PartyHeading")
+	settingsHeading.Text = L("Lobby.Menu.MatchSettings")
 	header.Title.Text = L("Lobby.Menu.Party", { count = #s.players, max = s.maxPlayers })
 	timerText.Text = if s.phase == "setup"
 		then L("Lobby.Menu.AutoStart", { n = s.timeLeft })
@@ -458,6 +452,7 @@ refresh = function()
 		else L("Lobby.Teleporting")
 	for i, slot in slots do
 		local id = s.players[i]
+		local available = i <= s.maxPlayers
 		if slot.userId ~= id then
 			slot.userId = id
 			slot.portrait.Image = ""
@@ -468,10 +463,11 @@ refresh = function()
 		end
 		slot.frame.BackgroundColor3 = if id then C.card else C.surface
 		slot.frame.Border.Color = if id == s.ownerUserId then C.goldDark else C.surfaceLine
+		Ui.setIcon(slot.fallback, if available then "Invite" else "Lock")
 		local member = id and Players:GetPlayerByUserId(id)
 		slot.name.Text = if id
 			then (member and member.DisplayName or L("Lobby.Menu.Player"))
-			else L("Lobby.Menu.OpenSlot")
+			else L(if available then "Lobby.Menu.OpenSlot" else "Lobby.Menu.ClosedSlot")
 		slot.name.TextColor3 = if id then C.ink else C.inkSoft
 		slot.role.Visible = id ~= nil
 		slot.role.Text = if not id
@@ -481,7 +477,7 @@ refresh = function()
 			)
 			else L(if id == player.UserId then "Lobby.Menu.You" else "Lobby.Menu.Member")
 		slot.portrait.Visible = id ~= nil
-		slot.fallback.ImageTransparency = if id then 0 else 0.55
+		slot.fallback.ImageTransparency = if id then 0 elseif available then 0.55 else 0.7
 	end
 	membersLayout(window.layout())
 	Ui.setKind(
@@ -502,7 +498,6 @@ refresh = function()
 	local map = Maps.ById[s.mapId]
 	mapName.Text = map and L("Map." .. map.Id) or ""
 	mapPicture.Image = map and map.Image or ""
-	mapCaption.Text = L("Lobby.Menu.MapLabel")
 	Ui.setIcon(mapMark, if #Maps.List > 1 then "Map" else "Check")
 	mapControl.Selectable = edit and #Maps.List > 1
 	capacityLabel.Text = L("Lobby.Menu.MaxPlayers")
@@ -572,38 +567,71 @@ end
 applyLayout = function(mode)
 	local normal = mode == "normal"
 	local compact = mode == "compact"
-	local w = if normal then 680 elseif compact then 920 else 780
+	local w = if normal then 800 elseif compact then 860 else 760
+	local pad = if compact then 16 else 20
+	local partyWidth = if compact then 380 elseif normal then 360 else 340
+	local gap = if compact then 16 else 20
+	local settingsWidth = w - 2 * pad - partyWidth - gap
+	local top = if compact then 8 else 14
+	-- The shared fit margin is 12px per edge; keep the cap inside it on a phone.
+	window.root.SnowCap.Position = UDim2.new(0.5, 0, 0, if compact then -12 else -18)
 	header.Title.Size = UDim2.new(1, if compact then -432 else -400, 1, -4)
 	timer.Size = UDim2.fromOffset(if compact then 260 else 228, 40)
 	timerText.TextSize = if compact then 20 else 18
-	mapCaption.TextSize = if compact then 18 else 16
-	roster.Position = UDim2.fromOffset(20, if normal then 16 else 12)
-	roster.Size = UDim2.fromOffset(w, if compact then 84 else 104)
-	membersPane.Size = UDim2.fromOffset(w - 192, if compact then 60 else 104)
-	inviteHint.Position = UDim2.new(1, 0, 0, if compact then 64 else 68)
-	inviteHint.Size = UDim2.fromOffset(176, if compact then 24 else 36)
-	match.Position = UDim2.fromOffset(20, if normal then 136 elseif compact then 112 else 132)
-	match.Size = UDim2.fromOffset(w, 72)
-	local mapWidth = if normal then 320 else 280
-	mapControl.Size = UDim2.fromOffset(mapWidth, 72)
-	capacity.Position = UDim2.fromOffset(mapWidth + 16, 0)
-	capacity.Size = UDim2.fromOffset(if normal then 344 else 280, 72)
-	stepper.Size = UDim2.fromOffset(if normal then 212 else 188, 60)
-	countBox.Size = UDim2.fromOffset(if normal then 68 else 52, 60)
-	plus.Position = UDim2.fromOffset(if normal then 144 else 128, 0)
-	capacityLabel.Size = UDim2.new(1, if normal then -224 else -196, 1, 0)
-	access.Position = UDim2.fromOffset(20, if normal then 220 elseif compact then 112 else 132)
-	access.Size = UDim2.fromOffset(w, if normal then 60 else 112)
-	friends.Position = if normal then UDim2.new() else UDim2.fromOffset(592, 6)
-	friends.Size = UDim2.fromOffset(if normal then 280 else w - 592, 60)
-	privacy.Position = if normal then UDim2.fromOffset(304, 0) else UDim2.fromOffset(592, 76)
-	privacy.Size = if normal then UDim2.fromOffset(w - 304, 60) else UDim2.fromOffset(w - 592, 44)
-	local footerY = if normal then 300 elseif compact then 240 else 272
-	leave.Position = UDim2.fromOffset(20, footerY)
-	start.Position = UDim2.new(1, -20, 0, footerY)
-	start.Size = UDim2.fromOffset(w - 160, 64)
-	footnote.Position = UDim2.fromOffset(20, if normal then 376 elseif compact then 316 else 344)
-	footnote.Size = UDim2.fromOffset(w, 24)
+	roster.Position = UDim2.fromOffset(pad, top)
+	roster.Size = UDim2.fromOffset(partyWidth, if compact then 250 else 286)
+	partyHeading.Size = UDim2.fromOffset(partyWidth, 24)
+	settingsHeading.Size = UDim2.fromOffset(settingsWidth, 24)
+	partyHeading.TextSize = if compact then 20 else 18
+	settingsHeading.TextSize = partyHeading.TextSize
+	membersPane.Position = UDim2.fromOffset(0, if compact then 28 else 34)
+	membersPane.Size = UDim2.fromOffset(partyWidth, if compact then 128 else 152)
+	invite.Position = UDim2.fromOffset(0, if compact then 168 else 198)
+	invite.Size = UDim2.fromOffset(partyWidth, if compact then 48 else 56)
+	inviteHint.Position = UDim2.fromOffset(0, if compact then 224 else 262)
+	inviteHint.Size = UDim2.fromOffset(partyWidth, if compact then 26 else 24)
+	inviteHint.TextSize = if compact then 18 else 16
+	match.Position = UDim2.fromOffset(pad + partyWidth + gap, top)
+	match.Size = UDim2.fromOffset(settingsWidth, roster.Size.Y.Offset)
+	settingsCard.Position = UDim2.fromOffset(0, if compact then 28 else 34)
+	settingsCard.Size = UDim2.fromOffset(settingsWidth, if compact then 222 else 252)
+	mapControl.Position = UDim2.fromOffset(12, 8)
+	mapControl.Size = UDim2.fromOffset(settingsWidth - 24, if compact then 54 else 68)
+	mapPicture.Size = UDim2.fromOffset(if compact then 80 else 90, if compact then 48 else 54)
+	mapPicture.Position = UDim2.fromOffset(0, if compact then 3 else 7)
+	mapName.Position = UDim2.fromOffset(if compact then 94 else 104, 0)
+	mapName.Size = UDim2.new(1, if compact then -134 else -144, 1, 0)
+	mapName.TextSize = if compact then 24 else 22
+	mapDivider.Position = UDim2.fromOffset(12, if compact then 70 else 84)
+	mapDivider.Size = UDim2.fromOffset(settingsWidth - 24, 1)
+	capacity.Position = UDim2.fromOffset(12, if compact then 78 else 94)
+	capacity.Size = UDim2.fromOffset(settingsWidth - 24, 48)
+	stepper.Size = UDim2.fromOffset(160, 48)
+	minus.Size = UDim2.fromOffset(48, 48)
+	countBox.Position = UDim2.fromOffset(56, 0)
+	countBox.Size = UDim2.fromOffset(48, 48)
+	plus.Position = UDim2.fromOffset(112, 0)
+	plus.Size = UDim2.fromOffset(48, 48)
+	capacityLabel.Size = UDim2.new(1, -172, 1, 0)
+	capacityLabel.TextSize = if compact then 22 else 20
+	capacityDivider.Position = UDim2.fromOffset(12, if compact then 134 else 154)
+	capacityDivider.Size = UDim2.fromOffset(settingsWidth - 24, 1)
+	access.Position = UDim2.fromOffset(12, if compact then 144 else 164)
+	access.Size = UDim2.fromOffset(settingsWidth - 24, if compact then 78 else 80)
+	friends.Size = UDim2.new(1, 0, 0, 48)
+	privacy.Position = UDim2.fromOffset(0, 54)
+	privacy.Size = UDim2.new(1, 0, 0, if compact then 24 else 26)
+	privacy.TextSize = if compact then 18 else 16
+	local footerY = if compact then 274 else 320
+	actionDivider.Position = UDim2.fromOffset(pad, footerY - 12)
+	actionDivider.Size = UDim2.fromOffset(w - 2 * pad, 1)
+	leave.Position = UDim2.fromOffset(pad, footerY)
+	leave.Size = UDim2.fromOffset(128, if compact then 52 else 60)
+	start.Position = UDim2.new(1, -pad, 0, footerY)
+	start.Size = UDim2.fromOffset(w - 2 * pad - 144, leave.Size.Y.Offset)
+	footnote.Position = UDim2.fromOffset(pad, if compact then 334 else 392)
+	footnote.Size = UDim2.fromOffset(w - 2 * pad, if compact then 22 else 24)
+	footnote.TextSize = if compact then 18 else 16
 	membersLayout(mode)
 end
 applyLayout(window.layout())

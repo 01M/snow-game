@@ -295,6 +295,7 @@ return {
 	["Shop.UpgradeShop"] = { en = "Upgrade Shop", ru = "Магазин апгрейдов" },
 	["Shop.ToolsSign"] = { en = "TOOLS", ru = "ИНСТРУМЕНТЫ" },
 	["World.Purchase.Short"] = { en = "Need more Cash", ru = "Не хватает Cash" },
+	["World.Purchase.Insufficient"] = { en = "Need Cash", ru = "Не хватает" },
 	["World.Purchase.Ready"] = { en = "Ready to use", ru = "Можно использовать" },
 	["World.Backpack.Add"] = { en = "Backpack +{n}", ru = "Рюкзак +{n}" },
 

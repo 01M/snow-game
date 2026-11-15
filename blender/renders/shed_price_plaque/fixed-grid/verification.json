@@ -1,0 +1,193 @@
+{
+  "baseline": "81abd91",
+  "status": "Approved fixed grid implemented on one Shovel prototype; no other shelves changed",
+  "captureType": "Real Roblox Play screenshots; long names and front short/available states are GUI previews on the same 3D model, not new products or purchase prices.",
+  "files": [
+    "01-normal-insufficient-en.jpg",
+    "02-normal-buy-en.jpg",
+    "03-normal-owned-en.jpg",
+    "04-normal-long-ru-preview.jpg",
+    "05-front-short-preview.jpg",
+    "06-front-snow-pusher-preview.jpg",
+    "07-front-snowblower-ru-preview.jpg",
+    "08-front-owned-ru.jpg"
+  ],
+  "grid": {
+    "canvas": [
+      530,
+      150
+    ],
+    "price": [
+      30,
+      74,
+      200,
+      76
+    ],
+    "priceLabel": [
+      70,
+      -6,
+      130,
+      88
+    ],
+    "state": [
+      246,
+      74,
+      254,
+      76
+    ],
+    "stateLabel": [
+      64,
+      0,
+      190,
+      76
+    ],
+    "fixedAcrossAllStates": true
+  },
+  "type": {
+    "family": "Nunito",
+    "nameWeight": "ExtraBold",
+    "nameRange": [
+      76,
+      80
+    ],
+    "price": 88,
+    "status": 44
+  },
+  "icons": {
+    "currency": "Existing CashS SVG image 98735016004724",
+    "owned": "Existing Check SVG image 102665838410405",
+    "insufficient": "Native SurfaceGui vector triangle with !, no image upload"
+  },
+  "verification": {
+    "playSessions": 1,
+    "TestSave": true,
+    "actualNormalStates": [
+      "5 Cash: Need Cash + warning",
+      "10 Cash: Buy",
+      "Native E purchase 10 -> 2 Cash, Hand,Shovel: Owned + check"
+    ],
+    "referencePriceAfterPurchase": 8,
+    "promptDisabledAfterPurchase": true,
+    "geometryAndMaterialsUnchanged": true,
+    "debugAndPreviewCleanup": true,
+    "mandatoryChecks": "StyLua, Selene 0 errors/0 warnings/0 parse errors; fresh both-place analyze 0 errors",
+    "renderingRecovery": "Initial viewport 1x1 stalled captures. Bringing House Map to foreground restored rendering. Play was not restarted; game screenshots afterward used Studio MCP."
+  },
+  "cameras": {
+    "normal": {
+      "position": [
+        -22.92,
+        6.46,
+        -42.35
+      ],
+      "lookAt": [
+        -24.1,
+        3.3,
+        -49.3225
+      ],
+      "fov": 70
+    },
+    "front": {
+      "position": [
+        -24.1,
+        3.3,
+        -45.9
+      ],
+      "lookAt": [
+        -24.1,
+        3.3,
+        -49.3225
+      ],
+      "fov": 70
+    }
+  },
+  "previewMetrics": [
+    {
+      "key": "Short",
+      "priceFits": true,
+      "price": "8",
+      "titleHeight": 80,
+      "titleSpace": 424,
+      "titleWidth": 191.1999969482422,
+      "titleFits": true,
+      "status": "Need Cash",
+      "pricePosition": {
+        "1": 30,
+        "2": 74
+      },
+      "statusSpace": 190,
+      "warning": true,
+      "statusFits": true,
+      "name": "Shovel",
+      "priceSpace": 130,
+      "labelPosition": {
+        "1": 64,
+        "2": 0
+      },
+      "statusWidth": 165.60000610351562,
+      "priceWidth": 39.20000076293945,
+      "statePosition": {
+        "1": 246,
+        "2": 74
+      }
+    },
+    {
+      "key": "Pusher",
+      "priceFits": true,
+      "price": "30",
+      "titleHeight": 80,
+      "titleSpace": 424,
+      "titleWidth": 371.20001220703125,
+      "titleFits": true,
+      "status": "Buy",
+      "pricePosition": {
+        "1": 30,
+        "2": 74
+      },
+      "statusSpace": 190,
+      "warning": false,
+      "statusFits": true,
+      "name": "Snow Pusher",
+      "priceSpace": 130,
+      "labelPosition": {
+        "1": 64,
+        "2": 0
+      },
+      "statusWidth": 60,
+      "priceWidth": 78.4000015258789,
+      "statePosition": {
+        "1": 246,
+        "2": 74
+      }
+    },
+    {
+      "key": "Vacuum",
+      "priceFits": true,
+      "price": "100",
+      "titleHeight": 76.80000305175781,
+      "titleSpace": 424,
+      "titleWidth": 420.8000183105469,
+      "titleFits": true,
+      "status": "Не хватает",
+      "pricePosition": {
+        "1": 30,
+        "2": 74
+      },
+      "statusSpace": 190,
+      "warning": true,
+      "statusFits": true,
+      "name": "Снегоуборщик",
+      "priceSpace": 130,
+      "labelPosition": {
+        "1": 64,
+        "2": 0
+      },
+      "statusWidth": 180,
+      "priceWidth": 117.5999984741211,
+      "statePosition": {
+        "1": 246,
+        "2": 74
+      }
+    }
+  ]
+}

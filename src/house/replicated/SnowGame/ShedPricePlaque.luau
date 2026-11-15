@@ -9,6 +9,40 @@ local L = require(shared:WaitForChild("Locale")).t
 local Plaque = {}
 export type Update = (name: string, price: number, owned: boolean, affordable: boolean) -> ()
 
+local function warning(parent: Instance): Frame
+	local glyph = Ui.new("Frame", {
+		Name = "Warning",
+		Size = UDim2.fromOffset(56, 76),
+		BackgroundTransparency = 1,
+		Parent = parent,
+	})
+	-- Vector outline, not a small badge on the currency icon. No extra image upload is needed.
+	local points = { Vector2.new(28, 15), Vector2.new(4, 61), Vector2.new(52, 61) }
+	for i, a in points do
+		local b = points[i % #points + 1]
+		local delta = b - a
+		Ui.new("Frame", {
+			AnchorPoint = Vector2.new(0.5, 0.5),
+			Position = UDim2.fromOffset((a.X + b.X) / 2, (a.Y + b.Y) / 2),
+			Size = UDim2.fromOffset(delta.Magnitude, 4.5),
+			Rotation = math.deg(math.atan2(delta.Y, delta.X)),
+			BackgroundColor3 = Ui.Color.ink,
+			BorderSizePixel = 0,
+			Parent = glyph,
+		}, { Ui.corner("full") })
+	end
+	for _, bar in { { 26, 31, 4, 16 }, { 26, 52, 4, 4 } } do
+		Ui.new("Frame", {
+			Position = UDim2.fromOffset(bar[1], bar[2]),
+			Size = UDim2.fromOffset(bar[3], bar[4]),
+			BackgroundColor3 = Ui.Color.ink,
+			BorderSizePixel = 0,
+			Parent = glyph,
+		}, { Ui.corner("full") })
+	end
+	return glyph
+end
+
 function Plaque.create(anchor: BasePart, rail: BasePart): Update
 	-- 200 pixels/stud; inset the ink horizontally from the enamel's clipped corners.
 	-- Parent the print to the existing anchor so it survives the mesh streaming out independently.
@@ -57,15 +91,16 @@ function Plaque.create(anchor: BasePart, rail: BasePart): Update
 	local title = Ui.label({
 		Name = "Title",
 		-- Optical alignment: Nunito's line box includes space above its visible capitals.
-		Position = UDim2.fromOffset(30, -4),
-		Size = UDim2.fromOffset(470, 80),
+		Position = UDim2.fromOffset(53, -4),
+		Size = UDim2.fromOffset(424, 80),
 		Text = "",
-		-- Even the longest current RU name fits at this size; short names stay equally large.
+		FontFace = Ui.Font.bold,
 		TextSize = 80,
+		TextScaled = true,
 		TextColor3 = Ui.Color.ink,
 		TextXAlignment = Enum.TextXAlignment.Center,
 		Parent = gui,
-	})
+	}, { Ui.new("UITextSizeConstraint", { MinTextSize = 76, MaxTextSize = 80 }) })
 	Ui.new("Frame", {
 		Name = "PrintedRule",
 		Position = UDim2.fromOffset(46, 75),
@@ -75,98 +110,63 @@ function Plaque.create(anchor: BasePart, rail: BasePart): Update
 		BorderSizePixel = 0,
 		Parent = gui,
 	})
-	local flourishes = {}
-	for _, x in { 48, 438 } do
-		table.insert(
-			flourishes,
-			Ui.new("Frame", {
-				Name = "PriceRule",
-				Position = UDim2.fromOffset(x, 111),
-				Size = UDim2.fromOffset(44, 1),
-				BackgroundColor3 = Ui.Color.ink,
-				BackgroundTransparency = 0.55,
-				BorderSizePixel = 0,
-				Parent = gui,
-			})
-		)
-		table.insert(
-			flourishes,
-			Ui.new("Frame", {
-				Name = "RuleStop",
-				Position = UDim2.fromOffset(if x == 48 then 94 else 432, 109),
-				Size = UDim2.fromOffset(4, 4),
-				BackgroundColor3 = Ui.Color.goldDark,
-				BackgroundTransparency = 0.2,
-				BorderSizePixel = 0,
-				Rotation = 45,
-				Parent = gui,
-			})
-		)
-	end
+	-- These columns and their children never move when Cash or ownership changes.
 	local row = Ui.new("Frame", {
 		Name = "PriceRow",
-		Position = UDim2.fromOffset(35, 74),
-		Size = UDim2.fromOffset(460, 76),
+		Position = UDim2.fromOffset(30, 74),
+		Size = UDim2.fromOffset(200, 76),
 		BackgroundTransparency = 1,
 		Parent = gui,
-	}, {
-		Ui.new("UIListLayout", {
-			FillDirection = Enum.FillDirection.Horizontal,
-			HorizontalAlignment = Enum.HorizontalAlignment.Center,
-			VerticalAlignment = Enum.VerticalAlignment.Center,
-			SortOrder = Enum.SortOrder.LayoutOrder,
-			Padding = UDim.new(0, 10),
-		}),
 	})
-	local mark = Ui.icon("Check", { Name = "Mark", Size = UDim2.fromOffset(42, 42), LayoutOrder = 1, Parent = row })
-	local shortage = Ui.label({
-		Name = "CashShortage",
-		Position = UDim2.fromOffset(316, 74),
-		Size = UDim2.fromOffset(179, 76),
-		FontFace = Ui.Font.bold,
-		Text = "",
-		TextSize = 36,
-		TextWrapped = true,
-		LineHeight = 0.94,
-		TextColor3 = Ui.Color.redDark,
-		Parent = gui,
-	})
-	local divider = Ui.new("Frame", {
-		Name = "StateDivider",
-		Position = UDim2.fromOffset(292, 89),
-		Size = UDim2.fromOffset(1, 40),
-		BackgroundColor3 = Ui.Color.ink,
-		BackgroundTransparency = 0.65,
-		BorderSizePixel = 0,
-		Parent = gui,
+	-- Centre the actual coin circle (not its sparkle) against the price's visible digits.
+	local cashMark = Ui.icon("CashS", {
+		Name = "Cash",
+		Position = UDim2.fromOffset(-10, -3),
+		Size = UDim2.fromOffset(80, 80),
+		Parent = row,
 	})
 	local detail = Ui.label({
 		Name = "Price",
-		Size = UDim2.fromOffset(0, 88),
-		AutomaticSize = Enum.AutomaticSize.X,
+		Position = UDim2.fromOffset(70, -6),
+		Size = UDim2.fromOffset(130, 88),
 		Text = "",
-		RichText = true,
-		TextSize = 40,
+		TextSize = 88,
 		TextColor3 = Ui.Color.ink,
-		LayoutOrder = 2,
 		Parent = row,
 	})
+	local state = Ui.new("Frame", {
+		Name = "State",
+		Position = UDim2.fromOffset(246, 74),
+		Size = UDim2.fromOffset(254, 76),
+		BackgroundTransparency = 1,
+		Parent = gui,
+	})
+	local check = Ui.icon("Check", {
+		Name = "Check",
+		Position = UDim2.fromOffset(-10, 0),
+		Size = UDim2.fromOffset(76, 76),
+		Parent = state,
+	})
+	local alert = warning(state)
+	local status = Ui.label({
+		Name = "Label",
+		Position = UDim2.fromOffset(64, 0),
+		Size = UDim2.fromOffset(190, 76),
+		FontFace = Ui.Font.bold,
+		Text = "",
+		TextSize = 44,
+		TextColor3 = Ui.Color.ink,
+		Parent = state,
+	})
 	return function(name: string, price: number, owned: boolean, affordable: boolean)
-		local short = not owned and not affordable
 		title.Text = name
-		-- Keep the localized currency order; only the numeric substitution carries the large type.
-		detail.Text = if owned
-			then L("Shop.Owned")
-			else L("Shop.CashPrice", { price = '<font size="88">' .. Ui.number(price) .. "</font>" })
-		detail.TextSize = if owned then 64 else 40
-		mark.Visible = owned
-		shortage.Text = L("World.Purchase.Short")
-		shortage.Visible = short
-		divider.Visible = short
-		row.Size = UDim2.fromOffset(if short then 250 else 460, 76)
-		for _, flourish in flourishes do
-			flourish.Visible = not short
-		end
+		-- Keep the list price as reference after purchase; ownership is communicated in its own column.
+		detail.Text = Ui.number(price)
+		detail.TextColor3 = if owned then Ui.Color.ink:Lerp(Ui.Color.inkSoft, 0.55) else Ui.Color.ink
+		cashMark.ImageTransparency = if owned then 0.2 else 0
+		status.Text = L(if owned then "Shop.Owned" elseif affordable then "Shop.Buy" else "World.Purchase.Insufficient")
+		check.Visible = owned
+		alert.Visible = not owned and not affordable
 	end
 end
 

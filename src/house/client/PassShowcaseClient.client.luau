@@ -1,7 +1,7 @@
 --!strict
 -- PassShowcaseClient: пропуска в мире (Workspace.PassShowcase) и табличка ×2 Cash у снегоплавилки.
 -- Деталь с тегом ShopPass и атрибутом ShopPassKey (ключ в Shop.Passes) несёт PassPrompt; промпт открывает окно покупки Roblox.
--- У витрины ×2 печать и индикатор пропуска находятся на двух гранях одного постамента.
+-- У витрины ×2 есть эмалевый шильд и отдельная сигнальная линза с подписью.
 -- Покупку и атрибут Pass_<Key> обрабатывает ShopServer. Тег, а не обход папки: Workspace подгружается по частям (StreamingEnabled).
 local CollectionService = game:GetService("CollectionService")
 local MarketplaceService = game:GetService("MarketplaceService")
@@ -20,8 +20,10 @@ local StallSigns = require(ReplicatedStorage:WaitForChild("SnowGame"):WaitForChi
 local player = Players.LocalPlayer
 
 local TAG = "ShopPass"
-type PassInk = { title: TextLabel, detail: TextLabel, mark: ImageLabel, active: TextLabel? }
+type PassInk = { title: TextLabel, detail: TextLabel, mark: ImageLabel, active: TextLabel?, lens: MeshPart? }
 local signs: { [Instance]: PassInk } = {}
+local ACTIVE_LENS = Color3.fromRGB(94, 182, 128)
+local INACTIVE_LENS = Color3.fromRGB(97, 112, 120)
 
 local function centeredInk(parent: SurfaceGui, name: string, top: number, height: number, maxSize: number): TextLabel
 	return Ui.label({
@@ -67,7 +69,9 @@ local function refresh(anchor: Instance)
 		if sign.active then
 			sign.detail.TextColor3 = Ui.Color.text
 			sign.active.Text = L(if owned then "World.X2Cash.Active" else "World.X2Cash.Inactive")
-			sign.active.TextColor3 = if owned then Ui.Color.greenLight else Ui.Color.textSoft
+		end
+		if sign.lens then
+			sign.lens.Color = if owned then ACTIVE_LENS else INACTIVE_LENS
 		end
 		Ui.setIcon(sign.mark, owned and "Check" or "Robux")
 		if not owned and pass.Id ~= 0 then
@@ -91,37 +95,43 @@ local function refresh(anchor: Instance)
 end
 
 local function bindCashDisplay(anchor: BasePart, billboard: BillboardGui, fallback: PassInk)
-	local product = WorldUi.surface(anchor, "X2ProductPrint", Enum.NormalId.Front, Vector2.new(340, 132))
-	local indicator = WorldUi.surface(anchor, "X2BonusPrint", Enum.NormalId.Front, Vector2.new(176, 132))
+	local product = WorldUi.surface(anchor, "X2ProductPrint", Enum.NormalId.Front, Vector2.new(316, 118))
+	local indicator = WorldUi.surface(anchor, "X2BonusPrint", Enum.NormalId.Front, Vector2.new(153, 50))
 	product.LightInfluence = 0.25
-	indicator.LightInfluence = 0.25
-	local title = centeredInk(product, "Product", 0.045, 0.48, 52)
+	indicator.LightInfluence = 0.4
+	local title = centeredInk(product, "Product", 0.02, 0.43, 53)
 	title.TextColor3 = Ui.Color.goldLight
-	local detail = centeredInk(product, "Ownership", 0.57, 0.34, 31)
-	detail.Position = UDim2.fromScale(0.27, 0.57)
+	local detail = centeredInk(product, "Ownership", 0.43, 0.31, 34)
+	detail.Position = UDim2.fromScale(0.34, 0.43)
 	detail.Size = UDim2.fromScale(0.65, 0.34)
 	detail.TextXAlignment = Enum.TextXAlignment.Left
 	local mark = Ui.icon("Robux", {
-		Position = UDim2.fromScale(0.13, 0.58),
-		Size = UDim2.fromOffset(36, 36),
+		Position = UDim2.fromScale(0.23, 0.49),
+		Size = UDim2.fromOffset(26, 26),
 		Parent = product,
 	})
-	local scope = centeredInk(indicator, "Scope", 0.11, 0.30, 26)
+	local scope = centeredInk(product, "Scope", 0.78, 0.18, 21)
 	scope.TextColor3 = Ui.Color.textSoft
-	local active = centeredInk(indicator, "Activation", 0.42, 0.44, 34)
+	local active = centeredInk(indicator, "Activation", 0.07, 0.82, 28)
+	active.TextColor3 = Ui.Color.ink
 	local ink: PassInk = { title = title, detail = detail, mark = mark, active = active }
 
 	local function bind(removing: Instance?)
-		local pedestal = anchor:FindFirstChild("IndustrialCashDisplay")
+		local pedestal = anchor:FindFirstChild("CashStandV2")
 		local face = pedestal and pedestal:FindFirstChild("Cash_ProductFace")
 		local statusFace = pedestal and pedestal:FindFirstChild("Cash_IndicatorFace")
+		local lens = pedestal and pedestal:FindFirstChild("Cash_StatusLens")
 		local ready = face ~= nil
 			and face:IsA("MeshPart")
 			and statusFace ~= nil
 			and statusFace:IsA("MeshPart")
+			and lens ~= nil
+			and lens:IsA("MeshPart")
 			and removing ~= face
 			and removing ~= statusFace
+			and removing ~= lens
 			and removing ~= pedestal
+		ink.lens = if ready then lens :: MeshPart else nil
 		product.Adornee = (if ready then face else nil) :: any
 		indicator.Adornee = (if ready then statusFace else nil) :: any
 		product.Enabled = ready

@@ -1,0 +1,174 @@
+{
+  "base": "3d1a1b4",
+  "placeId": 91608833946402,
+  "mount": "QueuePads.Queue3.Sign",
+  "camera": {
+    "camera": [
+      13,
+      9.35,
+      -17
+    ],
+    "aim": [
+      0,
+      10.9,
+      -37.15
+    ]
+  },
+  "pictures": [
+    {
+      "variant": "original",
+      "file": "01-original.jpg"
+    },
+    {
+      "variant": "cassette",
+      "file": "02-navy-cassette.jpg"
+    },
+    {
+      "variant": "inset",
+      "file": "03-inset-prototype.jpg"
+    }
+  ],
+  "comparison": [
+    {
+      "variant": "original",
+      "header": "MAP",
+      "label": "House",
+      "phase": "Lobby.Pad.Setup",
+      "fits": true,
+      "status": "Setting up...",
+      "counter": "1/4"
+    },
+    {
+      "variant": "cassette",
+      "header": "MAP",
+      "label": "House",
+      "phase": "Lobby.Pad.Setup",
+      "fits": true,
+      "status": "Setting up...",
+      "counter": "1/4"
+    },
+    {
+      "dimensions": {
+        "1": 11,
+        "2": 4.560000419616699,
+        "3": 0.10999999195337296
+      },
+      "status": "Setting up...",
+      "header": "MAP",
+      "label": "House",
+      "phase": "Lobby.Pad.Setup",
+      "fits": true,
+      "variant": "inset",
+      "counter": "1/4"
+    }
+  ],
+  "metrics": {
+    "display": "0/4",
+    "resized": true,
+    "left": true,
+    "actual": "0/4"
+  },
+  "placed": {
+    "installed": "Workspace.Blockout.QueuePads.Queue3.Sign.LobbySignArt",
+    "forceLanguage": false,
+    "archived": "ServerStorage._LobbySignsRollback.Truck3_NavyCassette_3d1a1b4",
+    "testSaveCleared": true,
+    "otherTrucks": true,
+    "parts": {
+      "1": {
+        "cf": {
+          "1": 2.384185791015625e-7,
+          "2": 14.905435562133789,
+          "3": -38.78626251220703,
+          "4": -1,
+          "5": 0,
+          "6": 0,
+          "7": 0,
+          "8": 1,
+          "9": 0,
+          "10": 0,
+          "11": 0,
+          "12": -1
+        },
+        "rgb": {
+          "1": 0.9098039269447327,
+          "2": 0.45490196347236633,
+          "3": 0.125490203499794
+        },
+        "name": "Truck_OrangeFascia",
+        "mesh": "rbxassetid://112282139880335",
+        "size": {
+          "1": 12.426218032836914,
+          "2": 5.93087100982666,
+          "3": 0.4874740242958069
+        }
+      },
+      "2": {
+        "cf": {
+          "1": 0,
+          "2": 14.754623413085938,
+          "3": -38.782737731933594,
+          "4": -1,
+          "5": 0,
+          "6": 0,
+          "7": 0,
+          "8": 1,
+          "9": 0,
+          "10": 0,
+          "11": 0,
+          "12": -1
+        },
+        "rgb": {
+          "1": 0.20000000298023224,
+          "2": 0.1764705926179886,
+          "3": 0.16470588743686676
+        },
+        "name": "Truck_WindowSeat",
+        "mesh": "rbxassetid://91863720168651",
+        "size": {
+          "1": 11.220000267028809,
+          "2": 4.7692484855651855,
+          "3": 0.19052137434482574
+        }
+      },
+      "3": {
+        "cf": {
+          "1": 0,
+          "2": 14.75,
+          "3": -38.736000061035156,
+          "4": -1,
+          "5": 0,
+          "6": 0,
+          "7": 0,
+          "8": 1,
+          "9": 0,
+          "10": 0,
+          "11": 0,
+          "12": -1
+        },
+        "rgb": {
+          "1": 0.11764705926179886,
+          "2": 0.12156862765550613,
+          "3": 0.14509804546833038
+        },
+        "name": "Truck_Print",
+        "mesh": "rbxassetid://94011922597936",
+        "size": {
+          "1": 11,
+          "2": 4.560000419616699,
+          "3": 0.10999999195337296
+        }
+      }
+    }
+  },
+  "export": {
+    "bytes": 26533,
+    "roundTrip": true
+  },
+  "playSessions": 1,
+  "test": {
+    "stylua": true,
+    "seleneWarnings": 0,
+    "bothPlacesErrors": 0
+  }
+}

@@ -380,6 +380,10 @@ return {
 	["Shop.GetPass"] = { en = "Get pass", ru = "Получить пропуск" },
 	["Shop.X2Sign.On"] = { en = "x2 Cash: ON", ru = "×2 Cash: ВКЛ" },
 	["Shop.X2Sign.Off"] = { en = "x2 Cash: OFF", ru = "×2 Cash: ВЫКЛ" },
+	["World.X2Cash.Title"] = { en = "×2 Cash", ru = "×2 Cash" },
+	["World.X2Cash.Scope"] = { en = "All snow", ru = "Весь снег" },
+	["World.X2Cash.Active"] = { en = "Active", ru = "Активен" },
+	["World.X2Cash.Inactive"] = { en = "Inactive", ru = "Неактивен" },
 	["Shop.BoostActive"] = { en = "Boost x2: {time}", ru = "Буст ×2: {time}" },
 	["Shop.BlizzardActive"] = { en = "Blizzard x2: {time}", ru = "Метель ×2: {time}" },
 	["Shop.BlizzardBy"] = {

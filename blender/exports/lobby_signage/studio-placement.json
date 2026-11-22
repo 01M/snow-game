@@ -1,0 +1,1316 @@
+{
+  "baseline": "98bef37",
+  "placeId": 91608833946402,
+  "seats": [
+    {
+      "id": "Truck1",
+      "profile": "Truck",
+      "path": "QueuePads.Queue1.Sign",
+      "origin": [
+        -48,
+        14.88,
+        -38.59
+      ],
+      "toward": [
+        0,
+        0,
+        1
+      ]
+    },
+    {
+      "id": "Truck2",
+      "profile": "Truck",
+      "path": "QueuePads.Queue2.Sign",
+      "origin": [
+        -24,
+        14.88,
+        -38.59
+      ],
+      "toward": [
+        0,
+        0,
+        1
+      ]
+    },
+    {
+      "id": "Truck3",
+      "profile": "Truck",
+      "path": "QueuePads.Queue3.Sign",
+      "origin": [
+        0,
+        14.88,
+        -38.59
+      ],
+      "toward": [
+        0,
+        0,
+        1
+      ]
+    },
+    {
+      "id": "Truck4",
+      "profile": "Truck",
+      "path": "QueuePads.Queue4.Sign",
+      "origin": [
+        24,
+        14.88,
+        -38.59
+      ],
+      "toward": [
+        0,
+        0,
+        1
+      ]
+    },
+    {
+      "id": "Truck5",
+      "profile": "Truck",
+      "path": "QueuePads.Queue5.Sign",
+      "origin": [
+        48,
+        14.88,
+        -38.59
+      ],
+      "toward": [
+        0,
+        0,
+        1
+      ]
+    },
+    {
+      "id": "Shop",
+      "profile": "Kiosk",
+      "path": "LeftStalls.ShopStall",
+      "origin": [
+        -43.38,
+        9.25,
+        6.6
+      ],
+      "toward": [
+        1,
+        0,
+        0
+      ],
+      "key": "Lobby.World.Shop"
+    },
+    {
+      "id": "Upgrades",
+      "profile": "Kiosk",
+      "path": "LeftStalls.UpgradeStall",
+      "origin": [
+        -43.38,
+        9.25,
+        -8.6
+      ],
+      "toward": [
+        1,
+        0,
+        0
+      ],
+      "key": "Lobby.World.Upgrades"
+    },
+    {
+      "id": "Gazebo",
+      "profile": "Gazebo",
+      "path": "RightArea.Stage",
+      "origin": [
+        39.29,
+        8.56,
+        -1
+      ],
+      "toward": [
+        -1,
+        0,
+        0
+      ],
+      "key": "Lobby.World.Records"
+    },
+    {
+      "id": "Records",
+      "profile": "Record",
+      "path": "Records.Board",
+      "origin": [
+        53.99,
+        6.3,
+        -0.64
+      ],
+      "toward": [
+        -1,
+        0,
+        0
+      ]
+    }
+  ],
+  "installed": {
+    "backup": "ServerStorage._LobbySignsRollback",
+    "seats": {
+      "Truck3": {
+        "anchor": "Workspace.Blockout.QueuePads.Queue3.Sign",
+        "originalTransparency": 0,
+        "originalCFrame": [
+          0,
+          14.899999618530273,
+          -38.599998474121094,
+          1,
+          0,
+          0,
+          0,
+          1,
+          0,
+          0,
+          0,
+          1
+        ],
+        "parts": [
+          {
+            "cf": [
+              0,
+              14.816720962524414,
+              -38.5099983215332,
+              -1,
+              0,
+              0,
+              0,
+              1,
+              0,
+              0,
+              0,
+              -1
+            ],
+            "mesh": "rbxassetid://102715197700431",
+            "name": "Truck_Case"
+          },
+          {
+            "cf": [
+              0,
+              14.824999809265137,
+              -38.17499923706055,
+              -1,
+              0,
+              0,
+              0,
+              1,
+              0,
+              0,
+              0,
+              -1
+            ],
+            "mesh": "rbxassetid://100499354940530",
+            "name": "Truck_Rim"
+          },
+          {
+            "cf": [
+              0,
+              14.824999809265137,
+              -38.140499114990234,
+              -1,
+              0,
+              0,
+              0,
+              1,
+              0,
+              0,
+              0,
+              -1
+            ],
+            "mesh": "rbxassetid://126260462368832",
+            "name": "Truck_Print"
+          },
+          {
+            "cf": [
+              0,
+              12.130000114440918,
+              -38.244998931884766,
+              -1,
+              0,
+              0,
+              0,
+              1,
+              0,
+              0,
+              0,
+              -1
+            ],
+            "mesh": "rbxassetid://88867549080221",
+            "name": "Truck_Clips"
+          }
+        ]
+      },
+      "Upgrades": {
+        "anchor": "Workspace.Blockout.LeftStalls.UpgradeStall",
+        "originalTransparency": 1,
+        "originalCFrame": [
+          -48,
+          12,
+          -8,
+          -4.371138828673793e-8,
+          0,
+          1,
+          0,
+          1,
+          0,
+          -1,
+          0,
+          -4.371138828673793e-8
+        ],
+        "parts": [
+          {
+            "cf": [
+              -43.33250045776367,
+              9.25,
+              -8.600000381469727,
+              0,
+              0,
+              -1,
+              0,
+              1,
+              0,
+              1,
+              0,
+              0
+            ],
+            "mesh": "rbxassetid://90233829939558",
+            "name": "Kiosk_Wood"
+          },
+          {
+            "cf": [
+              -43.10449981689453,
+              9.25,
+              -8.600000381469727,
+              0,
+              0,
+              -1,
+              0,
+              1,
+              0,
+              1,
+              0,
+              0
+            ],
+            "mesh": "rbxassetid://139079931594158",
+            "name": "Kiosk_Rim"
+          },
+          {
+            "cf": [
+              -43.06850051879883,
+              9.25,
+              -8.600000381469727,
+              0,
+              0,
+              -1,
+              0,
+              1,
+              0,
+              1,
+              0,
+              0
+            ],
+            "mesh": "rbxassetid://137647833099000",
+            "name": "Kiosk_Print"
+          },
+          {
+            "cf": [
+              -43.35499954223633,
+              9.25,
+              -8.600000381469727,
+              0,
+              0,
+              -1,
+              0,
+              1,
+              0,
+              1,
+              0,
+              0
+            ],
+            "mesh": "rbxassetid://90830201146632",
+            "name": "Kiosk_Mounts"
+          }
+        ]
+      },
+      "Gazebo": {
+        "anchor": "Workspace.Blockout.RightArea.Stage",
+        "originalTransparency": 1,
+        "originalCFrame": [
+          48,
+          10,
+          -1,
+          1,
+          0,
+          0,
+          0,
+          1,
+          0,
+          0,
+          0,
+          1
+        ],
+        "parts": [
+          {
+            "cf": [
+              39.24250030517578,
+              8.5600004196167,
+              -1,
+              0,
+              0,
+              1,
+              0,
+              1,
+              0,
+              -1,
+              0,
+              0
+            ],
+            "mesh": "rbxassetid://107285553313707",
+            "name": "Gazebo_Wood"
+          },
+          {
+            "cf": [
+              39.01449966430664,
+              8.5600004196167,
+              -1,
+              0,
+              0,
+              1,
+              0,
+              1,
+              0,
+              -1,
+              0,
+              0
+            ],
+            "mesh": "rbxassetid://126413087185309",
+            "name": "Gazebo_Rim"
+          },
+          {
+            "cf": [
+              38.97850036621094,
+              8.5600004196167,
+              -1,
+              0,
+              0,
+              1,
+              0,
+              1,
+              0,
+              -1,
+              0,
+              0
+            ],
+            "mesh": "rbxassetid://104838065822490",
+            "name": "Gazebo_Print"
+          },
+          {
+            "cf": [
+              39.26499938964844,
+              8.5600004196167,
+              -1,
+              0,
+              0,
+              1,
+              0,
+              1,
+              0,
+              -1,
+              0,
+              0
+            ],
+            "mesh": "rbxassetid://99628360718027",
+            "name": "Gazebo_Mounts"
+          },
+          {
+            "cf": [
+              39.595001220703125,
+              9.430000305175781,
+              -1,
+              0,
+              0,
+              1,
+              0,
+              1,
+              0,
+              -1,
+              0,
+              0
+            ],
+            "mesh": "rbxassetid://88059139227096",
+            "name": "Gazebo_Hangers"
+          }
+        ]
+      },
+      "Records": {
+        "anchor": "Workspace.Blockout.Records.Board",
+        "originalTransparency": 0,
+        "originalCFrame": [
+          55.5,
+          6.199999809265137,
+          -0.9999996423721313,
+          -4.371138828673793e-8,
+          0,
+          -1,
+          0,
+          1,
+          0,
+          1,
+          0,
+          -4.371138828673793e-8
+        ],
+        "parts": [
+          {
+            "cf": [
+              53.92500305175781,
+              6.215000152587891,
+              -0.6399999856948853,
+              0,
+              0,
+              1,
+              0,
+              1,
+              0,
+              -1,
+              0,
+              0
+            ],
+            "mesh": "rbxassetid://121315515431535",
+            "name": "Record_Wood"
+          },
+          {
+            "cf": [
+              53.622501373291016,
+              6.21750020980835,
+              -0.6399999856948853,
+              0,
+              0,
+              1,
+              0,
+              1,
+              0,
+              -1,
+              0,
+              0
+            ],
+            "mesh": "rbxassetid://102474314563412",
+            "name": "Record_Rim"
+          },
+          {
+            "cf": [
+              53.58700180053711,
+              6.2300004959106445,
+              -0.6399999856948853,
+              0,
+              0,
+              1,
+              0,
+              1,
+              0,
+              -1,
+              0,
+              0
+            ],
+            "mesh": "rbxassetid://137868209096524",
+            "name": "Record_Print"
+          },
+          {
+            "cf": [
+              53.90999984741211,
+              9.09000015258789,
+              -0.6399999856948853,
+              0,
+              0,
+              1,
+              0,
+              1,
+              0,
+              -1,
+              0,
+              0
+            ],
+            "mesh": "rbxassetid://86403916486748",
+            "name": "Record_Cap"
+          },
+          {
+            "cf": [
+              54.38500213623047,
+              4.8550004959106445,
+              -0.6399999856948853,
+              0,
+              0,
+              1,
+              0,
+              1,
+              0,
+              -1,
+              0,
+              0
+            ],
+            "mesh": "rbxassetid://78059515731115",
+            "name": "Record_Posts"
+          },
+          {
+            "cf": [
+              54.37000274658203,
+              1.1200003623962402,
+              -0.6399999856948853,
+              0,
+              0,
+              1,
+              0,
+              1,
+              0,
+              -1,
+              0,
+              0
+            ],
+            "mesh": "rbxassetid://96095650224000",
+            "name": "Record_Shoes"
+          }
+        ]
+      },
+      "Shop": {
+        "anchor": "Workspace.Blockout.LeftStalls.ShopStall",
+        "originalTransparency": 1,
+        "originalCFrame": [
+          -48,
+          12,
+          6,
+          -4.371138828673793e-8,
+          0,
+          1,
+          0,
+          1,
+          0,
+          -1,
+          0,
+          -4.371138828673793e-8
+        ],
+        "parts": [
+          {
+            "cf": [
+              -43.33250045776367,
+              9.25,
+              6.599999904632568,
+              0,
+              0,
+              -1,
+              0,
+              1,
+              0,
+              1,
+              0,
+              0
+            ],
+            "mesh": "rbxassetid://90233829939558",
+            "name": "Kiosk_Wood"
+          },
+          {
+            "cf": [
+              -43.10449981689453,
+              9.25,
+              6.599999904632568,
+              0,
+              0,
+              -1,
+              0,
+              1,
+              0,
+              1,
+              0,
+              0
+            ],
+            "mesh": "rbxassetid://139079931594158",
+            "name": "Kiosk_Rim"
+          },
+          {
+            "cf": [
+              -43.06850051879883,
+              9.25,
+              6.599999904632568,
+              0,
+              0,
+              -1,
+              0,
+              1,
+              0,
+              1,
+              0,
+              0
+            ],
+            "mesh": "rbxassetid://137647833099000",
+            "name": "Kiosk_Print"
+          },
+          {
+            "cf": [
+              -43.35499954223633,
+              9.25,
+              6.599999904632568,
+              0,
+              0,
+              -1,
+              0,
+              1,
+              0,
+              1,
+              0,
+              0
+            ],
+            "mesh": "rbxassetid://90830201146632",
+            "name": "Kiosk_Mounts"
+          }
+        ]
+      },
+      "Truck5": {
+        "anchor": "Workspace.Blockout.QueuePads.Queue5.Sign",
+        "originalTransparency": 0,
+        "originalCFrame": [
+          48,
+          14.899999618530273,
+          -38.599998474121094,
+          1,
+          0,
+          0,
+          0,
+          1,
+          0,
+          0,
+          0,
+          1
+        ],
+        "parts": [
+          {
+            "cf": [
+              48,
+              14.816720962524414,
+              -38.5099983215332,
+              -1,
+              0,
+              0,
+              0,
+              1,
+              0,
+              0,
+              0,
+              -1
+            ],
+            "mesh": "rbxassetid://102715197700431",
+            "name": "Truck_Case"
+          },
+          {
+            "cf": [
+              48,
+              14.824999809265137,
+              -38.17499923706055,
+              -1,
+              0,
+              0,
+              0,
+              1,
+              0,
+              0,
+              0,
+              -1
+            ],
+            "mesh": "rbxassetid://100499354940530",
+            "name": "Truck_Rim"
+          },
+          {
+            "cf": [
+              48,
+              14.824999809265137,
+              -38.140499114990234,
+              -1,
+              0,
+              0,
+              0,
+              1,
+              0,
+              0,
+              0,
+              -1
+            ],
+            "mesh": "rbxassetid://126260462368832",
+            "name": "Truck_Print"
+          },
+          {
+            "cf": [
+              48,
+              12.130000114440918,
+              -38.244998931884766,
+              -1,
+              0,
+              0,
+              0,
+              1,
+              0,
+              0,
+              0,
+              -1
+            ],
+            "mesh": "rbxassetid://88867549080221",
+            "name": "Truck_Clips"
+          }
+        ]
+      },
+      "Truck4": {
+        "anchor": "Workspace.Blockout.QueuePads.Queue4.Sign",
+        "originalTransparency": 0,
+        "originalCFrame": [
+          24,
+          14.899999618530273,
+          -38.599998474121094,
+          1,
+          0,
+          0,
+          0,
+          1,
+          0,
+          0,
+          0,
+          1
+        ],
+        "parts": [
+          {
+            "cf": [
+              24,
+              14.816720962524414,
+              -38.5099983215332,
+              -1,
+              0,
+              0,
+              0,
+              1,
+              0,
+              0,
+              0,
+              -1
+            ],
+            "mesh": "rbxassetid://102715197700431",
+            "name": "Truck_Case"
+          },
+          {
+            "cf": [
+              24,
+              14.824999809265137,
+              -38.17499923706055,
+              -1,
+              0,
+              0,
+              0,
+              1,
+              0,
+              0,
+              0,
+              -1
+            ],
+            "mesh": "rbxassetid://100499354940530",
+            "name": "Truck_Rim"
+          },
+          {
+            "cf": [
+              24,
+              14.824999809265137,
+              -38.140499114990234,
+              -1,
+              0,
+              0,
+              0,
+              1,
+              0,
+              0,
+              0,
+              -1
+            ],
+            "mesh": "rbxassetid://126260462368832",
+            "name": "Truck_Print"
+          },
+          {
+            "cf": [
+              24,
+              12.130000114440918,
+              -38.244998931884766,
+              -1,
+              0,
+              0,
+              0,
+              1,
+              0,
+              0,
+              0,
+              -1
+            ],
+            "mesh": "rbxassetid://88867549080221",
+            "name": "Truck_Clips"
+          }
+        ]
+      },
+      "Truck1": {
+        "anchor": "Workspace.Blockout.QueuePads.Queue1.Sign",
+        "originalTransparency": 0,
+        "originalCFrame": [
+          -48,
+          14.899999618530273,
+          -38.599998474121094,
+          1,
+          0,
+          0,
+          0,
+          1,
+          0,
+          0,
+          0,
+          1
+        ],
+        "parts": [
+          {
+            "cf": [
+              -48,
+              14.816720962524414,
+              -38.5099983215332,
+              -1,
+              0,
+              0,
+              0,
+              1,
+              0,
+              0,
+              0,
+              -1
+            ],
+            "mesh": "rbxassetid://102715197700431",
+            "name": "Truck_Case"
+          },
+          {
+            "cf": [
+              -48,
+              14.824999809265137,
+              -38.17499923706055,
+              -1,
+              0,
+              0,
+              0,
+              1,
+              0,
+              0,
+              0,
+              -1
+            ],
+            "mesh": "rbxassetid://100499354940530",
+            "name": "Truck_Rim"
+          },
+          {
+            "cf": [
+              -48,
+              14.824999809265137,
+              -38.140499114990234,
+              -1,
+              0,
+              0,
+              0,
+              1,
+              0,
+              0,
+              0,
+              -1
+            ],
+            "mesh": "rbxassetid://126260462368832",
+            "name": "Truck_Print"
+          },
+          {
+            "cf": [
+              -48,
+              12.130000114440918,
+              -38.244998931884766,
+              -1,
+              0,
+              0,
+              0,
+              1,
+              0,
+              0,
+              0,
+              -1
+            ],
+            "mesh": "rbxassetid://88867549080221",
+            "name": "Truck_Clips"
+          }
+        ]
+      },
+      "Truck2": {
+        "anchor": "Workspace.Blockout.QueuePads.Queue2.Sign",
+        "originalTransparency": 0,
+        "originalCFrame": [
+          -24,
+          14.899999618530273,
+          -38.599998474121094,
+          1,
+          0,
+          0,
+          0,
+          1,
+          0,
+          0,
+          0,
+          1
+        ],
+        "parts": [
+          {
+            "cf": [
+              -24,
+              14.816720962524414,
+              -38.5099983215332,
+              -1,
+              0,
+              0,
+              0,
+              1,
+              0,
+              0,
+              0,
+              -1
+            ],
+            "mesh": "rbxassetid://102715197700431",
+            "name": "Truck_Case"
+          },
+          {
+            "cf": [
+              -24,
+              14.824999809265137,
+              -38.17499923706055,
+              -1,
+              0,
+              0,
+              0,
+              1,
+              0,
+              0,
+              0,
+              -1
+            ],
+            "mesh": "rbxassetid://100499354940530",
+            "name": "Truck_Rim"
+          },
+          {
+            "cf": [
+              -24,
+              14.824999809265137,
+              -38.140499114990234,
+              -1,
+              0,
+              0,
+              0,
+              1,
+              0,
+              0,
+              0,
+              -1
+            ],
+            "mesh": "rbxassetid://126260462368832",
+            "name": "Truck_Print"
+          },
+          {
+            "cf": [
+              -24,
+              12.130000114440918,
+              -38.244998931884766,
+              -1,
+              0,
+              0,
+              0,
+              1,
+              0,
+              0,
+              0,
+              -1
+            ],
+            "mesh": "rbxassetid://88867549080221",
+            "name": "Truck_Clips"
+          }
+        ]
+      }
+    },
+    "count": 9,
+    "templates": 19
+  },
+  "native": [
+    {
+      "file": "LobbyQueueSigns_Playable.rbxm",
+      "bytes": 16874,
+      "roundTrip": true,
+      "parts": 20
+    },
+    {
+      "file": "LobbyDirectoryRecords_Playable.rbxm",
+      "bytes": 35683,
+      "roundTrip": true,
+      "parts": 19
+    }
+  ],
+  "verification": {
+    "sessions": 1,
+    "mounts": {
+      "prompts": {
+        "DailyPrompt": {
+          "enabled": true,
+          "action": "Открыть календарь",
+          "object": "Ежедневные награды",
+          "key": "E"
+        },
+        "StatsPrompt": {
+          "enabled": true,
+          "action": "Посмотреть уровни",
+          "object": "Улучшения",
+          "key": "E"
+        },
+        "ShopPrompt": {
+          "enabled": true,
+          "action": "Открыть магазин",
+          "object": "Магазин",
+          "key": "E"
+        }
+      },
+      "signs": [
+        {
+          "id": "Lobby.World.Shop",
+          "text": "Магазин",
+          "fallback": false,
+          "fits": true
+        },
+        {
+          "id": "Lobby.World.Upgrades",
+          "text": "Улучшения",
+          "fallback": false,
+          "fits": true
+        },
+        {
+          "oldPad": false,
+          "heading": "ОТПРАВЛЕНИЕ",
+          "oldRoof": false,
+          "count": "0/4",
+          "id": "QueuePads.Queue1.Sign",
+          "fits": true,
+          "status": "Встань, чтобы создать игру",
+          "map": "Выбор карты"
+        },
+        {
+          "id": "Lobby.World.Records",
+          "text": "Рекорды и награды",
+          "fallback": false,
+          "fits": true
+        },
+        {
+          "oldPad": false,
+          "heading": "ОТПРАВЛЕНИЕ",
+          "oldRoof": false,
+          "count": "0/4",
+          "id": "QueuePads.Queue3.Sign",
+          "fits": true,
+          "status": "Встань, чтобы создать игру",
+          "map": "Выбор карты"
+        },
+        {
+          "oldPad": false,
+          "heading": "ОТПРАВЛЕНИЕ",
+          "oldRoof": false,
+          "count": "0/4",
+          "id": "QueuePads.Queue5.Sign",
+          "fits": true,
+          "status": "Встань, чтобы создать игру",
+          "map": "Выбор карты"
+        },
+        {
+          "oldPad": false,
+          "heading": "ОТПРАВЛЕНИЕ",
+          "oldRoof": false,
+          "count": "0/4",
+          "id": "QueuePads.Queue4.Sign",
+          "fits": true,
+          "status": "Встань, чтобы создать игру",
+          "map": "Выбор карты"
+        },
+        {
+          "oldPad": false,
+          "heading": "ОТПРАВЛЕНИЕ",
+          "oldRoof": false,
+          "count": "0/4",
+          "id": "QueuePads.Queue2.Sign",
+          "fits": true,
+          "status": "Встань, чтобы создать игру",
+          "map": "Выбор карты"
+        }
+      ],
+      "records": {
+        "title": "Больше всего снега за матч",
+        "adornee": "Record_Print",
+        "empty": false,
+        "family": "rbxasset://fonts/families/Nunito.json"
+      },
+      "en": {
+        "Lobby.World.Records": "Records & Rewards",
+        "Lobby.World.DailyPrompt": "Open calendar",
+        "Lobby.World.UpgradesPrompt": "View levels",
+        "Lobby.World.Upgrades": "Upgrades",
+        "Lobby.Records.Title": "Most snow in one match",
+        "Lobby.Board.PickMap": "Choose a map",
+        "Lobby.World.Shop": "Shop"
+      }
+    },
+    "queue": {
+      "entered": {
+        "map": "Дом",
+        "heading": "КАРТА",
+        "count": "1/4",
+        "status": "Настройка...",
+        "fits": true
+      },
+      "left": {
+        "map": "Выбор карты",
+        "heading": "ОТПРАВЛЕНИЕ",
+        "count": "0/4",
+        "status": "Встань, чтобы создать игру",
+        "fits": true
+      },
+      "resized": {
+        "map": "Дом",
+        "heading": "КАРТА",
+        "count": "1/2",
+        "status": "Настройка...",
+        "fits": true
+      }
+    },
+    "prompts": [
+      {
+        "enabled": [
+          "Freecam",
+          "SnowballHud",
+          "UiIconCache",
+          "LobbyHud",
+          "ProximityPrompts",
+          "ShopGui"
+        ],
+        "expected": "ShopGui",
+        "action": "Открыть магазин",
+        "tag": "ShopPrompt"
+      },
+      {
+        "enabled": [
+          "Freecam",
+          "SnowballHud",
+          "UiIconCache",
+          "LobbyHud",
+          "ProximityPrompts",
+          "StatsGui"
+        ],
+        "expected": "StatsGui",
+        "action": "Посмотреть уровни",
+        "tag": "StatsPrompt"
+      },
+      {
+        "enabled": [
+          "Freecam",
+          "SnowballHud",
+          "UiIconCache",
+          "LobbyHud",
+          "ProximityPrompts",
+          "DailyGui"
+        ],
+        "expected": "DailyGui",
+        "action": "Открыть календарь",
+        "tag": "DailyPrompt"
+      }
+    ],
+    "recordsPreview": {
+      "longFits": true,
+      "first": "Снежный Мастер",
+      "enabled": true,
+      "longName": "Северный Снегоуборщик",
+      "before": {
+        "title": "Больше всего снега за матч",
+        "empty": false
+      },
+      "firstScore": "127 480",
+      "family": "rbxasset://fonts/families/Nunito.json",
+      "empty": true,
+      "eighth": "CedarHill",
+      "face": "Record_Print"
+    },
+    "restored": {
+      "fallback": true,
+      "previewRestored": true,
+      "rebound": true
+    },
+    "debugCleanup": {
+      "place": 91608833946402,
+      "sourceSynced": true,
+      "clean": true
+    },
+    "stylua": "pass",
+    "seleneWarnings": 0,
+    "analyzeErrors": 0
+  },
+  "captures": [
+    {
+      "file": "01-lobby-wide.jpg",
+      "position": [
+        -23,
+        25,
+        49
+      ],
+      "lookAt": [
+        -1,
+        6,
+        -14
+      ]
+    },
+    {
+      "file": "02-truck-signs.jpg",
+      "position": [
+        7,
+        6.6,
+        -15.2
+      ],
+      "lookAt": [
+        0,
+        11.9,
+        -37.8
+      ]
+    },
+    {
+      "file": "03-market-signs.jpg",
+      "position": [
+        -29.8,
+        6.2,
+        11.8
+      ],
+      "lookAt": [
+        -46.5,
+        7.4,
+        -0.9
+      ]
+    },
+    {
+      "file": "04-gazebo-entrance.jpg",
+      "position": [
+        28.9,
+        6.8,
+        -6.4
+      ],
+      "lookAt": [
+        49.5,
+        6.7,
+        -0.7
+      ]
+    },
+    {
+      "file": "05-records-board-preview.jpg",
+      "position": [
+        47.83,
+        5.7,
+        3.84
+      ],
+      "lookAt": [
+        53.64,
+        6.32,
+        -0.57
+      ]
+    }
+  ]
+}

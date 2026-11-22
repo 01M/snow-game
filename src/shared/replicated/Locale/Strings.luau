@@ -476,11 +476,11 @@ return {
 	["Map.House"] = { en = "House", ru = "Дом" },
 
 	-- Надписи площадок и досок (ставит LobbyServer атрибутами LocaleKey / LocaleArgs)
-	["Lobby.Pad.Create"] = { en = "Create a game!", ru = "Создать игру!" },
+	["Lobby.Pad.Create"] = { en = "Step aboard to host", ru = "Встань, чтобы создать игру" },
 	["Lobby.Pad.Setup"] = { en = "Setting up...", ru = "Настройка..." },
 	["Lobby.Pad.StartIn"] = { en = "Starting in {n}", ru = "Старт через {n}" },
-	["Lobby.Board.Unknown"] = { en = "???", ru = "???" },
-	["Lobby.Board.PickMap"] = { en = "Pick a map!", ru = "Выбери карту!" },
+	["Lobby.Board.Unknown"] = { en = "DEPARTURES", ru = "ОТПРАВЛЕНИЕ" },
+	["Lobby.Board.PickMap"] = { en = "Choose a map", ru = "Выбор карты" },
 	["Lobby.Board.Map"] = { en = "MAP", ru = "КАРТА" },
 
 	-- Меню хозяина площадки (LobbyMenuClient)
@@ -639,12 +639,14 @@ return {
 	-- Надписи в мире лобби
 	["Lobby.World.Shop"] = { en = "Shop", ru = "Магазин" },
 	["Lobby.World.Upgrades"] = { en = "Upgrades", ru = "Улучшения" },
-	["Lobby.World.UpgradesPrompt"] = { en = "Open", ru = "Открыть" },
+	["Lobby.World.UpgradesPrompt"] = { en = "View levels", ru = "Посмотреть уровни" },
 	["Lobby.World.Records"] = { en = "Records & Rewards", ru = "Рекорды и награды" },
 	["Lobby.World.ShopPrompt"] = { en = "Open shop", ru = "Открыть магазин" },
 	["Lobby.World.Daily"] = { en = "Daily rewards", ru = "Ежедневные награды" },
-	["Lobby.World.DailyPrompt"] = { en = "Open", ru = "Открыть" },
+	["Lobby.World.DailyPrompt"] = { en = "Open calendar", ru = "Открыть календарь" },
 	["Lobby.Records.Title"] = { en = "Most snow in one match", ru = "Больше всего снега за матч" },
+	["Lobby.Records.Player"] = { en = "PLAYER", ru = "ИГРОК" },
+	["Lobby.Records.Portions"] = { en = "SNOW PORTIONS", ru = "ПОРЦИИ СНЕГА" },
 	["Lobby.Records.Empty"] = { en = "No records yet", ru = "Рекордов пока нет" },
 	["Lobby.Hud.Throw"] = { en = "Throw", ru = "Бросить" },
 }

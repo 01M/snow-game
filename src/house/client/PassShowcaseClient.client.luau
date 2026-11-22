@@ -20,7 +20,14 @@ local StallSigns = require(ReplicatedStorage:WaitForChild("SnowGame"):WaitForChi
 local player = Players.LocalPlayer
 
 local TAG = "ShopPass"
-type PassInk = { title: TextLabel, detail: TextLabel, mark: ImageLabel, active: TextLabel?, lens: MeshPart? }
+type PassInk = {
+	title: TextLabel,
+	detail: TextLabel,
+	mark: ImageLabel,
+	active: TextLabel?,
+	lens: MeshPart?,
+	detailInk: Color3?,
+}
 local signs: { [Instance]: PassInk } = {}
 local ACTIVE_LENS = Color3.fromRGB(94, 182, 128)
 local INACTIVE_LENS = Color3.fromRGB(97, 112, 120)
@@ -62,8 +69,9 @@ local function refresh(anchor: Instance)
 	local sign = signs[anchor]
 	if sign then
 		sign.title.Text = L(if sign.active then "World.X2Cash.Title" else "Shop.Pass." .. pass.Key .. ".Name")
-		sign.detail.TextColor3 = if pass.Key == "BigBackpack"
-			then Ui.Color.ink
+		sign.detail.TextColor3 = if sign.detailInk
+			then sign.detailInk
+			elseif pass.Key == "BigBackpack" then Ui.Color.ink
 			else owned and Ui.Color.greenLight or Ui.Color.goldLight
 		sign.detail.Text = owned and L("Shop.Owned") or L("Shop.PassOnly")
 		if sign.active then
@@ -167,6 +175,80 @@ local function bindCashDisplay(anchor: BasePart, billboard: BillboardGui, fallba
 	bind()
 end
 
+local function bindPassNameplate(anchor: BasePart, billboard: BillboardGui, fallback: PassInk, key: string)
+	local autoSell = key == "AutoSell"
+	local modelName = if autoSell then "AutoSellDock" else "VipCrownPlinth"
+	local faceName = if autoSell then "Auto_PrintFace" else "Vip_PrintFace"
+	local surface = WorldUi.surface(anchor, key .. "NameplatePrint", Enum.NormalId.Front, Vector2.new(360, 118))
+	surface.LightInfluence = 0.25
+	surface.MaxDistance = 18
+	local title = centeredInk(surface, "Product", 0.04, if autoSell then 0.36 else 0.49, 54)
+	title.TextColor3 = if autoSell then Ui.Color.text else Ui.Color.ink
+	local hint = if autoSell then centeredInk(surface, "Function", 0.40, 0.24, 26) else nil
+	if hint then
+		hint.TextColor3 = Ui.Color.textSoft
+	end
+	local statusTop = if autoSell then 0.66 else 0.54
+	local detail = centeredInk(surface, "Ownership", statusTop, 0.31, 32)
+	detail.Position = UDim2.fromScale(0.40, statusTop)
+	detail.Size = UDim2.fromScale(0.55, 0.31)
+	detail.TextXAlignment = Enum.TextXAlignment.Left
+	local mark = Ui.icon("Robux", {
+		AnchorPoint = Vector2.new(1, 0.5),
+		Position = UDim2.fromScale(0.39, statusTop + 0.155),
+		Size = UDim2.fromOffset(26, 26),
+		Parent = surface,
+	})
+	local ink: PassInk = {
+		title = title,
+		detail = detail,
+		mark = mark,
+		detailInk = if autoSell then nil else Ui.Color.ink,
+	}
+
+	local function bind(removing: Instance?)
+		local model = anchor:FindFirstChild(modelName)
+		local face = model and model:FindFirstChild(faceName)
+		local ready = face ~= nil and face:IsA("MeshPart") and removing ~= model and removing ~= face
+		surface.Adornee = (if ready then face else nil) :: any
+		surface.Enabled = ready
+		billboard.Enabled = not ready
+		local nextInk = if ready then ink else fallback
+		if signs[anchor] ~= nextInk then
+			signs[anchor] = nextInk
+			refresh(anchor)
+		end
+	end
+
+	local function localize()
+		if hint then
+			hint.Text = L("World.AutoSell.FullBackpack")
+		end
+		refresh(anchor)
+	end
+
+	local added = anchor.DescendantAdded:Connect(function(inst)
+		if inst.Name == modelName or inst.Name == faceName then
+			bind()
+		end
+	end)
+	local removed = anchor.DescendantRemoving:Connect(function(inst)
+		if inst.Name == modelName or inst.Name == faceName then
+			bind(inst)
+		end
+	end)
+	local language = localeModule:GetAttributeChangedSignal("ForceLanguage"):Connect(localize)
+	surface.Destroying:Once(function()
+		added:Disconnect()
+		removed:Disconnect()
+		language:Disconnect()
+	end)
+	if hint then
+		hint.Text = L("World.AutoSell.FullBackpack")
+	end
+	bind()
+end
+
 local function hook(anchor: Instance)
 	local pass = findPass(anchor:GetAttribute("ShopPassKey"))
 	local prompt = anchor:WaitForChild("PassPrompt", 5) :: ProximityPrompt?
@@ -214,6 +296,8 @@ local function hook(anchor: Instance)
 		signs[anchor] = ink
 		if pass.Key == "X2Cash" and anchor.Name == "PassAnchor" and anchor:IsA("BasePart") then
 			bindCashDisplay(anchor, billboard, ink)
+		elseif (pass.Key == "AutoSell" or pass.Key == "VIP") and anchor:IsA("BasePart") then
+			bindPassNameplate(anchor, billboard, ink, pass.Key)
 		end
 	end
 	local surface = anchor:FindFirstChild("SignGui") :: SurfaceGui?

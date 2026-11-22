@@ -384,6 +384,7 @@ return {
 	["World.X2Cash.Scope"] = { en = "All snow", ru = "Весь снег" },
 	["World.X2Cash.Active"] = { en = "Active", ru = "Активен" },
 	["World.X2Cash.Inactive"] = { en = "Inactive", ru = "Неактивен" },
+	["World.AutoSell.FullBackpack"] = { en = "Sells when full", ru = "Продаёт полный рюкзак" },
 	["Shop.BoostActive"] = { en = "Boost x2: {time}", ru = "Буст ×2: {time}" },
 	["Shop.BlizzardActive"] = { en = "Blizzard x2: {time}", ru = "Метель ×2: {time}" },
 	["Shop.BlizzardBy"] = {

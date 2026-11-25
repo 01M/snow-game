@@ -1,6 +1,6 @@
 -- GameHudClient: HUD матча и журнал (Tab). Вид HUD — общий Ui (ReplicatedStorage.Shared.Ui).
 -- HUD: текущая задача (цепочка Config.Onboarding, считает OnboardingServer); когда цепочка пройдена, карточка показывает
--- следующую цель (сначала Лопата, затем активная зона, инструмент или апгрейд рюкзака), без награды,
+-- следующую цель (Рука или Лопата, затем зона, инструмент или апгрейд рюкзака), без награды,
 -- рюкзак, зона и таймер матча по центру (workspace.MatchStartTime/MatchEndTime ставит MatchServer),
 -- Cash с множителем магазина (Shop.cashMultiplier), кнопки журнала и магазина; «+N» за Cash — в общей стопке SnowGame.Toasts. Низ экрана свободен для управления на телефоне.
 -- Журнал: «Журнал» (задачи + игроки), «Апгрейды» (инструменты из Config.Tools — Remotes.BuyToolUpgrade, рюкзак — Remotes.BuyUpgrade),
@@ -122,7 +122,7 @@ end
 -- Цепочка задач новичка: шаг и прогресс считает сервер (OnboardingServer), здесь только тексты
 local tasks = {}
 for i, step in config.Onboarding do
-	tasks[i] = { text = L(step.Text, { goal = step.Goal }), reward = step.Reward }
+	tasks[i] = { id = step.Id, text = L(step.Text, { goal = step.Goal }), reward = step.Reward }
 end
 
 -- ============================================================
@@ -243,6 +243,16 @@ local taskCount = Ui.label({
 	Parent = taskCard,
 })
 
+local taskHint = Ui.label({
+	Name = "Hint",
+	Position = UDim2.fromOffset(14, 68),
+	Size = UDim2.new(1, -100, 0, 24),
+	TextScaled = true,
+	TextColor3 = Ui.Color.inkSoft,
+	Visible = false,
+	Parent = taskCard,
+}, { new("UITextSizeConstraint", { MaxTextSize = 16, MinTextSize = 12 }) })
+
 local function setTaskReward(reward: number?)
 	local show = reward ~= nil and reward > 0
 	taskReward.Text = if show then "+" .. Ui.number(reward :: number) else ""
@@ -265,6 +275,7 @@ local function showTaskDone(reward: number)
 	taskTag.BackgroundColor3 = Ui.Color.amber
 	taskText.Text = L("Hud.TaskDone", { cash = reward })
 	taskBar.Visible = false
+	taskHint.Visible = false
 	taskCount.Text = ""
 	setTaskReward(nil)
 	taskCardScale.Scale = 1.1
@@ -1594,16 +1605,6 @@ end
 local SHOVEL_PRICE = config.getTool("Shovel").Price
 
 local function nextGoal(cash: number)
-	if not ownsTool("Shovel") then
-		return {
-			text = if cash >= SHOVEL_PRICE
-				then L("Task.BuyShovel")
-				else L("Hud.Goal.Tool", { tool = L("Tool.Shovel") }),
-			share = math.clamp(cash / SHOVEL_PRICE, 0, 1),
-			count = string.format("%d/%d", math.min(cash, SHOVEL_PRICE), SHOVEL_PRICE),
-		}
-	end
-
 	local zone = nil
 	if getZoneValue(barZone, "State") == "active" then
 		zone = barZone
@@ -1690,7 +1691,23 @@ local function refreshHud()
 		end
 	end
 	if os.clock() >= taskToastUntil then
-		if current then
+		taskHint.Visible = false
+		local matchState = workspace:GetAttribute("MatchState")
+		local onboardingDone = stepsDone ~= nil and stepsDone >= #tasks
+		local shovelGoal = matchState == "playing"
+			and ((current and current.id == "BuyShovel") or onboardingDone)
+			and not ownsTool("Shovel")
+		if shovelGoal then
+			taskCard.Visible = true
+			taskTag.Text = L("Hud.NextGoal")
+			taskTag.BackgroundColor3 = Ui.Color.blue
+			taskText.Text = L(if cash >= SHOVEL_PRICE then "Hud.ShovelReady" else "Hud.HandOrShovel")
+			setTaskReward(nil)
+			taskHint.Text = L("Hud.HandUpgradePath")
+			taskHint.Visible = true
+			taskBar.Visible = false
+			taskCount.Text = string.format("%d/%d", math.min(cash, SHOVEL_PRICE), SHOVEL_PRICE)
+		elseif current then
 			taskCard.Visible = true
 			taskTag.Text = L("Hud.CurrentTask")
 			taskTag.BackgroundColor3 = Ui.Color.green
@@ -1699,7 +1716,7 @@ local function refreshHud()
 			taskBar.Visible = currentGoal > 1
 			setTaskBar(currentValue / currentGoal, Ui.Color.green)
 			taskCount.Text = currentGoal > 1 and string.format("%d/%d", currentValue, currentGoal) or ""
-		elseif stepsDone ~= nil and workspace:GetAttribute("MatchState") ~= "finished" then
+		elseif onboardingDone and matchState ~= "finished" then
 			-- Цепочка пройдена: карточка показывает следующую цель (без награды)
 			local goal = nextGoal(cash)
 			taskCard.Visible = true

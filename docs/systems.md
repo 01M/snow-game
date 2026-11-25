@@ -44,7 +44,8 @@ Numbers and lists are deliberately not repeated here: the source of truth is `Co
 ## Tools
 
 - `Config.Tools` — the order equals the hotbar slots. The fields are described in the comment above the table. `Config.getToolStats` computes the stats with upgrades, one function for server and client.
-- Hand (`Bare = true`, `Config.BareTool`) is not an item: it is not put in the Backpack and works when there is no Tool in the character. Clicks without a tool are caught by `ToolClient` through `UserInputService`, and `BlowServer` treats empty hands as Hand. The upgrades and the id `Hand` are unchanged.
+- Hand (`Bare = true`, `Config.BareTool`) works when there is no Tool in the character. `ToolClient` catches those clicks through `UserInputService`, and `BlowServer` treats empty hands as Hand. Hold costs 6 Cash and uses a `MeltRate` of 0.105. Dexterity costs 4 / 6 / 9 and adds 10% of the base cut rate per level. Grasp costs 6 / 9 / 13 and adds 6% of the base range per level.
+- Shovel costs 68 Cash. Its base `MeltRate` is 0.12, with `MinDistance = 1.2` and `NozzleOffset = 0.6`. Range remains 5 studs, the cone half-angle is 40°, and it takes up to 9 portions per second from a pile.
 - `ToolServer` keeps what was bought and the levels, gives out tools after loading and on `CharacterAdded`, maintains the player attributes `OwnedTools` and `ToolUpgrades` (JSON). Everyone has the `Price = 0` tools and they are not saved.
 - Buying: a tool — a ProximityPrompt on the shed shelf (`ToolShopServer` → `ToolServer.buyTool`), an upgrade — remote `BuyToolUpgrade`, the backpack — remote `BuyUpgrade` or the stall's ProximityPrompt (`UpgradeShopServer`). Cooldown 0.3 s.
 - One `ToolClient` for all tools. Hold: `BlowState(true, look)` every `BlowAimInterval`, which is also the keepalive. Released, unequipped the tool, lost focus or opened a menu → `BlowState(false)`. Click: `ToolClick(look)` no more often than `Cooldown`. The bob is local only, through `RightGrip.C1`.
@@ -120,7 +121,25 @@ Numbers and lists are deliberately not repeated here: the source of truth is `Co
 - The server counts, the client only displays: player attributes `OnboardingStep` (steps completed), `OnboardingProgress`, `OnboardingGoal`. The journal shows the same list.
 - `OnboardingStep` is stored in the save, so completed steps and rewards are not repeated. Steps are identified by number: new ones only at the end of the list. The counter inside a step lives for one match.
 - An already fulfilled condition (the Shovel bought, the zone cleared by the group) counts by itself, no more often than once per `STEP_PAUSE`. Players with old saves also go through the chain from the start.
-- Chain completed → the card is hidden. Daily quests can be shown through `current` in `refreshHud`.
+- While the current step is buying the Shovel, the HUD shows the choice between Hand upgrades and saving for the Shovel. Players who have completed onboarding get the same choice until they own the Shovel in the current match. The shed pointer becomes available at the purchase price. The first collection, sale, and Shovel purchase still complete their original steps and award 2 / 1 / 2 Cash.
+
+### Hand-to-Shovel solo playtest (2026-11-26)
+
+One manual F2P run in House Map with `TestSave`, zero starting Cash, and no passes, paid boosts, or permanent stat effects. Times are relative to the first detected movement.
+
+| Event | Elapsed | Result |
+|---|---:|---|
+| First sale | 0:11.63 | 7 portions, 10 Cash after the collection and sale rewards |
+| Hold I | 0:15.53 | 6 Cash |
+| First time the Shovel was affordable | 1:45.45 | Balance 70 after the seventh sale, 107 portions sold in total |
+| Shovel bought | 1:51.03 | 68 Cash. Hand upgrades: Hold I, Dexterity III, Grasp II, 40 Cash total |
+| Shovel equipped | 1:51.86 | Base Shovel from here until Strength I at 2:26.78 |
+| Porch, Backpack I and shed rewards | 2:17.20 / 2:44.06 / 3:24.93 | +15 / +10 / +15 Cash after the Shovel purchase, in addition to its own +2 reward |
+
+- The player reported that the second iteration felt better and chose six of seven Hand upgrades before switching. In the first prototype they deliberately bought all eleven upgrades for comparison. In that run, the first sale was at 0:14.28 and the Shovel purchase at 2:34.38. The difference includes the different choices and selling routes.
+- The last Hand selling cycle recorded 23 portions cut in 15.10 s (91.4/min). From equipping the base Shovel to the first sale, the player cut 27 in 16.75 s (96.7/min). In 20-portion collection windows the rates were 99.0 and 109.1 portions/min. These snapshots used different patches. They measure elapsed gameplay, including movement, and do not isolate cutting speed.
+- The observer recorded 16 payouts (290 Cash). The estimated elapsed time from the last addition to the backpack until each payout totalled 16.75 s, of which 6.55 s preceded the Shovel purchase. This estimate omits the return route and movement while cutting. Three pairs of payouts were about one second apart, so the payout count is not a count of distinct routes.
+- No Snow Pusher or Snowblower was purchased in this test. The recorded route establishes the early progression only.
 
 ## Save and lock (`PlayerData`)
 

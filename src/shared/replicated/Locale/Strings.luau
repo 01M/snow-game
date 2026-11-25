@@ -5,6 +5,12 @@
 return {
 	-- ===== HUD матча (GameHudClient) =====
 	["Hud.CurrentTask"] = { en = "TASK", ru = "ЗАДАЧА" },
+	["Hud.HandOrShovel"] = {
+		en = "Upgrade your Hand or save for a Shovel",
+		ru = "Улучшай Руку или копи на Лопату",
+	},
+	["Hud.HandUpgradePath"] = { en = "Journal → Upgrades", ru = "Журнал → Апгрейды" },
+	["Hud.ShovelReady"] = { en = "Shovel available in the shed", ru = "Лопата доступна в сарае" },
 	["Hud.Backpack"] = { en = "BACKPACK", ru = "РЮКЗАК" },
 	["Hud.BackpackFull"] = {
 		en = "FULL! SELL AT THE MELTER",

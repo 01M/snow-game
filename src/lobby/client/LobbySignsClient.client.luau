@@ -1,5 +1,5 @@
 --!strict
--- Printed faces on the Lobby mounts. The queue keeps its replicated state and its fallback signs.
+-- Printed directory signs and live queue information on the original truck boards.
 local CollectionService = game:GetService("CollectionService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
@@ -17,7 +17,7 @@ local icons = {
 }
 
 local function line(
-	gui: SurfaceGui,
+	parent: Instance,
 	name: string,
 	color: Color3,
 	x: number,
@@ -35,7 +35,7 @@ local function line(
 		TextScaled = true,
 		TextColor3 = color,
 		TextXAlignment = align,
-		Parent = gui,
+		Parent = parent,
 	}, { Ui.new("UITextSizeConstraint", { MaxTextSize = maxSize }) })
 end
 
@@ -72,83 +72,70 @@ local function bindDirectory(gui: SurfaceGui, anchor: Instance, key: string)
 	end)
 end
 
-local function bindQueue(gui: SurfaceGui, sign: Instance, queue: Instance)
-	local section = line(gui, "Section", Ui.Color.goldLight, 0.07, 0.065, 0.86, 0.17, 40, Enum.TextXAlignment.Center)
-	local map = line(gui, "Map", Ui.Color.text, 0.07, 0.235, 0.86, 0.41, 116, Enum.TextXAlignment.Center)
-	local status = line(gui, "Status", Ui.Color.textSoft, 0.09, 0.725, 0.67, 0.20, 50, Enum.TextXAlignment.Left)
-	local count = line(gui, "Count", Ui.Color.text, 0.78, 0.72, 0.13, 0.21, 54, Enum.TextXAlignment.Right)
-	Ui.new("Frame", {
-		Name = "Rule",
-		BorderSizePixel = 0,
-		BackgroundColor3 = Ui.Color.surfaceLine,
-		BackgroundTransparency = 0.50,
-		Position = UDim2.fromScale(0.09, 0.69),
-		Size = UDim2.fromScale(0.82, 0.007),
-		Parent = gui,
-	})
+local function bindQueue(gui: SurfaceGui, queue: Instance)
+	local board = gui:FindFirstChild("Board")
+	local map = textLabel(board, "Main")
+	if not board or not map or board:FindFirstChild("QueueStatus") then
+		return
+	end
+
+	-- Preserve the orange strip, border and original title typography. Use only
+	-- the bottom of the dark field for the two secondary queue labels.
+	map.Position = UDim2.fromScale(0.05, 0.225)
+	map.Size = UDim2.fromScale(0.90, 0.58)
+	local status = line(board, "QueueStatus", Ui.Color.textSoft, 0.055, 0.82, 0.70, 0.145, 48, Enum.TextXAlignment.Left)
+	local count = line(board, "QueueCount", Ui.Color.text, 0.77, 0.82, 0.175, 0.145, 54, Enum.TextXAlignment.Right)
+	status.FontFace = Ui.Font.bold
 
 	local links: { RBXScriptConnection } = {}
-	local oldBoard: SurfaceGui?
 	local oldPad: BillboardGui?
+	local padWasEnabled = false
 	local function disconnect()
 		for _, connection in links do
 			connection:Disconnect()
 		end
 		table.clear(links)
-		if oldBoard and oldBoard.Parent then
-			oldBoard.Enabled = true
-		end
 		if oldPad and oldPad.Parent then
-			oldPad.Enabled = true
+			oldPad.Enabled = padWasEnabled
 		end
+		oldPad = nil
 	end
 	local function bindSources()
 		if not gui.Parent then
 			return
 		end
 		disconnect()
-		local boardGui = sign:FindFirstChild("BoardGui")
-		local layout = boardGui and boardGui:FindFirstChild("Board")
 		local pad = queue:FindFirstChild("Pad")
 		local padGui = pad and pad:FindFirstChild("PadGui")
-		local sourceSection = textLabel(layout and layout:FindFirstChild("Strip"), "Top")
-		local sourceMap = textLabel(layout, "Main")
 		local sourceStatus = textLabel(padGui, "Status")
 		local sourceCount = textLabel(padGui, "Count")
-		local function mirror(from: TextLabel?, to: TextLabel, fallback: string)
-			if not from then
-				to.Text = fallback
-				return
-			end
-			local function refresh()
-				to.Text = from.Text
-				if to == status then
-					status.TextColor3 = if from:GetAttribute("LocaleKey") == "Lobby.Pad.Create"
-						then Ui.Color.textSoft
-						else Ui.Color.goldLight
-				end
-			end
-			refresh()
-			table.insert(links, from:GetPropertyChangedSignal("Text"):Connect(refresh))
-			if to == status then
-				table.insert(links, from:GetAttributeChangedSignal("LocaleKey"):Connect(refresh))
-			end
+		if not padGui or not padGui:IsA("BillboardGui") or not sourceStatus or not sourceCount then
+			status.Text = ""
+			count.Text = ""
+			return
 		end
-		mirror(sourceSection, section, L("Lobby.Board.Unknown"))
-		mirror(sourceMap, map, L("Lobby.Board.PickMap"))
-		mirror(sourceStatus, status, "")
-		mirror(sourceCount, count, "")
-		if boardGui and boardGui:IsA("SurfaceGui") then
-			oldBoard = boardGui
-			boardGui.Enabled = false
+
+		local function refresh()
+			status.Text = sourceStatus.Text
+			status.TextColor3 = if sourceStatus:GetAttribute("LocaleKey") == "Lobby.Pad.Create"
+				then Ui.Color.textSoft
+				else Ui.Color.goldLight
+			count.Text = sourceCount.Text
 		end
-		if padGui and padGui:IsA("BillboardGui") and sourceStatus and sourceCount then
-			oldPad = padGui
-			padGui.Enabled = false
+		oldPad = padGui
+		padWasEnabled = padGui.Enabled
+		local function refreshVisibility()
+			padGui.Enabled = padWasEnabled and not gui.Enabled
 		end
+		refresh()
+		refreshVisibility()
+		table.insert(links, sourceStatus:GetPropertyChangedSignal("Text"):Connect(refresh))
+		table.insert(links, sourceStatus:GetAttributeChangedSignal("LocaleKey"):Connect(refresh))
+		table.insert(links, sourceCount:GetPropertyChangedSignal("Text"):Connect(refresh))
+		table.insert(links, gui:GetPropertyChangedSignal("Enabled"):Connect(refreshVisibility))
 	end
 
-	local sources = { Pad = true, PadGui = true, BoardGui = true, Main = true, Top = true, Status = true, Count = true }
+	local sources = { Pad = true, PadGui = true, Status = true, Count = true }
 	local function changed(inst: Instance)
 		if sources[inst.Name] and not inst:IsDescendantOf(gui) then
 			task.defer(bindSources)
@@ -171,7 +158,7 @@ local function mount(inst: Instance)
 	local art = inst.Parent
 	local anchor = art and art.Parent
 	local key = inst:GetAttribute("SignText")
-	if not anchor or (typeof(key) ~= "string" and not anchor.Parent) then
+	if not anchor or typeof(key) ~= "string" then
 		return
 	end
 	local canvasWidth = 640
@@ -182,15 +169,11 @@ local function mount(inst: Instance)
 		SizingMode = Enum.SurfaceGuiSizingMode.FixedSize,
 		CanvasSize = Vector2.new(canvasWidth, canvasHeight),
 		LightInfluence = 0.24,
-		MaxDistance = if typeof(key) == "string" then 68 else 120,
+		MaxDistance = 68,
 		Parent = inst,
 	}) :: SurfaceGui
 	surfaces[inst] = gui
-	if typeof(key) == "string" then
-		bindDirectory(gui, anchor, key)
-	else
-		bindQueue(gui, anchor, anchor.Parent :: Instance)
-	end
+	bindDirectory(gui, anchor, key)
 end
 
 CollectionService:GetInstanceAddedSignal(TAG):Connect(mount)
@@ -203,4 +186,21 @@ CollectionService:GetInstanceRemovedSignal(TAG):Connect(function(inst)
 end)
 for _, face in CollectionService:GetTagged(TAG) do
 	mount(face)
+end
+
+local queues = workspace:WaitForChild("Blockout"):WaitForChild("QueuePads")
+local function mountTruck(inst: Instance)
+	if inst.Name ~= "BoardGui" and inst.Name ~= "Board" and inst.Name ~= "Main" then
+		return
+	end
+	local gui = if inst:IsA("SurfaceGui") then inst else inst:FindFirstAncestorWhichIsA("SurfaceGui")
+	local sign = gui and gui.Parent
+	local queue = sign and sign.Parent
+	if gui and gui.Name == "BoardGui" and queue and queue.Parent == queues then
+		bindQueue(gui, queue)
+	end
+end
+queues.DescendantAdded:Connect(mountTruck)
+for _, inst in queues:GetDescendants() do
+	mountTruck(inst)
 end

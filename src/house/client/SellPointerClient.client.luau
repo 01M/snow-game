@@ -1,8 +1,6 @@
 --!strict
--- SellPointerClient: указатель к снегоплавилке, когда рюкзак почти полон (UX-3). Только клиент.
--- Над SellZone (Workspace.SnowYard.Snowmelter.SellZone) — метка «Продать · N м», видна сквозь стены.
--- Плавилка вне экрана — стрелка с иконкой плавилки на эллипсе вокруг центра экрана (края экрана заняты HUD).
--- Не показывается: матч не идёт (MatchState ≠ "playing"), нет SellZone, пасс «Автопродажа», рядом с плавилкой.
+-- Один указатель к цели: первая покупка, первая продажа или почти полный рюкзак.
+-- В поле зрения показываем метку, за краем обзора — стрелку. Вблизи цели указатель скрывается.
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
@@ -16,12 +14,14 @@ local player = Players.LocalPlayer
 local new = Ui.new
 
 local FULL_RATIO = 0.9 -- показывать с 90% рюкзака
-local HIDE_DISTANCE = 16 -- studs до центра SellZone: дальше указатель не нужен
 local METERS_PER_STUD = 0.28
 local ELLIPSE_X, ELLIPSE_Y = 0.3, 0.26 -- полуоси эллипса стрелки (доля экрана)
 local UPDATE_EVERY = 0.1
+local SHOVEL_PRICE = config.getTool("Shovel").Price
+local SELL = { Icon = "Melter", Text = "Hud.SellMarker", Offset = Vector3.new(0, 7, 0), Near = 16 }
+local SHED = { Icon = "ToolShovel", Text = "Hud.ShedMarker", Offset = Vector3.new(0, 6, 0), Near = 7 }
 
--- Метка над плавилкой
+-- Метка над целью
 local marker = new("BillboardGui", {
 	Name = "SellMarker",
 	AlwaysOnTop = true,
@@ -36,7 +36,7 @@ local marker = new("BillboardGui", {
 		Size = UDim2.fromScale(1, 1),
 		BackgroundColor3 = Ui.Color.amber,
 	}, {
-		Ui.icon("Melter", { Size = UDim2.fromOffset(32, 32), Position = UDim2.fromOffset(4, 4) }) :: any,
+		Ui.icon("Melter", { Name = "Icon", Size = UDim2.fromOffset(32, 32), Position = UDim2.fromOffset(4, 4) }) :: any,
 		Ui.label({
 			Name = "Text",
 			Size = UDim2.new(1, -42, 1, 0),
@@ -48,6 +48,7 @@ local marker = new("BillboardGui", {
 	}),
 })
 local markerText = marker:FindFirstChild("Text", true) :: TextLabel
+local markerIcon = marker:FindFirstChild("Icon", true) :: ImageLabel
 
 -- Стрелка у края обзора
 local screen = new("ScreenGui", {
@@ -91,13 +92,10 @@ local playerGui = player:WaitForChild("PlayerGui")
 marker.Parent = playerGui
 screen.Parent = playerGui
 
-local function backpackRatio(): number
-	local ls = player:FindFirstChild("leaderstats")
-	local bp = ls and ls:FindFirstChild("Backpack")
-	local snow = if bp and bp:IsA("IntValue") then bp.Value else 0
-	local capacity = player:GetAttribute("BackpackCapacity")
-	local cap = if type(capacity) == "number" then capacity else config.BackpackCapacity
-	return if cap > 0 then snow / cap else 0
+local function stat(name: string): number
+	local stats = player:FindFirstChild("leaderstats")
+	local value = stats and stats:FindFirstChild(name)
+	return if value and value:IsA("IntValue") then value.Value else 0
 end
 
 local function sellZone(): BasePart?
@@ -107,46 +105,80 @@ local function sellZone(): BasePart?
 	return if zone and zone:IsA("BasePart") then zone else nil
 end
 
+local function destination(): (BasePart?, typeof(SELL))
+	local stepsDone = player:GetAttribute("OnboardingStep")
+	local step = if typeof(stepsDone) == "number" then config.Onboarding[stepsDone + 1] else nil
+	if (step and step.Id == "BuyShovel") or (typeof(stepsDone) == "number" and stepsDone >= #config.Onboarding) then
+		local owned = (player:GetAttribute("OwnedTools") or "") :: string
+		if stat("Cash") >= SHOVEL_PRICE and not string.find("," .. owned .. ",", ",Shovel,", 1, true) then
+			local shop = workspace:FindFirstChild("ToolShop")
+			local shelves = shop and shop:FindFirstChild("Shelves")
+			local shelf = shelves and shelves:FindFirstChild("Shelf_Shovel")
+			local anchor = shelf and shelf:FindFirstChild("PromptAnchor")
+			if anchor and anchor:IsA("BasePart") then
+				return anchor, SHED
+			end
+		end
+	end
+
+	local snow = stat("Backpack")
+	if snow > 0 and not Shop.hasPass(player, "AutoSell") then
+		local remaining = if step and step.Id == "Sell"
+			then (step.Goal or 0) - ((player:GetAttribute("OnboardingProgress") or 0) :: number)
+			else 0
+		local capacity = (player:GetAttribute("BackpackCapacity") or config.BackpackCapacity) :: number
+		if (remaining > 0 and snow >= remaining) or (capacity > 0 and snow >= capacity * FULL_RATIO) then
+			return sellZone(), SELL
+		end
+	end
+	return nil, SELL
+end
+
 local function hide()
 	marker.Enabled = false
 	screen.Enabled = false
 end
 
-local acc = 0
+local acc = UPDATE_EVERY
+local zone: BasePart?
+local style = SELL
 RunService.RenderStepped:Connect(function(dt)
 	acc += dt
-	local zone = sellZone()
+	if workspace:GetAttribute("MatchState") ~= "playing" then
+		zone = nil
+		acc = UPDATE_EVERY
+		hide()
+		return
+	end
+	local refresh = acc >= UPDATE_EVERY
+	if refresh then
+		acc = 0
+		local nextZone, nextStyle = destination()
+		zone = nextZone
+		if style ~= nextStyle then
+			style = nextStyle
+			marker.StudsOffsetWorldSpace = style.Offset
+			Ui.setIcon(markerIcon, style.Icon)
+			Ui.setIcon(arrowIcon, style.Icon)
+		end
+	end
 	local character = player.Character
 	local root = character and character:FindFirstChild("HumanoidRootPart") :: BasePart?
 	local camera = workspace.CurrentCamera
-	if
-		workspace:GetAttribute("MatchState") ~= "playing"
-		or not zone
-		or not root
-		or not camera
-		or Shop.hasPass(player, "AutoSell")
-		or backpackRatio() < FULL_RATIO
-	then
+	if not zone or not zone.Parent or not root or not camera then
 		hide()
 		return
 	end
 	local target = zone.Position
 	local distance = (target - root.Position).Magnitude
-	if distance < HIDE_DISTANCE then
+	if distance <= style.Near then
 		hide()
 		return
 	end
 
-	marker.Adornee = zone
-	marker.Enabled = true
-	if acc >= UPDATE_EVERY then
-		acc = 0
-		markerText.Text = Locale.t("Hud.SellMarker", { m = math.floor(distance * METERS_PER_STUD + 0.5) })
-	end
-
 	-- на экране — хватает метки; иначе стрелка
 	local vp = camera.ViewportSize
-	local point, inFront = camera:WorldToViewportPoint(target + Vector3.new(0, 7, 0))
+	local point, inFront = camera:WorldToViewportPoint(target + style.Offset)
 	local margin = 40
 	local onScreen = inFront
 		and point.X > margin
@@ -154,9 +186,15 @@ RunService.RenderStepped:Connect(function(dt)
 		and point.Y > margin
 		and point.Y < vp.Y - margin
 	if onScreen then
+		if refresh or not marker.Enabled then
+			marker.Adornee = zone
+			markerText.Text = Locale.t(style.Text, { m = math.floor(distance * METERS_PER_STUD + 0.5) })
+		end
+		marker.Enabled = true
 		screen.Enabled = false
 		return
 	end
+	marker.Enabled = false
 
 	-- направление в плоскости экрана; позади камеры — проекция зеркальная
 	local center = vp / 2

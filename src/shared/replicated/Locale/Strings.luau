@@ -11,6 +11,7 @@ return {
 		ru = "ПОЛНЫЙ! НЕСИ НА ПЛАВИЛКУ",
 	},
 	["Hud.SellMarker"] = { en = "Sell · {m} m", ru = "Продать · {m} м" },
+	["Hud.ShedMarker"] = { en = "Tool shed · {m} m", ru = "Сарай · {m} м" },
 	["Hud.TaskDone"] = { en = "Done! +{cash} Cash", ru = "Готово! +{cash} Cash" },
 	["Hud.Cleared"] = { en = "CLEARED", ru = "ОЧИЩЕНО" },
 	["Hud.NextGoal"] = { en = "GOAL", ru = "ЦЕЛЬ" },

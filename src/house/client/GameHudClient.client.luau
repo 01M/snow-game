@@ -1,6 +1,6 @@
 -- GameHudClient: HUD матча и журнал (Tab). Вид HUD — общий Ui (ReplicatedStorage.Shared.Ui).
 -- HUD: текущая задача (цепочка Config.Onboarding, считает OnboardingServer); когда цепочка пройдена, карточка показывает
--- следующую цель (nextGoal: активная зона → самый дешёвый некупленный инструмент → апгрейд рюкзака), без награды,
+-- следующую цель (сначала Лопата, затем активная зона, инструмент или апгрейд рюкзака), без награды,
 -- рюкзак, зона и таймер матча по центру (workspace.MatchStartTime/MatchEndTime ставит MatchServer),
 -- Cash с множителем магазина (Shop.cashMultiplier), кнопки журнала и магазина; «+N» за Cash — в общей стопке SnowGame.Toasts. Низ экрана свободен для управления на телефоне.
 -- Журнал: «Журнал» (задачи + игроки), «Апгрейды» (инструменты из Config.Tools — Remotes.BuyToolUpgrade, рюкзак — Remotes.BuyUpgrade),
@@ -1591,8 +1591,19 @@ local function canAffordToolUpgrade(cash: number): boolean
 end
 
 -- Следующая цель после цепочки новичка: считает клиент из уже известных данных, награды нет.
--- Порядок: активная зона (сначала та, где стоит игрок) → самый дешёвый некупленный инструмент → апгрейд рюкзака
+local SHOVEL_PRICE = config.getTool("Shovel").Price
+
 local function nextGoal(cash: number)
+	if not ownsTool("Shovel") then
+		return {
+			text = if cash >= SHOVEL_PRICE
+				then L("Task.BuyShovel")
+				else L("Hud.Goal.Tool", { tool = L("Tool.Shovel") }),
+			share = math.clamp(cash / SHOVEL_PRICE, 0, 1),
+			count = string.format("%d/%d", math.min(cash, SHOVEL_PRICE), SHOVEL_PRICE),
+		}
+	end
+
 	local zone = nil
 	if getZoneValue(barZone, "State") == "active" then
 		zone = barZone

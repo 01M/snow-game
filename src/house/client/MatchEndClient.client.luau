@@ -1,6 +1,6 @@
 -- MatchEndClient: итоги через Ui.window, последовательные результаты и живые решения игроков.
 -- Только отображение: ReturnCountdown, PlayAgainVotes/Total и EndChoice приходят с сервера.
--- MatchAction "again" / "cancel" / "lobby" сохраняет существующий личный выбор и телепорты.
+-- MatchAction "again" / "cancel" / "lobby" задаёт выбор, "retry" повторяет сохранение перед переходом.
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local GuiService = game:GetService("GuiService")
@@ -347,10 +347,13 @@ local function canChoose()
 		and type(t) == "number"
 		and t > 0
 		and player:GetAttribute("EndChoice") ~= "lobby"
+		and player:GetAttribute("MatchSaveStatus") == nil
 end
 local function refreshDecisions()
 	local t = workspace:GetAttribute("ReturnCountdown")
 	local choosing = canChoose()
+	local saving = player:GetAttribute("MatchSaveStatus")
+	local failed = saving == "Failed"
 	local again = player:GetAttribute("EndChoice") == "again"
 	local votes = workspace:GetAttribute("PlayAgainVotes") or 0
 	local total = workspace:GetAttribute("PlayAgainTotal") or 0
@@ -370,15 +373,22 @@ local function refreshDecisions()
 		)
 		entry.status.TextColor3 = if choice == "again" then C.greenDark else C.inkSoft
 	end
-	Ui.setKind(againButton, if not choosing then "disabled" elseif again then "reward" else "primary")
+	Ui.setKind(
+		againButton,
+		if failed then "primary" elseif not choosing then "disabled" elseif again then "reward" else "primary"
+	)
 	Ui.setKind(lobbyButton, if choosing then "secondary" else "disabled")
-	againText.Text = L(if again and choosing then "MatchEnd.Cancel" else "MatchEnd.PlayAgain")
-	Ui.setIcon(againButton.Icon, if again and choosing then "Check" else "Play")
-	hint.Text = if choosing
-		then L(if again then "MatchEnd.JoinedHint" else "MatchEnd.DecisionHint")
+	againText.Text = L(
+		if failed then "MatchEnd.RetrySave" elseif again and choosing then "MatchEnd.Cancel" else "MatchEnd.PlayAgain"
+	)
+	Ui.setIcon(againButton.Icon, if failed then "Clock" elseif again and choosing then "Check" else "Play")
+	hint.Text = if failed
+		then L("MatchEnd.SaveFailed")
+		elseif saving == "Saving" then L("MatchEnd.Saving")
+		elseif choosing then L(if again then "MatchEnd.JoinedHint" else "MatchEnd.DecisionHint")
 		elseif again then L("MatchEnd.Teleporting")
 		else L("MatchEnd.Returning")
-	hint.TextColor3 = if again then C.greenDark else C.inkSoft
+	hint.TextColor3 = if again and not saving then C.greenDark else C.inkSoft
 	local timed = choosing
 	timerText.Text = if timed then L("MatchEnd.Time", { n = t }) else "…"
 	Ui.setIcon(timerIcon, if timed then "Clock" elseif again then "Play" else "Leave")
@@ -476,7 +486,9 @@ reopen.Activated:Connect(function()
 	end
 end)
 againButton.Activated:Connect(function()
-	if canChoose() then
+	if player:GetAttribute("MatchSaveStatus") == "Failed" then
+		MatchAction:FireServer("retry")
+	elseif canChoose() then
 		MatchAction:FireServer(if player:GetAttribute("EndChoice") == "again" then "cancel" else "again")
 	end
 end)
@@ -502,6 +514,12 @@ local function onMatchState()
 	end
 end
 workspace:GetAttributeChangedSignal("MatchState"):Connect(onMatchState)
+player:GetAttributeChangedSignal("MatchSaveStatus"):Connect(function()
+	if workspace:GetAttribute("MatchState") == "finished" and player:GetAttribute("MatchSaveStatus") == "Failed" then
+		window.open()
+	end
+	refreshDecisions()
+end)
 for _, key in ipairs({ "ReturnCountdown", "PlayAgainVotes", "PlayAgainTotal" }) do
 	workspace:GetAttributeChangedSignal(key):Connect(refreshDecisions)
 end

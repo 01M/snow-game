@@ -278,6 +278,12 @@ return {
 	},
 	["MatchEnd.Returning"] = { en = "Returning to the lobby…", ru = "Возвращаемся в лобби…" },
 	["MatchEnd.PlayAgain"] = { en = "Play again", ru = "Играть ещё" },
+	["MatchEnd.Saving"] = { en = "Saving progress…", ru = "Сохраняем прогресс…" },
+	["MatchEnd.SaveFailed"] = {
+		en = "Couldn't confirm the save. Retry to continue.",
+		ru = "Сохранение не подтверждено. Повтори попытку.",
+	},
+	["MatchEnd.RetrySave"] = { en = "Retry save", ru = "Повторить сохранение" },
 	["MatchEnd.Cancel"] = { en = "Cancel", ru = "Отмена" },
 	["MatchEnd.ToLobby"] = { en = "Lobby", ru = "В лобби" },
 	["MatchEnd.Votes"] = { en = "Play again: {n}/{m} · {t} s", ru = "Ещё раз: {n}/{m} · {t} с" },

@@ -10,7 +10,7 @@ local SaveSchema = {}
 
 export type Status = "ok" | "newer" | "failed"
 
-SaveSchema.CURRENT = 3
+SaveSchema.CURRENT = 4
 
 local steps: { [number]: (data: { [string]: any }) -> () } = {
 	-- 0 → 1: поля те же, только появляется SchemaVersion
@@ -53,6 +53,8 @@ local steps: { [number]: (data: { [string]: any }) -> () } = {
 			data.Stats = {}
 		end
 	end,
+	-- 3 → 4: MatchSaveId is optional until the first match save.
+	[4] = function(_data) end,
 }
 
 -- Версия схемы таблицы сохранения; нет поля или мусор — 0

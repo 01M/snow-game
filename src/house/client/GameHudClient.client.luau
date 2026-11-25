@@ -626,21 +626,39 @@ local leaveButton = Ui.button({
 })
 local leaveText = leaveButton:FindFirstChild("Text") :: TextLabel
 local leaveArmedUntil = 0
+local function refreshLeave()
+	local status = player:GetAttribute("MatchSaveStatus")
+	Ui.setKind(leaveButton, if status == "Saving" or status == "Saved" then "disabled" else "neutral")
+	leaveText.Text = L(
+		if status == "Failed"
+			then "MatchEnd.RetrySave"
+			elseif status == "Saving" then "MatchEnd.Saving"
+			elseif status == "Saved" then "MatchEnd.Returning"
+			elseif os.clock() < leaveArmedUntil then "Hud.LeaveConfirm"
+			else "Hud.LeaveMatch"
+	)
+end
 leaveButton.Activated:Connect(function()
-	if os.clock() < leaveArmedUntil then
-		leaveArmedUntil = 0
-		leaveText.Text = L("Hud.LeaveMatch")
-		MatchAction:FireServer("lobby")
+	local status = player:GetAttribute("MatchSaveStatus")
+	if status == "Saving" or status == "Saved" then
 		return
+	elseif status == "Failed" then
+		MatchAction:FireServer("retry")
+	elseif os.clock() < leaveArmedUntil then
+		leaveArmedUntil = 0
+		refreshLeave()
+		MatchAction:FireServer("lobby")
+	else
+		leaveArmedUntil = os.clock() + LEAVE_CONFIRM_TIME
+		refreshLeave()
+		task.delay(LEAVE_CONFIRM_TIME, refreshLeave)
 	end
-	leaveArmedUntil = os.clock() + LEAVE_CONFIRM_TIME
-	leaveText.Text = L("Hud.LeaveConfirm")
-	task.delay(LEAVE_CONFIRM_TIME, function()
-		if os.clock() >= leaveArmedUntil then
-			leaveText.Text = L("Hud.LeaveMatch")
-		end
-	end)
 end)
+player:GetAttributeChangedSignal("MatchSaveStatus"):Connect(function()
+	leaveArmedUntil = 0
+	refreshLeave()
+end)
+refreshLeave()
 
 -- Раскладка журнала под размер окна (правило масштаба в Ui.window)
 applyJournalLayout = function(layout)

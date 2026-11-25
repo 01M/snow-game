@@ -91,7 +91,8 @@ Oleg creates a new product in the Creator Dashboard and sends the id; `Id = 0` m
 - Saving and receipts work as usual; the normal key is not changed.
 - **Only one place at a time.** The key is shared: starting the second place refills it and drops the first place's lock, so the first place's save is skipped.
 - The next Play refills the key again, so the save is checked after Stop, by reading `test_<UserId>` from `PlayerData_Studio`. `[unverified]` From edit mode (Command Bar, MCP) the DataStore answers `Access forbidden` (2026-11-08); it can be read during Play from the Server context.
-- The filled key has no `SchemaVersion`, so every TestSave run checks the migration from the old format: Output shows `[SaveSchema] <name>: 0 → 3`.
+- The filled key has no `SchemaVersion`, so every TestSave run checks migration from the old format: Output shows `[SaveSchema] <name>: 0 → 4`.
+- **Match save test (House Map, Studio with TestSave):** set the player attribute `DebugMatchSaveFailure` from the Server context. `BeforeFinal` rejects every final write until cleared. `AfterFinal` and `AfterCheckpoint` simulate a missing reply once, after the write reached the test store, and clear themselves. Read the test key from the Server context without the GetAsync cache when verifying the persisted balance. Remove the test attribute after the run.
 - `TestSaveFutureSchema = true` (together with TestSave) fills the key with `SchemaVersion = 999`: a check that a save from a newer version is not overwritten (in the match: kick `Kick.SaveTooNew`).
 - `StartCash` (a workspace attribute, House Map, Studio only, set in edit mode): Cash on the first join into the match; without it every join starts with 0. A rejoin restored from `MatchCache` ignores it. Remove the attribute after the test.
 - `DebugFinishZone = "<zone Name>"` (a workspace attribute, House Map, Studio only, during Play from the Server context): finishes that active zone at once, the same way as clearing it (Crystals for players who cut 20+ portions since it opened, the next stage, the end of the match after the last one); the snow stays. Player work is the attribute `SnowCut`, which can be set from the Server context for the test. The attribute clears itself.
@@ -128,7 +129,7 @@ Versions are pinned in `rokit.toml`: Rojo 7.7.1, StyLua 2.6.0, Selene 0.32.0, lu
 2. `stylua src`, then `stylua --check src`; if the check fails, repeat.
 3. `selene src` shows 0 warnings.
 4. `scripts/analyze.ps1` shows 0 errors.
-5. Debug attributes removed: `TestSave`, `TestSaveFutureSchema`, `TestSaveStats`, `StartCash`, `DebugDayOffset`, `DebugFinishZone`, `DebugGiveCrystals`, `DebugRejoin` and `DebugCollect` (player), `ForceLanguage`, `DebugSnowBlocks`, `DebugSnowDepth`, `DebugTouchButton`, `DebugFinds`, `DebugShovelFxOld`, `DebugShovelShake`, `DebugShovelLite`, `DebugUiSounds`, `DebugWindowLayout`, `DebugShopState`.
+5. Debug attributes removed: `TestSave`, `TestSaveFutureSchema`, `TestSaveStats`, `StartCash`, `DebugDayOffset`, `DebugFinishZone`, `DebugGiveCrystals`, `DebugRejoin`, `DebugCollect` and `DebugMatchSaveFailure` (player), `ForceLanguage`, `DebugSnowBlocks`, `DebugSnowDepth`, `DebugTouchButton`, `DebugFinds`, `DebugShovelFxOld`, `DebugShovelShake`, `DebugShovelLite`, `DebugUiSounds`, `DebugWindowLayout`, `DebugShopState`.
 
 ### Proportionate UI validation
 

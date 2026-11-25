@@ -3,7 +3,7 @@
 -- (workspace.ReturnCountdown, CHOICE_TIME сек): «Ещё раз» или «В лобби» (remote MatchAction).
 -- Окно закрывается раньше, если выбрали все. Нажавшие «Ещё раз» вместе едут на новый reserved-сервер House Map,
 -- остальные — в лобби. «В лобби» работает и во время матча (кнопка в журнале).
--- Перед любым телепортом игрок сохраняется со снятием блокировки (один раз: потом isLoaded = false).
+-- Телепорт возможен только после подтверждённого сохранения со снятием блокировки.
 local Players = game:GetService("Players")
 local TeleportService = game:GetService("TeleportService")
 local HttpService = game:GetService("HttpService")
@@ -43,7 +43,9 @@ end
 -- Конец матча: выбор и телепорт
 -- ============================================================
 local choice = {} -- [player] = "again", пока идёт окно выбора
-local departed = {} -- [player] = true: сохранён со снятием блокировки и отправлен (или отправляется)
+local departed = {} -- [player] = true: финальная запись подтверждена
+local transfers = {} -- [player] = { Target, Saving }; после ошибки цель сохраняется для повтора
+local lobbyTarget = { PlaceId = LOBBY_PLACE_ID }
 local initFailures = {} -- [player] = сколько раз сработал TeleportInitFailed
 local lastAction = {}
 local matchEnding = false
@@ -87,7 +89,7 @@ end
 local function updateVotes()
 	local votes, total = 0, 0
 	for _, player in ipairs(Players:GetPlayers()) do
-		if not departed[player] then
+		if not departed[player] and not transfers[player] then
 			total += 1
 			if choice[player] == "again" then
 				votes += 1
@@ -101,7 +103,7 @@ end
 local function present(players)
 	local list = {}
 	for _, player in ipairs(players) do
-		if player.Parent then
+		if player.Parent == Players and departed[player] then
 			table.insert(list, player)
 		end
 	end
@@ -111,6 +113,10 @@ end
 -- TeleportAsync с повторами; true — Roblox принял телепорт (он ещё может сорваться: TeleportInitFailed)
 local function tryTeleport(placeId, players, options)
 	for attempt = 1, TELEPORT_RETRIES do
+		players = present(players)
+		if #players == 0 then
+			return true
+		end
 		local ok, err = pcall(function()
 			TeleportService:TeleportAsync(placeId, players, options)
 		end)
@@ -154,48 +160,57 @@ local function sendToLobby(players)
 	end
 end
 
--- Вся группа «Ещё раз» — на один новый reserved-сервер. Карту берём из состояния сервера, не от клиента.
-local function sendPlayAgain(players)
-	players = present(players)
-	if #players == 0 then
-		return
-	end
+-- Одна цель для «Ещё раз», включая тех, кто успешно сохранится позже.
+local function replayTarget()
 	local options = Instance.new("TeleportOptions")
 	options.ReservedServerId = HttpService:GenerateGUID(false)
 	options:SetTeleportData({ map = workspace:GetAttribute("MatchMap") })
-	if not tryTeleport(game.PlaceId, players, options) then
-		sendToLobby(players)
-	end
+	return { PlaceId = game.PlaceId, Options = options }
 end
 
--- Сохранить со снятием блокировки тех, кого ещё не отправляли, и пометить их (повторно не сохраняются)
-local function releaseForTeleport(players)
+local function saveAndTransfer(players, target)
 	local list = {}
 	for _, player in ipairs(players) do
-		if not departed[player] then
-			departed[player] = true
+		local transfer = transfers[player]
+		if
+			player.Parent == Players
+			and not departed[player]
+			and (not transfer or (transfer.Target == target and not transfer.Saving))
+		then
+			transfers[player] = { Target = target, Saving = true }
+			player:SetAttribute("MatchSaveStatus", "Saving")
 			table.insert(list, player)
 		end
 	end
-	PlayerData.saveAll(list, true)
 	updateVotes()
-	return list
-end
-
--- «В лобби»: сразу, и во время матча, и в окне выбора
-local function leaveNow(player)
-	if departed[player] then
-		return
+	local results = PlayerData.saveAll(list, true)
+	local ready = {}
+	for _, player in ipairs(list) do
+		local transfer = transfers[player]
+		if transfer and player.Parent == Players then
+			if results[player] then
+				transfers[player] = nil
+				departed[player] = true
+				if target == lobbyTarget then
+					player:SetAttribute("EndChoice", "lobby")
+				end
+				player:SetAttribute("MatchSaveStatus", "Saved")
+				table.insert(ready, player)
+			else
+				transfer.Saving = false
+				player:SetAttribute("MatchSaveStatus", "Failed")
+			end
+		end
 	end
-	choice[player] = nil
-	player:SetAttribute("EndChoice", "lobby")
-	releaseForTeleport({ player })
-	sendToLobby({ player })
+	updateVotes()
+	if target == lobbyTarget or not tryTeleport(target.PlaceId, ready, target.Options) then
+		sendToLobby(ready)
+	end
 end
 
 local function everyoneChose()
 	for _, player in ipairs(Players:GetPlayers()) do
-		if not departed[player] and choice[player] == nil then
+		if not departed[player] and not transfers[player] and choice[player] == nil then
 			return false
 		end
 	end
@@ -233,15 +248,14 @@ local function onMatchFinished()
 
 	local again, lobby = {}, {}
 	for _, player in ipairs(Players:GetPlayers()) do
-		if not departed[player] then
+		if not departed[player] and not transfers[player] then
 			table.insert(if choice[player] == "again" then again else lobby, player)
 		end
 	end
-	-- Сохраняем всех разом, потом телепортируем; уже ушедшие пропускаются (departed)
-	again = releaseForTeleport(again)
-	lobby = releaseForTeleport(lobby)
-	task.spawn(sendPlayAgain, again)
-	sendToLobby(lobby)
+	if #again > 0 then
+		task.spawn(saveAndTransfer, again, replayTarget())
+	end
+	saveAndTransfer(lobby, lobbyTarget)
 end
 
 MatchAction.OnServerEvent:Connect(function(player, action)
@@ -254,8 +268,17 @@ MatchAction.OnServerEvent:Connect(function(player, action)
 	end
 	lastAction[player] = now
 
+	local transfer = transfers[player]
+	if transfer then
+		if action == "retry" and not transfer.Saving then
+			saveAndTransfer({ player }, transfer.Target)
+		end
+		return
+	end
+
 	if action == "lobby" then
-		leaveNow(player)
+		choice[player] = nil
+		saveAndTransfer({ player }, lobbyTarget)
 	elseif action == "again" and choosing then
 		choice[player] = "again"
 		player:SetAttribute("EndChoice", "again")
@@ -302,17 +325,17 @@ TeleportService.TeleportInitFailed:Connect(function(player, result, errorMessage
 	end
 end)
 
--- Зашедший после конца окна выбора сразу отправляется в лобби (его сохранит PlayerRemoving)
+-- При позднем входе сначала ждём загрузку данных, затем используем общий путь выхода.
 Players.PlayerAdded:Connect(function(player)
-	if workspace:GetAttribute("ReturnCountdown") == 0 then
-		departed[player] = true
-		sendToLobby({ player })
+	if workspace:GetAttribute("ReturnCountdown") == 0 and player:WaitForChild("leaderstats", 120) then
+		saveAndTransfer({ player }, lobbyTarget)
 	end
 end)
 
 Players.PlayerRemoving:Connect(function(player)
 	choice[player] = nil
 	departed[player] = nil
+	transfers[player] = nil
 	initFailures[player] = nil
 	lastAction[player] = nil
 	if choosing then

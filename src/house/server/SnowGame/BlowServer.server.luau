@@ -568,6 +568,9 @@ end
 -- Возвращает собранное в порциях (0 — ничего не взяли).
 -- ============================================================
 local function cutSnow(player: Player, tool: Tool?, toolCfg, stats, rateMax: number, dt: number): number
+	if player:GetAttribute("MatchSaveStatus") ~= nil then
+		return 0
+	end
 	local range = stats.Range
 	local coneAngle = math.rad(math.min(stats.HalfAngle, 85))
 	local coneCos = math.cos(coneAngle)

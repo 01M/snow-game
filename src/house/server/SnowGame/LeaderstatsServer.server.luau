@@ -193,9 +193,7 @@ end)
 
 game:BindToClose(function()
 	MatchCache.clear()
-	PlayerData.saveAll(Players:GetPlayers(), true)
-	-- При закрытии игроки часто уже ушли, и их сохранение идёт из PlayerRemoving — дожидаемся его
-	PlayerData.waitForSaves(25)
+	PlayerData.flushOnShutdown(25)
 end)
 
 task.spawn(function()

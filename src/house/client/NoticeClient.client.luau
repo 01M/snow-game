@@ -2,6 +2,7 @@
 -- NoticeClient: short answers of the server to a purchase (Remotes.Notice from ToolServer and UpgradeShopServer)
 -- shown as toasts: bought a tool, bought an upgrade, bought the backpack upgrade, not enough Cash.
 -- Only display: the purchase itself is decided on the server.
+local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local snowGame = ReplicatedStorage:WaitForChild("SnowGame")
@@ -9,6 +10,13 @@ local notice = snowGame:WaitForChild("Remotes"):WaitForChild("Notice") :: Remote
 local Toasts = require(snowGame:WaitForChild("Toasts"))
 local L = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Locale")).t
 local Ui = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Ui"))
+
+local player = Players.LocalPlayer
+player:GetAttributeChangedSignal("MatchSaveStatus"):Connect(function()
+	if player:GetAttribute("MatchSaveStatus") == "Failed" and workspace:GetAttribute("MatchState") ~= "finished" then
+		Toasts.get().show(L("MatchEnd.SaveFailed"), "error", "Clock")
+	end
+end)
 
 local TOOL_ICONS: { [string]: string } = {
 	Shovel = "ToolShovel",

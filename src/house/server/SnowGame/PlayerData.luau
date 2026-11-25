@@ -1,6 +1,6 @@
 -- Сохранение прогресса игрока в DataStore (общий для всех мест experience).
 -- Схема (что пишет матч): { Purchases = { id чека }, BoostUntil = os.time, OnboardingStep = пройдено шагов Config.Onboarding,
---   Collection = { id находки }, Crystals (прибавкой, см. saveImpl), Session = { Job, Time } }.
+--   Collection = { id находки }, Crystals (прибавкой), MatchSaveId, Session = { Job, Time } }.
 -- Cash, UpgradeLevel, OwnedTools, ToolUpgrades с 2026-11-09 (B1) не читаются и не пишутся: Cash и покупки живут один матч
 -- (MatchCache держит их при перезаходе на тот же сервер). Старые значения в сохранении остаются нетронутыми.
 -- Daily и Stats пишет только лобби (Stats здесь только читаются в атрибуты Stat_<Id>); Crystals — лобби, а матч, пока держит
@@ -22,7 +22,7 @@ local Analytics = require(ServerScriptService:WaitForChild("Shared"):WaitForChil
 
 local LOAD_ATTEMPTS = 6 -- последняя попытка забирает блокировку силой
 local SAVE_ATTEMPTS = 3
-local FINAL_SAVE_ATTEMPTS = 6 -- сохранение со снятием блокировки (выход, телепорт): после него данных уже нет
+local FINAL_SAVE_ATTEMPTS = 6
 local RETRY_WAIT = 3
 
 local store = SaveStore.store
@@ -34,7 +34,9 @@ local PlayerData = {}
 
 -- loaded[player] = последние известные данные; есть только у успешно загруженных игроков
 local loaded = {}
-local released = {}
+local released = setmetatable({}, { __mode = "k" })
+local loadedByUserId = {}
+local loading = {}
 -- Сколько сохранений сейчас в процессе (BindToClose ждёт их, в т.ч. запущенные из PlayerRemoving)
 local savesInFlight = 0
 
@@ -79,8 +81,18 @@ end
 -- Загружает данные и ставит блокировку.
 -- Возвращает { BoostUntil, OnboardingStep, Collection, Stats, Crystals } или nil и причину:
 -- "SaveTooNew" — сохранение из более новой версии игры (не тронуто), иначе ошибка загрузки.
-function PlayerData.load(player)
+local function loadImpl(player)
+	local previous = loadedByUserId[player.UserId]
+	if previous and (previous.Parent or not PlayerData.save(previous, true)) then
+		return nil, "LoadFailed"
+	end
+	if not player.Parent then
+		return nil, "LoadFailed"
+	end
+
 	SaveStore.prepare(player)
+	-- У одного JobId могут быть разные входы одного игрока. Старый вход не должен писать под новым локом.
+	local lockId = jobId .. "/" .. HttpService:GenerateGUID(false)
 	local key = SaveStore.key(player)
 	for attempt = 1, LOAD_ATTEMPTS do
 		local locked = false
@@ -100,13 +112,13 @@ function PlayerData.load(player)
 				if
 					not force
 					and typeof(s) == "table"
-					and s.Job ~= jobId
+					and s.Job ~= lockId
 					and os.time() - (tonumber(s.Time) or 0) < LOCK_TIMEOUT
 				then
 					locked = true
 					return nil
 				end
-				old.Session = { Job = jobId, Time = os.time() }
+				old.Session = { Job = lockId, Time = os.time() }
 				return old
 			end)
 		end)
@@ -145,10 +157,10 @@ function PlayerData.load(player)
 				-- Crystals: баланс для показа и ещё не сохранённая прибавка (сохранение добавляет её к сохранённому)
 				Crystals = toCount(result.Crystals),
 				Pending = 0,
-				InFlight = 0,
+				LockId = lockId,
 			}
 			loaded[player] = data
-			released[player] = nil
+			loadedByUserId[player.UserId] = player
 			return {
 				BoostUntil = data.BoostUntil,
 				OnboardingStep = data.OnboardingStep,
@@ -190,127 +202,204 @@ function PlayerData.load(player)
 	return nil, "LoadFailed"
 end
 
-function PlayerData.isLoaded(player)
-	return loaded[player] ~= nil and not released[player]
+function PlayerData.load(player)
+	local userId = player.UserId
+	while loading[userId] and player.Parent do
+		task.wait()
+	end
+	if not player.Parent then
+		return nil, "LoadFailed"
+	end
+	loading[userId] = true
+	local ok, data, reason = pcall(loadImpl, player)
+	loading[userId] = nil
+	if not ok then
+		warn("[PlayerData] ошибка загрузки", player.Name, data)
+		return nil, "LoadFailed"
+	end
+	return data, reason
 end
 
--- Сохраняет данные игрока. release = true снимает блокировку (выход, телепорт, закрытие).
-local saveImpl
+function PlayerData.isLoaded(player)
+	local data = loaded[player]
+	return data ~= nil and not data.Closing
+end
+
+-- Снимки, записи и обработка чеков для одного игрока идут последовательно.
+local function withSaveLock(data, closing, callback)
+	savesInFlight += 1
+	while data.Busy do
+		task.wait()
+	end
+	local ok, result = true, false
+	if closing or not data.Closing then
+		data.Busy = true
+		ok, result = pcall(callback)
+		data.Busy = false
+	end
+	savesInFlight -= 1
+	if not ok then
+		warn("[PlayerData] ошибка сохранения", result)
+	end
+	return ok and result == true
+end
+
+local function commitWrite(player, data)
+	local write = data.Write
+	local key = SaveStore.key(player)
+	local attempts = if write.Release then FINAL_SAVE_ATTEMPTS else SAVE_ATTEMPTS
+	for attempt = 1, attempts do
+		local confirmedBalance
+		local rejection
+		local mode = if SaveStore.TEST_SAVE then player:GetAttribute("DebugMatchSaveFailure") else nil
+		local ok, result = pcall(function()
+			if mode == "BeforeFinal" and write.Release then
+				error("TestSave: отказ до финальной записи")
+			end
+			local saved = store:UpdateAsync(key, function(old)
+				confirmedBalance = nil
+				rejection = nil
+				if typeof(old) ~= "table" then
+					rejection = "нет сохранения"
+					return nil
+				end
+				-- При ошибке ответ мог потеряться после записи. Маркер проверяем даже после снятия лока.
+				if old.MatchSaveId == write.Id then
+					confirmedBalance = toCount(old.Crystals)
+					return nil
+				end
+				if typeof(old.Session) ~= "table" or old.Session.Job ~= data.LockId then
+					rejection = "блокировка принадлежит другой сессии"
+					return nil
+				end
+				local schemaStatus = SaveSchema.upgrade(old)
+				if schemaStatus ~= "ok" then
+					rejection = "схема сохранения " .. schemaStatus
+					return nil
+				end
+				old.Purchases = write.Purchases
+				old.BoostUntil = write.BoostUntil
+				old.OnboardingStep = write.OnboardingStep
+				old.Collection = write.Collection
+				old.Crystals = toCount(old.Crystals) + write.Crystals
+				old.MatchSaveId = write.Id
+				old.Session = if write.Release then nil else { Job = data.LockId, Time = os.time() }
+				return old
+			end)
+			if
+				saved
+				and ((mode == "AfterFinal" and write.Release) or (mode == "AfterCheckpoint" and not write.Release))
+			then
+				player:SetAttribute("DebugMatchSaveFailure", nil)
+				error("TestSave: ответ потерян после записи")
+			end
+			return saved
+		end)
+		if ok then
+			local balance = if typeof(result) == "table" and result.MatchSaveId == write.Id
+				then toCount(result.Crystals)
+				else confirmedBalance
+			if balance ~= nil then
+				data.Pending -= write.Crystals
+				data.Crystals = balance + data.Pending
+				data.Write = nil
+				if player.Parent then
+					player:SetAttribute("Crystals", data.Crystals)
+				end
+				if write.Release then
+					released[player] = true
+					loaded[player] = nil
+					loadedByUserId[player.UserId] = nil
+				end
+				return true
+			end
+			warn("[PlayerData] запись отклонена", player.Name, rejection)
+			return false
+		end
+		warn(
+			string.format(
+				"[PlayerData] %s: сохранение не удалось (%d/%d): %s",
+				player.Name,
+				attempt,
+				attempts,
+				tostring(result)
+			)
+		)
+		if attempt < attempts then
+			task.wait(if mode == "BeforeFinal" and write.Release then 0.2 else RETRY_WAIT)
+		end
+	end
+	return false
+end
+
+local function saveLocked(player, data, release)
+	-- Сначала разрешаем неопределённость предыдущего снимка с тем же id. Свежие награды ждут следующей записи.
+	local previous = data.Write
+	if previous then
+		if not commitWrite(player, data) then
+			return false
+		end
+		if previous.Release then
+			return true
+		end
+	end
+	snapshot(player)
+	data.Write = {
+		Id = HttpService:GenerateGUID(false),
+		Purchases = table.clone(data.Purchases),
+		BoostUntil = data.BoostUntil,
+		OnboardingStep = data.OnboardingStep,
+		Collection = data.Collection,
+		Crystals = data.Pending,
+		Release = release,
+	}
+	return commitWrite(player, data)
+end
 
 function PlayerData.save(player, release)
-	if not PlayerData.isLoaded(player) then
-		return false
+	local data = loaded[player]
+	if not data then
+		return release == true and released[player] == true
 	end
-	savesInFlight += 1
-	local ok, result = pcall(saveImpl, player, release)
-	savesInFlight -= 1
-	return ok and result or false
+	if not release then
+		return withSaveLock(data, false, function()
+			return saveLocked(player, data, false)
+		end)
+	end
+
+	-- Таймер, ручной выход и отключение могут ждать одну финальную попытку.
+	local final = data.Final
+	if final then
+		repeat
+			task.wait()
+		until final.Result ~= nil
+		return final.Result
+	end
+	final = {}
+	data.Final = final
+	data.Closing = true
+	local result = withSaveLock(data, true, function()
+		return saveLocked(player, data, true)
+	end)
+	final.Result = result
+	data.Final = nil
+	return result
 end
 
--- Ждёт, пока завершатся все начатые сохранения (не дольше timeout сек)
-function PlayerData.waitForSaves(timeout)
+-- Повторяем также финальные записи уже отключившихся игроков, пока сервер закрывается.
+function PlayerData.flushOnShutdown(timeout)
+	for player in table.clone(loaded) do
+		task.spawn(PlayerData.save, player, true)
+	end
 	local deadline = os.clock() + timeout
 	while savesInFlight > 0 and os.clock() < deadline do
 		task.wait(0.1)
 	end
-	return savesInFlight == 0
-end
-
-saveImpl = function(player, release)
-	local data = snapshot(player)
-	if release then
-		released[player] = true
-	end
-	local key = SaveStore.key(player)
-	-- Crystals пишем прибавкой к сохранённому: так награда лобби, записанная в промежутке, не затирается.
-	-- sent — прибавка на момент начала; награды, пришедшие во время сохранения, остаются в Pending.
-	-- InFlight — уже отправленное другими сохранениями этого игрока (автосейв и checkpoint могут идти вместе):
-	-- каждое сохранение отправляет только своё, поэтому прибавка не попадёт в сохранение дважды
-	local sent = data.Pending - data.InFlight
-	data.InFlight += sent
-	local storedCrystals = data.Crystals
-	local attempts = if release then FINAL_SAVE_ATTEMPTS else SAVE_ATTEMPTS
-	for attempt = 1, attempts do
-		local owned = true
-		local schemaStatus: SaveSchema.Status = "ok"
-		local ok, err = pcall(function()
-			store:UpdateAsync(key, function(old)
-				owned = true
-				schemaStatus = "ok"
-				-- пишем только если блокировка наша, иначе можно затереть более свежие данные
-				if typeof(old) ~= "table" or typeof(old.Session) ~= "table" or old.Session.Job ~= jobId then
-					owned = false
-					return nil
-				end
-				-- сохранение новее этой игры (или сломанная миграция) — не перезаписываем
-				schemaStatus = SaveSchema.upgrade(old)
-				if schemaStatus ~= "ok" then
-					return nil
-				end
-				old.Purchases = data.Purchases
-				old.BoostUntil = data.BoostUntil
-				old.OnboardingStep = data.OnboardingStep
-				old.Collection = data.Collection
-				old.Crystals = toCount(old.Crystals) + sent
-				storedCrystals = old.Crystals
-				old.Session = not release and { Job = jobId, Time = os.time() } or nil
-				return old
-			end)
-		end)
-		if ok then
-			data.InFlight -= sent
-			if owned and schemaStatus == "ok" and sent > 0 then
-				data.Pending -= sent
-				-- баланс = сохранённое (с наградами лобби) + то, что пришло во время сохранения
-				data.Crystals = storedCrystals + data.Pending
-				if player.Parent then
-					player:SetAttribute("Crystals", data.Crystals)
-				end
-			end
-			if release and data.Pending > 0 then
-				warn(string.format("[PlayerData] %s: %d Crystals не сохранены", player.Name, data.Pending))
-			end
-			if not owned then
-				warn(
-					string.format(
-						"[PlayerData] %s: блокировку забрал другой сервер, сохранение пропущено",
-						player.Name
-					)
-				)
-			elseif schemaStatus ~= "ok" then
-				warn(
-					string.format(
-						"[PlayerData] %s: схема сохранения %s, сохранение пропущено",
-						player.Name,
-						schemaStatus
-					)
-				)
-			end
-			if release then
-				loaded[player] = nil
-			end
-			return owned and schemaStatus == "ok"
-		end
+	if next(loaded) ~= nil then
 		warn(
-			string.format(
-				"[PlayerData] сохранение %s не удалось (попытка %d): %s",
-				player.Name,
-				attempt,
-				tostring(err)
-			)
+			"[PlayerData] сервер закрывается с неподтверждёнными сохранениями"
 		)
-		if attempt < attempts then
-			task.wait(RETRY_WAIT)
-		end
 	end
-	data.InFlight -= sent
-	if release then
-		if data.Pending > 0 then
-			warn(string.format("[PlayerData] %s: %d Crystals не сохранены", player.Name, data.Pending))
-		end
-		loaded[player] = nil
-	end
-	return false
 end
 
 -- Crystals за матч (находки, зоны, конец матча), с прибавкой Crystal Sense. Пока сохранение не загружено и блокировка
@@ -320,7 +409,7 @@ end
 function PlayerData.addCrystals(player: Player, amount: number, reason: string): number
 	local data = loaded[player]
 	local base = math.floor(tonumber(amount) or 0)
-	if not data or released[player] or base <= 0 then
+	if not data or data.Closing or base <= 0 then
 		return 0
 	end
 	-- Crystal Sense: +доля к награде; дробный остаток копится в атрибуте CrystalCarry (его держит MatchCache)
@@ -349,34 +438,37 @@ end
 -- Повтор того же чека товар второй раз не выдаёт. true — можно отвечать Roblox PurchaseGranted.
 function PlayerData.grantReceipt(player, purchaseId: string, apply: () -> ()): boolean
 	local data = loaded[player]
-	if not data or released[player] then
+	if not data then
 		return false
 	end
-	if not table.find(data.Purchases, purchaseId) then
-		apply()
-		table.insert(data.Purchases, purchaseId)
-		while #data.Purchases > MAX_PURCHASES do
-			table.remove(data.Purchases, 1)
+	return withSaveLock(data, false, function()
+		if not table.find(data.Purchases, purchaseId) then
+			apply()
+			table.insert(data.Purchases, purchaseId)
+			while #data.Purchases > MAX_PURCHASES do
+				table.remove(data.Purchases, 1)
+			end
 		end
-	end
-	return PlayerData.save(player, false)
+		return saveLocked(player, data, false)
+	end)
 end
 
--- Сохраняет всех переданных игроков параллельно и ждёт завершения.
+-- Игроки пишутся параллельно. Каждый получает отдельный результат, даже если запись не начиналась.
 function PlayerData.saveAll(players, release)
 	local pending = 0
+	local results = {}
 	for _, player in ipairs(players) do
-		if PlayerData.isLoaded(player) then
-			pending += 1
-			task.spawn(function()
-				PlayerData.save(player, release)
-				pending -= 1
-			end)
-		end
+		pending += 1
+		task.spawn(function()
+			local ok, saved = pcall(PlayerData.save, player, release)
+			results[player] = ok and saved == true
+			pending -= 1
+		end)
 	end
 	while pending > 0 do
 		task.wait()
 	end
+	return results
 end
 
 return PlayerData

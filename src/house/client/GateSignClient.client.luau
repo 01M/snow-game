@@ -6,7 +6,9 @@
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
-local zoneConfig = require(ReplicatedStorage:WaitForChild("SnowGame"):WaitForChild("ZoneConfig"))
+local snowGame = ReplicatedStorage:WaitForChild("SnowGame")
+local zoneConfig = require(snowGame:WaitForChild("ZoneConfig"))
+local ZoneProgress = require(snowGame:WaitForChild("ZoneProgress"))
 local Locale = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Locale"))
 local Ui = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Ui"))
 
@@ -27,13 +29,6 @@ type Sign = {
 	percents: { TextLabel },
 	setBars: { (number, Color3?) -> () },
 }
-
-local function zoneValue(name: string, key: string): any
-	local yard = workspace:FindFirstChild("SnowYard")
-	local folder = yard and yard:FindFirstChild(name)
-	local value = folder and folder:FindFirstChild(key)
-	return if value and value:IsA("ValueBase") then (value :: any).Value else nil
-end
 
 -- Две широкие грани детали ворот
 local function wideFaces(part: BasePart): { Enum.NormalId }
@@ -149,23 +144,30 @@ end
 
 local function update()
 	for _, sign in signs do
-		local locked = zoneValue(sign.zone.Name, "State") == "locked"
+		local locked = ZoneProgress.read(sign.zone.Name).state == "locked"
 		for _, gui in sign.guis do
 			gui.Enabled = locked
 		end
 		if not locked then
 			continue
 		end
-		local names = {}
+		local names, waiting = {}, {}
 		local score, total = 0, 0
 		for _, z in sign.previous do
-			table.insert(names, Locale.t("Zone." .. z.Name))
-			score += zoneValue(z.Name, "Score") or 0
-			total += zoneValue(z.Name, "Total") or 0
+			local name = Locale.t("Zone." .. z.Name)
+			local progress = ZoneProgress.read(z.Name)
+			table.insert(names, name)
+			if progress.waitingForPiles then
+				table.insert(waiting, name)
+			end
+			score += if progress.state == "finished" then progress.total else progress.score
+			total += progress.total
 		end
-		local share = if total > 0 then math.clamp(score / total, 0, 1) else 0
-		local hint = Locale.t("Gate.Hint", { zones = table.concat(names, ", ") })
-		local pct = string.format("%d%%", math.floor(share * 100))
+		local share = ZoneProgress.share(score, total, false)
+		local hint = if #waiting > 0
+			then Locale.t("Gate.ClearPiles", { zones = table.concat(waiting, ", ") })
+			else Locale.t("Gate.Hint", { zones = table.concat(names, ", ") })
+		local pct = ZoneProgress.percent(share)
 		for i in sign.guis do
 			sign.hints[i].Text = hint
 			sign.percents[i].Text = pct

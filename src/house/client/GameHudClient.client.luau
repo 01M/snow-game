@@ -16,6 +16,7 @@ local TweenService = game:GetService("TweenService")
 local snowGame = ReplicatedStorage:WaitForChild("SnowGame")
 local config = require(snowGame:WaitForChild("Config"))
 local zoneConfig = require(snowGame:WaitForChild("ZoneConfig"))
+local ZoneProgress = require(snowGame:WaitForChild("ZoneProgress"))
 local finds = require(snowGame:WaitForChild("Finds"))
 local buyRemote = snowGame:WaitForChild("Remotes"):WaitForChild("BuyUpgrade")
 local buyToolUpgradeRemote = snowGame:WaitForChild("Remotes"):WaitForChild("BuyToolUpgrade")
@@ -108,13 +109,6 @@ local function getStat(name)
 	return v and v.Value or 0
 end
 
-local function getZoneValue(zone, name: string)
-	local yard = workspace:FindFirstChild("SnowYard")
-	local folder = yard and yard:FindFirstChild(zone.Name)
-	local value = folder and folder:FindFirstChild(name)
-	return value and value.Value or 0
-end
-
 local function getUpgradePrice()
 	return config.getUpgradePrice(player:GetAttribute("BackpackUpgradeLevel") or 0)
 end
@@ -122,7 +116,7 @@ end
 -- Цепочка задач новичка: шаг и прогресс считает сервер (OnboardingServer), здесь только тексты
 local tasks = {}
 for i, step in config.Onboarding do
-	tasks[i] = { id = step.Id, text = L(step.Text, { goal = step.Goal }), reward = step.Reward }
+	tasks[i] = { id = step.Id, text = L(step.Text, { goal = step.Goal }), reward = step.Reward, zone = step.Zone }
 end
 
 -- ============================================================
@@ -1605,24 +1599,24 @@ end
 local SHOVEL_PRICE = config.getTool("Shovel").Price
 
 local function nextGoal(cash: number)
-	local zone = nil
-	if getZoneValue(barZone, "State") == "active" then
-		zone = barZone
-	else
+	local zone = barZone
+	local progress = ZoneProgress.read(zone.Name)
+	if progress.state ~= "active" then
 		for _, z in zoneConfig.Zones do
-			if getZoneValue(z, "State") == "active" then
-				zone = z
+			local candidate = ZoneProgress.read(z.Name)
+			if candidate.state == "active" then
+				zone, progress = z, candidate
 				break
 			end
 		end
 	end
-	if zone then
-		local total = getZoneValue(zone, "Total")
-		local share = total > 0 and math.clamp(getZoneValue(zone, "Score") / total, 0, 1) or 0
+	if progress.state == "active" then
+		local share = ZoneProgress.share(progress.score, progress.total, false)
 		return {
 			text = L("Hud.Goal.Zone", { zone = L("Zone." .. zone.Name) }),
 			share = share,
-			count = string.format("%d%%", math.floor(share * 100)),
+			count = ZoneProgress.percent(share),
+			waitingForPiles = progress.waitingForPiles,
 		}
 	end
 	local best = nil
@@ -1677,6 +1671,7 @@ local function refreshHud()
 	-- задачи: nil — данные ещё не загружены
 	local stepsDone = player:GetAttribute("OnboardingStep")
 	local current, currentGoal, currentValue = nil, 1, 0
+	local currentZoneShare, currentZoneWaiting
 	for i, t in ipairs(tasks) do
 		local done = stepsDone ~= nil and i <= stepsDone
 		local row = taskRows[i]
@@ -1686,7 +1681,15 @@ local function refreshHud()
 		if stepsDone ~= nil and i == stepsDone + 1 then
 			currentGoal = player:GetAttribute("OnboardingGoal") or 1
 			currentValue = math.min(player:GetAttribute("OnboardingProgress") or 0, currentGoal)
-			row.progress.Text = string.format("(%d/%d)", currentValue, currentGoal)
+			if t.zone then
+				local progress = ZoneProgress.read(t.zone)
+				currentZoneShare = ZoneProgress.share(progress.score, progress.total, progress.state == "finished")
+				currentZoneWaiting = progress.waitingForPiles
+				row.progress.Text = ZoneProgress.percent(currentZoneShare)
+					.. (currentZoneWaiting and " · " .. L("Zone.ClearPiles") or "")
+			else
+				row.progress.Text = string.format("(%d/%d)", currentValue, currentGoal)
+			end
 			current = t
 		end
 	end
@@ -1713,9 +1716,17 @@ local function refreshHud()
 			taskTag.BackgroundColor3 = Ui.Color.green
 			taskText.Text = current.text
 			setTaskReward(current.reward)
-			taskBar.Visible = currentGoal > 1
-			setTaskBar(currentValue / currentGoal, Ui.Color.green)
-			taskCount.Text = currentGoal > 1 and string.format("%d/%d", currentValue, currentGoal) or ""
+			if currentZoneShare then
+				taskBar.Visible = not currentZoneWaiting
+				taskHint.Text = L("Zone.ClearPiles")
+				taskHint.Visible = currentZoneWaiting
+				setTaskBar(currentZoneShare, Ui.Color.green)
+				taskCount.Text = ZoneProgress.percent(currentZoneShare)
+			else
+				taskBar.Visible = currentGoal > 1
+				setTaskBar(currentValue / currentGoal, Ui.Color.green)
+				taskCount.Text = currentGoal > 1 and string.format("%d/%d", currentValue, currentGoal) or ""
+			end
 		elseif onboardingDone and matchState ~= "finished" then
 			-- Цепочка пройдена: карточка показывает следующую цель (без награды)
 			local goal = nextGoal(cash)
@@ -1724,7 +1735,9 @@ local function refreshHud()
 			taskTag.BackgroundColor3 = Ui.Color.blue
 			taskText.Text = goal.text
 			setTaskReward(nil)
-			taskBar.Visible = true
+			taskBar.Visible = not goal.waitingForPiles
+			taskHint.Text = L("Zone.ClearPiles")
+			taskHint.Visible = goal.waitingForPiles == true
 			setTaskBar(goal.share, Ui.Color.ice)
 			taskCount.Text = goal.count
 		else
@@ -1738,11 +1751,12 @@ local function refreshHud()
 	if standing and standing ~= barZone then
 		barZone = standing
 	end
-	local cleared, total = getZoneValue(barZone, "Score"), getZoneValue(barZone, "Total")
-	local pct = total > 0 and math.clamp(cleared / total, 0, 1) or 0
-	zoneLabel.Text = getZoneValue(barZone, "State") == "finished"
-			and string.format("%s · %s", L("Zone." .. barZone.Name), L("Hud.Cleared"))
-		or string.format("%s · %d%%", L("Zone." .. barZone.Name), math.floor(pct * 100))
+	local progress = ZoneProgress.read(barZone.Name)
+	local share = ZoneProgress.share(progress.score, progress.total, progress.state == "finished")
+	zoneLabel.Text = L("Zone." .. barZone.Name)
+		.. " · "
+		.. ZoneProgress.percent(share)
+		.. (progress.waitingForPiles and " · " .. L("Zone.ClearPiles") or "")
 
 	-- таймер
 	local startTime = workspace:GetAttribute("MatchStartTime")

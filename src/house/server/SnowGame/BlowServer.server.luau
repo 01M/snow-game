@@ -248,6 +248,7 @@ end
 local function finishZone(zone)
 	zone.state = "finished"
 	zone.stateValue.Value = "finished"
+	zone.folder:SetAttribute("WaitingForPiles", nil)
 
 	local lastZone = true
 	for _, z in ipairs(zones) do
@@ -302,6 +303,8 @@ local function tryFinish(zone)
 	end)
 	if piles == 0 then
 		finishZone(zone)
+	elseif zone.folder:GetAttribute("WaitingForPiles") ~= true then
+		zone.folder:SetAttribute("WaitingForPiles", true)
 	end
 end
 

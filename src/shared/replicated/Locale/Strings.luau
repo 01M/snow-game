@@ -19,7 +19,6 @@ return {
 	["Hud.SellMarker"] = { en = "Sell · {m} m", ru = "Продать · {m} м" },
 	["Hud.ShedMarker"] = { en = "Tool shed · {m} m", ru = "Сарай · {m} м" },
 	["Hud.TaskDone"] = { en = "Done! +{cash} Cash", ru = "Готово! +{cash} Cash" },
-	["Hud.Cleared"] = { en = "CLEARED", ru = "ОЧИЩЕНО" },
 	["Hud.NextGoal"] = { en = "GOAL", ru = "ЦЕЛЬ" },
 	["Hud.Goal.Zone"] = { en = "Clear: {zone}", ru = "Очисти: {zone}" },
 	["Hud.Goal.Tool"] = { en = "Save up for: {tool}", ru = "Накопи на: {tool}" },
@@ -169,6 +168,7 @@ return {
 	["Zone.Driveway"] = { en = "Driveway", ru = "Подъездная дорожка" },
 	["Zone.SideYard"] = { en = "Side Yard", ru = "Боковой двор" },
 	["Zone.Backyard"] = { en = "Backyard", ru = "Задний двор" },
+	["Zone.ClearPiles"] = { en = "Clear the piles", ru = "Уберите кучи" },
 
 	-- Вкладка «Коллекция» и находки (Finds, FindClient)
 	["Collection.Unknown"] = { en = "???", ru = "???" },
@@ -464,6 +464,7 @@ return {
 		en = "Opens when you clear: {zones}",
 		ru = "Откроется, когда очистите: {zones}",
 	},
+	["Gate.ClearPiles"] = { en = "Clear the piles in: {zones}", ru = "Уберите кучи: {zones}" },
 	["World.Closed"] = { en = "Closed", ru = "Закрыто" },
 
 	-- Сообщения сервера

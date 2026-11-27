@@ -22,7 +22,7 @@ local QUANT = config.SnowHeightQuant
 local Y_LIFT = 0.02 -- чтобы пустое место не мерцало с землёй
 local SKIRT_BOTTOM = -0.25 -- низ «юбки» по краям поля, ниже уровня земли
 local UV_SCALE = 1 / 8
-local HIDE_BELOW = 0.08 -- снег тоньше этого прячем под землю, чтобы было видно расчищенное место
+local MIN_VISIBLE_HEIGHT = 0.12 -- тонкий остаток должен быть заметен над поверхностью
 local HIDDEN_Y = SKIRT_BOTTOM
 -- Цвет по толщине: тонкий/примятый снег серо-голубой, свежий белый (иначе при ровном свете глубину не видно)
 local COLOR_FRESH = Color3.fromRGB(255, 255, 255)
@@ -310,7 +310,7 @@ end
 -- чтобы вершина уходила под землю без скачка (HIDDEN_Y в масштабе карты высот)
 local function easeTarget(z, i: number): number
 	local srv = z.srv[i]
-	return if srv < HIDE_BELOW then HIDDEN_Y / depthScale else srv
+	return if srv > 0 then srv else HIDDEN_Y / depthScale
 end
 
 -- Положение и цвет одной вершины: показанная высота минус следы, цвет по толщине
@@ -319,7 +319,8 @@ local function vertexValues(z, i: number): (Vector3, Color3)
 	local foot = z.foot[i]
 	local h = math.max(0, shown - foot)
 	-- Ниже нуля — снег уходит под землю (см. easeTarget)
-	local y = if shown < 0 then shown * depthScale else visualHeight(h, z.cap[i], z.keep[i])
+	local minimum = MIN_VISIBLE_HEIGHT * math.clamp(shown / config.SnowMinHeight, 0, 1)
+	local y = if shown < 0 then shown * depthScale else math.max(minimum, visualHeight(h, z.cap[i], z.keep[i]))
 	local x, zz = z.localXZ(i)
 	local color = COLOR_THIN:Lerp(COLOR_FRESH, math.clamp(h / COLOR_FULL_DEPTH, 0, 1))
 	if shown > 0 and foot > 0 then
@@ -445,14 +446,15 @@ local function updateBlocks(z)
 				n += 1
 			end
 		end
-		local h = if n > 0 then sum / n else 0
 		local p = cell.part
-		if h < HIDE_BELOW then
+		if sum <= 0 then
 			p.Transparency = 1
 		else
 			p.Transparency = 0
+			local h = sum / n
 			local wx, wz = c.X + cell.lx, c.Z + cell.lz
-			local vh = visualHeight(h, z.zc:depthAt(wx, wz) * DRIFT_CAP, keepAt(z.zc, wx, wz))
+			local vh =
+				math.max(MIN_VISIBLE_HEIGHT, visualHeight(h, z.zc:depthAt(wx, wz) * DRIFT_CAP, keepAt(z.zc, wx, wz)))
 			p.Size = Vector3.new(cell.w, vh, cell.d)
 			p.Position = Vector3.new(c.X + cell.lx, groundY + vh / 2, c.Z + cell.lz)
 			p.Color = COLOR_THIN:Lerp(COLOR_FRESH, math.clamp(h / COLOR_FULL_DEPTH, 0, 1))

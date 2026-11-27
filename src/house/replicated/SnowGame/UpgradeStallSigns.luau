@@ -73,7 +73,7 @@ local function warning(parent: Instance): Frame
 	return glyph
 end
 
-function Signs.upgrade(anchor: BasePart): (number, number, boolean) -> ()
+function Signs.upgrade(anchor: BasePart): (number, number?, boolean) -> ()
 	local gui = surface(anchor, anchor, "CounterPlaque", "Counter_CreamEnamel", Vector2.new(784, 156))
 	local title = Ui.label({
 		Name = "Title",
@@ -95,7 +95,7 @@ function Signs.upgrade(anchor: BasePart): (number, number, boolean) -> ()
 		BorderSizePixel = 0,
 		Parent = gui,
 	})
-	Ui.icon(
+	local cashIcon = Ui.icon(
 		"CashS",
 		{ Name = "Cash", Position = UDim2.fromOffset(30, 78), Size = UDim2.fromOffset(76, 76), Parent = gui }
 	)
@@ -127,11 +127,32 @@ function Signs.upgrade(anchor: BasePart): (number, number, boolean) -> ()
 		TextColor3 = Ui.Color.ink,
 		Parent = state,
 	})
-	return function(capacity: number, amount: number, affordable: boolean)
-		title.Text = L("World.Backpack.Add", { n = capacity })
-		price.Text = Ui.number(amount)
-		status.Text = L(if affordable then "Shop.Buy" else "World.Purchase.Insufficient")
-		alert.Visible = not affordable
+	local maximum = Ui.label({
+		Name = "Maximum",
+		Position = UDim2.fromOffset(40, 80),
+		Size = UDim2.fromOffset(704, 64),
+		FontFace = Ui.Font.bold,
+		Text = "",
+		TextSize = 44,
+		TextColor3 = Ui.Color.ink,
+		TextXAlignment = Enum.TextXAlignment.Center,
+		Visible = false,
+		Parent = gui,
+	})
+	return function(capacity: number, amount: number?, affordable: boolean)
+		local maxed = amount == nil
+		title.Text = L(if maxed then "World.Backpack.Capacity" else "World.Backpack.Add", { n = capacity })
+		cashIcon.Visible = not maxed
+		price.Visible = not maxed
+		state.Visible = not maxed
+		maximum.Visible = maxed
+		if amount then
+			price.Text = Ui.number(amount)
+			status.Text = L(if affordable then "Shop.Buy" else "World.Purchase.Insufficient")
+			alert.Visible = not affordable
+		else
+			maximum.Text = L("Upgrade.MaxButton")
+		end
 	end
 end
 

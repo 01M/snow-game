@@ -109,8 +109,8 @@ local function getStat(name)
 	return v and v.Value or 0
 end
 
-local function getUpgradePrice()
-	return config.getUpgradePrice(player:GetAttribute("BackpackUpgradeLevel") or 0)
+local function getBackpackUpgrade()
+	return config.getBackpackUpgrade(player:GetAttribute("BackpackUpgradeLevel") or 0)
 end
 
 -- Цепочка задач новичка: шаг и прогресс считает сервер (OnboardingServer), здесь только тексты
@@ -979,7 +979,6 @@ table.insert(UPGRADE_ROWS, {
 			id = "BackpackCapacity",
 			name = L("Upgrade.Backpack.Name"),
 			icon = "Backpack",
-			tag = L("Upgrade.Backpack.Tag", { n = config.UpgradeCapacityBoost }),
 			desc = L("Upgrade.Backpack.Desc"),
 		},
 	},
@@ -1210,7 +1209,7 @@ for k = 1, 5 do
 		Parent = levelStrip,
 	}, { corner(6) })
 end
--- уровень lv из max делений; max = 0 прячет деления (рюкзак — уровней сколько угодно)
+-- Уровень lv из max делений; max = 0 прячет деления.
 local function setDetailLevel(text, lv, max)
 	levelText.Text = text
 	for k, pip in ipairs(levelPips) do
@@ -1254,7 +1253,8 @@ buyPrice.button.Activated:Connect(function()
 		return
 	end
 	if item.kind == "backpack" then
-		if getStat("Cash") >= getUpgradePrice() then
+		local price = getBackpackUpgrade()
+		if price and getStat("Cash") >= price then
 			buyRemote:FireServer("BackpackCapacity")
 		end
 	elseif item.kind == "tool" then
@@ -1632,10 +1632,13 @@ local function nextGoal(cash: number)
 			count = Ui.number(best.Price),
 		}
 	end
-	local price = getUpgradePrice()
+	local price = getBackpackUpgrade()
+	if not price then
+		return nil
+	end
 	return {
 		text = L("Task.UpgradeBackpack"),
-		share = price > 0 and math.clamp(cash / price, 0, 1) or 0,
+		share = math.clamp(cash / price, 0, 1),
 		count = Ui.number(price),
 	}
 end
@@ -1647,7 +1650,7 @@ local function refreshHud()
 	local cash = getStat("Cash")
 	local snow = getStat("Backpack")
 	local capacity = player:GetAttribute("BackpackCapacity") or config.BackpackCapacity
-	local price = getUpgradePrice()
+	local price = getBackpackUpgrade()
 
 	if lastCash and cash > lastCash then
 		showCashToast(cash - lastCash)
@@ -1659,7 +1662,7 @@ local function refreshHud()
 	end
 	local multiplier = Shop.cashMultiplier(player)
 	cashPill.setTag(if multiplier > 1.001 then string.format("x%g", math.floor(multiplier * 100 + 0.5) / 100) else nil)
-	upgradeBadge.Visible = cash >= price or canAffordToolUpgrade(cash)
+	upgradeBadge.Visible = (price ~= nil and cash >= price) or canAffordToolUpgrade(cash)
 
 	-- рюкзак: полный — янтарный и подсказка «продай»
 	local full = snow >= capacity
@@ -1730,16 +1733,18 @@ local function refreshHud()
 		elseif onboardingDone and matchState ~= "finished" then
 			-- Цепочка пройдена: карточка показывает следующую цель (без награды)
 			local goal = nextGoal(cash)
-			taskCard.Visible = true
-			taskTag.Text = L("Hud.NextGoal")
-			taskTag.BackgroundColor3 = Ui.Color.blue
-			taskText.Text = goal.text
-			setTaskReward(nil)
-			taskBar.Visible = not goal.waitingForPiles
-			taskHint.Text = L("Zone.ClearPiles")
-			taskHint.Visible = goal.waitingForPiles == true
-			setTaskBar(goal.share, Ui.Color.ice)
-			taskCount.Text = goal.count
+			taskCard.Visible = goal ~= nil
+			if goal then
+				taskTag.Text = L("Hud.NextGoal")
+				taskTag.BackgroundColor3 = Ui.Color.blue
+				taskText.Text = goal.text
+				setTaskReward(nil)
+				taskBar.Visible = not goal.waitingForPiles
+				taskHint.Text = L("Zone.ClearPiles")
+				taskHint.Visible = goal.waitingForPiles == true
+				setTaskBar(goal.share, Ui.Color.ice)
+				taskCount.Text = goal.count
+			end
 		else
 			taskCard.Visible = false
 		end
@@ -1798,7 +1803,7 @@ local function refreshJournal()
 
 	-- апгрейды
 	local cash = getStat("Cash")
-	local price = getUpgradePrice()
+	local price, gain = getBackpackUpgrade()
 	local level = player:GetAttribute("BackpackUpgradeLevel") or 0
 	local levels = decodeLevels()
 	walletLabel.Text = L("Shop.CashPrice", { price = Ui.number(cash) })
@@ -1807,9 +1812,10 @@ local function refreshJournal()
 		for _, item in ipairs(rowData.items) do
 			local state = "normal"
 			if item.kind == "backpack" then
-				item.priceLabel.Text = L("Shop.CashPrice", { price = price })
-					.. " · "
-					.. L("Upgrade.Level", { n = level })
+				item.priceLabel.Text = if price
+					then L("Shop.CashPrice", { price = price }) .. " · " .. L("Upgrade.Level", { n = level })
+					else L("Upgrade.Max")
+				state = if price then "normal" else "done"
 			else
 				local lv, nextPrice, open = toolUpgradeState(item, levels)
 				-- Некупленный инструмент: карточки закрыты (??? и замок)
@@ -1830,18 +1836,21 @@ local function refreshJournal()
 	end
 
 	local item = selectedUpgrade
+	buyPrice.button.Interactable = not item or item.kind ~= "backpack" or price ~= nil
 	if item and item.kind == "backpack" then
 		descTitle.Text = item.name
 		Ui.setIcon(descIcon, item.icon)
 		Ui.setIcon(upgradeArt, "Backpack")
-		descTag.Visible = true
-		descTag.Text = item.tag
+		descTag.Visible = price ~= nil
+		descTag.Text = L("Upgrade.Backpack.Tag", { n = gain * Shop.backpackMultiplier(player) })
 		descText.Text = item.desc
 			.. "\n"
 			.. L("Upgrade.Backpack.Now", { n = player:GetAttribute("BackpackCapacity") or config.BackpackCapacity })
 		upgradeArt.ImageTransparency = 0
-		setDetailLevel(L("Upgrade.Level", { n = level }), 0, 0)
-		if cash >= price then
+		setDetailLevel(L("Upgrade.LevelLine", { lv = level, max = config.BackpackMaxLevel }), 0, 0)
+		if not price then
+			buyPrice.set("max", L("Upgrade.MaxButton"))
+		elseif cash >= price then
 			buyPrice.set("buy", L("Upgrade.Buy", { price = price }))
 		else
 			buyPrice.set("need", L("Upgrade.Need", { price = price }))

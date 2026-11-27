@@ -1,4 +1,16 @@
 -- Shared settings for the snowblower snow-layer system.
+local BACKPACK_LEVELS = {
+	{ Capacity = 30, Price = 0 },
+	{ Capacity = 40, Price = 20 },
+	{ Capacity = 50, Price = 30 },
+	{ Capacity = 60, Price = 45 },
+	{ Capacity = 70, Price = 67 },
+	{ Capacity = 90, Price = 101 },
+	{ Capacity = 115, Price = 150 },
+	{ Capacity = 145, Price = 210 },
+	{ Capacity = 180, Price = 290 },
+}
+
 local Config = {
 	-- Snow cells
 	SnowCellFolder = "SnowCells",
@@ -32,12 +44,11 @@ local Config = {
 	BlowStateMaxRate = 25, -- больше сообщений BlowState в секунду сервер отбрасывает
 
 	-- Backpack
-	BackpackCapacity = 30, -- max snow cells a player can carry before depositing
+	BackpackCapacity = BACKPACK_LEVELS[1].Capacity,
+	BackpackMaxLevel = #BACKPACK_LEVELS - 1,
 
-	-- Backpack upgrade shop (цена считается и на сервере, и на клиенте через getUpgradePrice)
-	UpgradeBasePrice = 20,
+	-- Tool upgrade prices
 	UpgradePriceGrowth = 1.5, -- +50% per level
-	UpgradeCapacityBoost = 10, -- capacity added per upgrade
 
 	-- Кучи снега от Движка (PileServer)
 	PileBaseRadius = 0.8, -- радиус кучи = Base + PerCbrt × порции^(1/3), не больше Max
@@ -226,14 +237,24 @@ function Config.getToolStats(toolCfg, levels: { [string]: number }?, cutMultipli
 	return stats
 end
 
-function Config.getUpgradePrice(level: number): number
-	return math.floor(Config.UpgradeBasePrice * (Config.UpgradePriceGrowth ^ level))
+function Config.clampBackpackLevel(level: number): number
+	return math.clamp(math.floor(level), 0, Config.BackpackMaxLevel)
+end
+
+function Config.getBackpackUpgrade(level: number): (number?, number)
+	local index = Config.clampBackpackLevel(level) + 1
+	local nextLevel = BACKPACK_LEVELS[index + 1]
+	if not nextLevel then
+		return nil, 0
+	end
+	return nextLevel.Price, nextLevel.Capacity - BACKPACK_LEVELS[index].Capacity
 end
 
 -- Вместимость рюкзака на уровне апгрейда level; multiplier — пасс «Большой рюкзак» (Shop.backpackMultiplier),
 -- bonus — постоянный стат Deep Pockets (Shared.Crystals.backpackBonus), прибавляется к базе до множителя пасса
 function Config.getBackpackCapacity(level: number, multiplier: number?, bonus: number?): number
-	return (Config.BackpackCapacity + (bonus or 0) + Config.UpgradeCapacityBoost * level) * (multiplier or 1)
+	local base = BACKPACK_LEVELS[Config.clampBackpackLevel(level) + 1].Capacity
+	return (base + (bonus or 0)) * (multiplier or 1)
 end
 
 return Config

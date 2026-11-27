@@ -73,6 +73,22 @@ Numbers and lists are deliberately not repeated here: the source of truth is `Co
   - **Tested in Play 2026-11-08** (one client, Tool:Activate from MCP): motor spin-up and spin-down, "chewing" only while cutting, fade after release, unequip and death, the scraper loop and thuds while pushing a pile, the Hand crunch on the echo, steam at the manhole on `ManholeCash` growth (attribute raised by hand). No errors in Output.
   - `[unverified]` By ear (volume balance, loop seams), the Roblox menu (Escape from MCP did not open the menu; the path is the same `BlowState(false)`), real melting of a pile on a manhole, other players, phone.
 
+## Backpack progression
+
+The server, journal and stall read the same backpack table in `SnowGame.Config`. The first four upgrades keep their original capacity and price. The next price is unavailable at level 8. The stall and journal show the effective gain with Big Backpack. Deep Pockets is added before the pass doubles capacity.
+
+| Level | Base capacity | Added capacity | Upgrade price (Cash) | Total cost (Cash) |
+| ---: | ---: | ---: | ---: | ---: |
+| 0 | 30 | 0 | 0 | 0 |
+| 1 | 40 | 10 | 20 | 20 |
+| 2 | 50 | 10 | 30 | 50 |
+| 3 | 60 | 10 | 45 | 95 |
+| 4 | 70 | 10 | 67 | 162 |
+| 5 | 90 | 20 | 101 | 263 |
+| 6 | 115 | 25 | 150 | 413 |
+| 7 | 145 | 30 | 210 | 623 |
+| 8 | 180 | 35 | 290 | 913 |
+
 ## Piles and manholes (`PileServer`)
 
 - `Pile = true` (Snow Pusher): snow goes not into the backpack but into a pile in front of the player. A pile is a ball Part `SnowYard.Piles.SnowPile`, the `Portions` attribute is fractional, created at runtime.

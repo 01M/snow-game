@@ -311,6 +311,7 @@ return {
 	["World.Purchase.Insufficient"] = { en = "Need Cash", ru = "Не хватает" },
 	["World.Purchase.Ready"] = { en = "Ready to use", ru = "Можно использовать" },
 	["World.Backpack.Add"] = { en = "Backpack +{n}", ru = "Рюкзак +{n}" },
+	["World.Backpack.Capacity"] = { en = "Backpack {n}", ru = "Рюкзак {n}" },
 
 	-- Магазин за Robux (ReplicatedStorage.Shared.Shop, окно ShopGui)
 	["Shop.Title"] = { en = "SHOP", ru = "МАГАЗИН" },

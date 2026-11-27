@@ -5,7 +5,9 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local config = require(ReplicatedStorage:WaitForChild("SnowGame"):WaitForChild("Config"))
 local WorldUi = require(ReplicatedStorage:WaitForChild("SnowGame"):WaitForChild("WorldUi"))
 local StallSigns = require(ReplicatedStorage:WaitForChild("SnowGame"):WaitForChild("UpgradeStallSigns"))
-local localeModule = ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Locale")
+local shared = ReplicatedStorage:WaitForChild("Shared")
+local Shop = require(shared:WaitForChild("Shop"))
+local localeModule = shared:WaitForChild("Locale")
 
 local player = Players.LocalPlayer
 local yard = workspace:WaitForChild("SnowYard")
@@ -18,15 +20,23 @@ WorldUi.prompt(prompt)
 
 local function updateBillboard()
 	local level = player:GetAttribute("BackpackUpgradeLevel") or 0
-	local price = config.getUpgradePrice(level)
+	local price, gain = config.getBackpackUpgrade(level)
 	local ls = player:FindFirstChild("leaderstats")
 	local cash = ls and ls:FindFirstChild("Cash")
-	printPrice(config.UpgradeCapacityBoost, price, cash ~= nil and cash.Value >= price)
+	local amount = if price
+		then gain * Shop.backpackMultiplier(player)
+		else player:GetAttribute("BackpackCapacity") or config.BackpackCapacity
+	prompt.Enabled = price ~= nil
+	printPrice(amount, price, price ~= nil and cash ~= nil and cash.Value >= price)
 end
 
--- Update on level change
-player:GetAttributeChangedSignal("BackpackUpgradeLevel"):Connect(updateBillboard)
-localeModule:GetAttributeChangedSignal("ForceLanguage"):Connect(updateBillboard)
+for _, attribute in { "BackpackUpgradeLevel", "BackpackCapacity", "Pass_BigBackpack" } do
+	player:GetAttributeChangedSignal(attribute):Connect(updateBillboard)
+end
+localeModule:GetAttributeChangedSignal("ForceLanguage"):Connect(function()
+	WorldUi.prompt(prompt)
+	updateBillboard()
+end)
 
 task.spawn(function()
 	local cash = player:WaitForChild("leaderstats"):WaitForChild("Cash")

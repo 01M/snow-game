@@ -59,7 +59,7 @@ local function applyMatch(player: Player, state: MatchCache.State)
 	if cash then
 		cash.Value = state.Cash
 	end
-	local level = math.max(0, math.floor(tonumber(state.Attributes.BackpackUpgradeLevel) or 0))
+	local level = config.clampBackpackLevel(tonumber(state.Attributes.BackpackUpgradeLevel) or 0)
 	-- Per-player upgradeable capacity (×2 с пассом «Большой рюкзак»; если пасс узнают позже, пересчитает ShopServer)
 	player:SetAttribute(
 		"BackpackCapacity",

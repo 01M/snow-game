@@ -36,8 +36,14 @@ local function buyBackpackUpgrade(player: Player)
 		return
 	end
 
-	local level = player:GetAttribute("BackpackUpgradeLevel") or 0
-	local price = config.getUpgradePrice(level)
+	local level = player:GetAttribute("BackpackUpgradeLevel")
+	if type(level) ~= "number" then
+		return
+	end
+	local price = config.getBackpackUpgrade(level)
+	if not price then
+		return
+	end
 
 	if cash.Value >= price then
 		cash.Value -= price
